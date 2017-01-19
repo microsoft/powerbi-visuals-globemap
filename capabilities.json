@@ -1,0 +1,114 @@
+{
+  "dataRoles": [
+    {
+      "name": "Category",
+      "kind": "Group",
+      "displayName": "Location",
+      "preferredTypes": [
+        { "geography": { "address": true } },
+        { "geography": { "city": true } },
+        { "geography": { "continent": true } },
+        { "geography": { "country": true } },
+        { "geography": { "county": true } },
+        { "geography": { "place": true } },
+        { "geography": { "postalCode": true } },
+        { "geography": { "region": true } },
+        { "geography": { "stateOrProvince": true } }
+      ]
+    },
+    {
+      "name": "Series",
+      "kind": "Grouping",
+      "displayName": "Legend"
+    },
+    {
+      "name": "X",
+      "kind": "Measure",
+      "display name": "Longitude",
+      "description": "Use to override the longitude of locations",
+      "preferredTypes": [ { "geography": { "longitude": true } } ]
+    },
+    {
+      "name": "Y",
+      "kind": "Measure",
+      "display name": "Latitude",
+      "description": "Use to override the latitude of locations",
+      "preferredTypes": [ { "geography": { "latitude": true } } ]
+    },
+    {
+      "name": "Height",
+      "kind": "Measure",
+      "display name": "Bar Height"
+    },
+    {
+      "name": "Heat",
+      "kind": "Measure",
+      "display name": "Heat Intensity"
+    }
+  ],
+  "dataViewMappings": [
+    {
+      "conditions": [
+        {
+          "Category": { "max": 1 },
+          "Series": { "max": 1 },
+          "Height": { "max": 1 },
+          "Heat": { "max": 1 }
+        }
+      ],
+      "categorical": {
+        "categories": {
+          "for": { "in": "Category" },
+          "dataReductionAlgorithm": { "top": { } }
+        },
+        "values": {
+          "group": {
+            "by": "Series",
+            "select": [
+              { "bind": { "to": "Height" } },
+              { "bind": { "to": "Heat" } },
+              { "bind": { "to": "X" } },
+              { "bind": { "to": "Y" } }
+            ],
+            "dataReductionAlgorithm": { "top": { } }
+          }
+        },
+        "rowCount": { "preferred": { "min": 2 } }
+      }
+    }
+  ],
+  "sorting": {
+    "custom": { }
+  },
+  "objects": {
+    "dataPoint": {
+      "displayName": "Data colors",
+      "properties": {
+        "defaultColor": {
+          "displayName": "Default color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "showAllDataPoints": {
+          "displayName": "Show all",
+          "type": { "bool": true }
+        },
+        "fill": {
+          "displayName": "Fill",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "fillRule": {
+          "displayName": "Color saturation",
+          "type": { "fillRule": { } },
+          "rule": {
+            "inputRole": "Gradient",
+            "output": {
+              "property": "fill",
+              "selector": [ "Category" ]
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

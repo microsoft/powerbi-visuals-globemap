@@ -1,0 +1,40 @@
+{
+  "visual": {
+    "name": "LineDotChart",
+    "displayName": "LineDot Chart",
+    "guid": "LineDotChart1460463831201",
+    "visualClassName": "LineDotChart",
+    "version": "0.3.3",
+    "description": "The LineDot chart is an animated line chart with fun animated dots. Use the LineDot chart to engage your audience especially in a presentation context. The bubbles size can be dynamic based on data you provide. A counter is provided that you can use to show a running value as the chart animates. Format options are provided for Lines, Dots, and Animation.",
+    "supportUrl": "http://community.powerbi.com",
+    "gitHubUrl": "https://github.com/Microsoft/powerbi-visuals-linedotchart"
+  },
+  "apiVersion": "1.3.0",
+  "author": {
+    "name": "Microsoft",
+    "email": "pbicvsupport@microsoft.com"
+  },
+  "assets": {
+    "icon": "assets/icon.png"
+  },
+  "externalJS": [
+    "node_modules/jquery/dist/jquery.min.js",
+    "node_modules/lodash/lodash.min.js",
+    "node_modules/d3/d3.js",
+    "node_modules/powerbi-visuals-utils-typeutils/lib/index.js",
+    "node_modules/globalize/lib/globalize.js",
+    "node_modules/globalize/lib/cultures/globalize.culture.en-US.js",
+    "node_modules/powerbi-visuals-utils-svgutils/lib/index.js",
+    "node_modules/powerbi-visuals-utils-dataviewutils/lib/index.js",
+    "node_modules/powerbi-visuals-utils-formattingutils/lib/index.js",
+    "node_modules/powerbi-visuals-utils-interactivityutils/lib/index.js",
+    "node_modules/powerbi-visuals-utils-chartutils/lib/index.js",
+    "node_modules/powerbi-visuals-utils-dataviewutils/lib/index.js",
+    "node_modules/powerbi-visuals-utils-tooltiputils/lib/index.js",
+    "src/lib/OrbitControls.js",
+    "src/lib/WebGLHeatMap.js",
+    "src/lib/three.js"
+  ],
+  "style": "style/lineDotChart.less",
+  "capabilities": "capabilities.json"
+}
