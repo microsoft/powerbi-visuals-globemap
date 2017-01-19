@@ -944,7 +944,7 @@ module powerbi.extensibility.visual {
             zoomOut.append("rect").attr({ x: startX - (radius / 2), y: startY + 5.9 * radius, width: radius, height: radius / 3, fill: "gray" });
 
             function onMouseDown(callback: () => void) {
-                d3.event.stopPropagation();
+                (d3.event as MouseEvent).stopPropagation();
                 if ((<any>d3.event).button === 0) {
                     callback();
                 }
@@ -954,7 +954,7 @@ module powerbi.extensibility.visual {
         private initMercartorSphere() {
             if (GlobeMap.MercartorSphere) return;
 
-            var MercartorSphere = function (this: ExtendedGeometry, radius, widthSegments, heightSegments) {
+            var MercartorSphere = function (radius, widthSegments, heightSegments) {
                 THREE.Geometry.call(this);
 
                 this.radius = radius;
@@ -970,7 +970,7 @@ module powerbi.extensibility.visual {
                 }
 
                 // interpolates between sphere and plane
-                function interpolateVertex(this: ExtendedGeometry, u, v, t) {
+                function interpolateVertex(u, v, t) {
                     var maxLng = Math.PI * 2;
                     var maxLat = Math.PI;
                     var radius = this.radius;

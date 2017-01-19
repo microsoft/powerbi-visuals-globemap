@@ -168,7 +168,7 @@ module powerbi.extensibility.visual {
         (url: string, settings: JQueryAjaxSettings): BingAjaxRequest;
     }
     export const safeCharacters: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
-    
+
     /** Note: Used for test mockup */
     export let BingAjaxCall: BingAjaxService = $.ajax;
 
@@ -249,7 +249,7 @@ module powerbi.extensibility.visual {
         }
     }
 
-    export class GeocodeQuery extends GeocodeQueryBase implements IGeocodeQuery  {
+    export class GeocodeQuery extends GeocodeQueryBase implements IGeocodeQuery {
         constructor(bingGeocodingUrl: string, bingSpatialDataUrl: string, query: string, category: string) {
             super(bingGeocodingUrl, bingSpatialDataUrl, query, category);
         }
@@ -362,16 +362,14 @@ module powerbi.extensibility.visual {
         }
     }
 
+    // TODO: Double check this function
     function getBestLocation(data: BingGeocodeResponse, quality: (location: BingLocation) => number): BingLocation {
         let resources = data && !_.isEmpty(data.resourceSets) && data.resourceSets[0].resources;
         if (Array.isArray(resources)) {
-            let bestLocation = _.chain(resources)
+            let bestLocation = resources
                 .map(location => ({ location: location, value: quality(location) }))
-                .max(locationValue => locationValue.value)
-                .value()
-                .location;
 
-            return bestLocation;
+            return _.maxBy(bestLocation, (locationValue) => locationValue.value).location;
         }
     }
 
@@ -379,8 +377,8 @@ module powerbi.extensibility.visual {
         public latitude: number;
         public longitude: number;
         public entities: string[];
-       
-        constructor(bingGeocodingUrl: string, bingSpatialDataUrl: string, latitude: number, longitude: number, entities:string[]) {
+
+        constructor(bingGeocodingUrl: string, bingSpatialDataUrl: string, latitude: number, longitude: number, entities: string[]) {
             super(bingGeocodingUrl, bingSpatialDataUrl, [latitude, longitude].join(), "Point");
             this.latitude = latitude;
             this.longitude = longitude;
@@ -394,10 +392,10 @@ module powerbi.extensibility.visual {
 
         public getUrl(): string {
             let urlAndQuery = UrlUtils.splitUrlAndQuery(this.bingGeocodingUrl);
-            
+
             // add backlash if it's missing
             let url = !_.endsWith(urlAndQuery.baseUrl, '/') ? urlAndQuery.baseUrl + '/' : urlAndQuery.baseUrl;
-            
+
             url += [this.latitude, this.longitude].join();
 
             let parameters: _.Dictionary<string> = {
@@ -407,7 +405,7 @@ module powerbi.extensibility.visual {
 
             if (!_.isEmpty(this.entities))
                 parameters['includeEntityTypes'] = this.entities.join();
-                
+
             return UrlUtils.setQueryParameters(url, parameters, /*keepExisting*/true);
         }
 
@@ -473,7 +471,7 @@ module powerbi.extensibility.visual {
             };
 
             let entityType = this.getBingEntity();
-            
+
             if (!entityType) {
                 return null;
             }
