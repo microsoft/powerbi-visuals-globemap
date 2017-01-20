@@ -32,7 +32,6 @@
     "src/geocoder/geocoderInterfaces.ts",
     "src/geocoder/geocodingCache.ts",
     "src/geocoder/geocoder.ts",
-    "src/geocoder/mapUtil.ts",
     "src/visual.ts"
   ]
 }
