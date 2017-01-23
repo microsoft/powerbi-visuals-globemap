@@ -32,8 +32,8 @@ module powerbi.extensibility.visual {
     import converterHelper = powerbi.extensibility.utils.dataview.converterHelper;
 
     export class GlobeMapColumns<T> {
-        public static Roles = Object.freeze(
-            _.mapValues(new GlobeMapColumns<string>(), (x, i) => i));
+        //public static Roles = Object.freeze(
+        //    _.mapValues(new GlobeMapColumns<string>(), (x, i) => i));
 
         public static getColumnSources(dataView: DataView) {
             return this.getColumnSourcesT<DataViewMetadataColumn>(dataView);

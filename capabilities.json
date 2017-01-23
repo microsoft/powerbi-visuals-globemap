@@ -97,14 +97,7 @@
         },
         "fillRule": {
           "displayName": "Color saturation",
-          "type": { "fill": { } },
-          "rule": {
-            "inputRole": "Gradient",
-            "output": {
-              "property": "fill",
-              "selector": [ "Category" ]
-            }
-          }
+          "type": { "fill": { } }
         }
       }
     }

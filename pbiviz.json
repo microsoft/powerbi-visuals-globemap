@@ -31,9 +31,10 @@
     "node_modules/powerbi-visuals-utils-chartutils/lib/index.js",
     "node_modules/powerbi-visuals-utils-dataviewutils/lib/index.js",
     "node_modules/powerbi-visuals-utils-tooltiputils/lib/index.js",
+    "node_modules/powerbi-visuals-utils-colorutils/lib/index.js",
+    "src/lib/three.js",
     "src/lib/OrbitControls.js",
-    "src/lib/WebGLHeatMap.js",
-    "src/lib/three.js"
+    "src/lib/WebGLHeatMap.js"    
   ],
   "style": "style/globemap.less",
   "capabilities": "capabilities.json"

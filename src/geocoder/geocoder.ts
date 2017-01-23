@@ -170,7 +170,7 @@ module powerbi.extensibility.geocoder {
     export const safeCharacters: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
 
     /** Note: Used for test mockup */
-    export let BingAjaxCall: BingAjaxService = $.ajax;
+    //export let BingAjaxCall: BingAjaxService = $.ajax;
 
     export const CategoryTypeArray = [
         "Address",
@@ -687,7 +687,7 @@ module powerbi.extensibility.geocoder {
 
             this.activeEntries.push(entry);
 
-            entry.request = BingAjaxCall(url, config);
+            entry.request = $.ajax(url, config);
 
             entry.request.always(() => {
                 _.pull(this.activeEntries, entry);

@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 
-declare var WebGLHeatmap;
+var WebGLHeatmap = window['WebGLHeatmap'];
 var GlobeMapCanvasLayers: JQuery[];
 
 module powerbi.extensibility.visual {
@@ -134,8 +134,8 @@ module powerbi.extensibility.visual {
             var dataPoints = [];
             var seriesDataPoints = [];
             var locations = [];
-
-            var colorHelper = new colorHelper(colors, properties.dataPoint.fill);
+            debugger;
+            var colorHelper = new ColorHelper(colors);//, properties.dataPoint.fill
 
             var locationType, heights, heightsBySeries, toolTipDataBySeries, heats;
 
@@ -351,7 +351,7 @@ module powerbi.extensibility.visual {
                     'position': "absolute"
                 });
             this.visualHost = options.host;
-            //this.layout = new VisualLayout(options.viewport);
+            this.layout = new VisualLayout();
             this.readyToRender = false;
 
             if (!this.globeMapLocationCache) {
@@ -843,9 +843,17 @@ module powerbi.extensibility.visual {
                 if (toolTipData.height.displayName) toolTipItems.push(toolTipData.height);
                 if (toolTipData.heat.displayName) toolTipItems.push(toolTipData.heat);
                 this.hoveredBar = object;
+          
+                this.visualHost.tooltipService.show(toolTipData);
+                //this.tooltipServiceWrapper.
                 //TooltipManager.ToolTipInstance.show(toolTipItems, <TouchRect>{ x: this.mousePos.x, y: this.mousePos.y, width: 0, height: 0 });
             } else {
                 this.hoveredBar = null;
+                var hideOp: powerbi.extensibility.TooltipHideOptions = {
+                    immediately: false,
+                    isTouchEvent: false
+                }
+                this.visualHost.tooltipService.hide(hideOp);
                 //TooltipManager.ToolTipInstance.hide();
             }
         }

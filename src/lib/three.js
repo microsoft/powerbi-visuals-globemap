@@ -1,4 +1,4 @@
-if(!window.THREE) {
+if (!window.THREE) {
 
 // File:src/Three.js
 
@@ -107,7 +107,7 @@ if ( Object.assign === undefined ) {
 }
 
 //
-
+var THREE = window["THREE"];
 Object.assign( THREE, {
 
 	// https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent.button
