@@ -23,7 +23,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-module powerbi.extensibility.visual {
+module powerbi.extensibility.geocoder {
     import UrlUtils = powerbi.extensibility.utils.UrlUtils;
 
     export const CategoryTypes = {

@@ -1,4 +1,4 @@
-﻿module powerbi.extensibility.visual {
+﻿module powerbi.extensibility.geocoder {
     import IPromise = powerbi.IPromise;
     import IRect = powerbi.extensibility.utils.svg.IRect;
 

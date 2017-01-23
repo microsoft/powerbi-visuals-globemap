@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 
-module powerbi.extensibility.visual {
+module powerbi.extensibility.geocoder {
 
     import IStorageService = powerbi.extensibility.utils.formatting.IStorageService;
 

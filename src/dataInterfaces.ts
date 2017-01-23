@@ -29,6 +29,7 @@ module powerbi.extensibility.visual {
     import IInteractivityService = powerbi.extensibility.utils.interactivity.IInteractivityService;
     import IAxisProperties = powerbi.extensibility.utils.chart.axis.IAxisProperties;
     import IValueFormatter = powerbi.extensibility.utils.formatting.IValueFormatter;
+    import ILocation = powerbi.extensibility.geocoder.ILocation;
 
     export interface GlobeMapData {
         dataView: DataView;

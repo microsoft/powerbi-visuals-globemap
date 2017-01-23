@@ -2,7 +2,7 @@
   "dataRoles": [
     {
       "name": "Category",
-      "kind": "Group",
+      "kind": "Grouping",
       "displayName": "Location",
       "preferredTypes": [
         { "geography": { "address": true } },
@@ -24,26 +24,26 @@
     {
       "name": "X",
       "kind": "Measure",
-      "display name": "Longitude",
+      "displayName": "Longitude",
       "description": "Use to override the longitude of locations",
       "preferredTypes": [ { "geography": { "longitude": true } } ]
     },
     {
       "name": "Y",
       "kind": "Measure",
-      "display name": "Latitude",
+      "displayName": "Latitude",
       "description": "Use to override the latitude of locations",
       "preferredTypes": [ { "geography": { "latitude": true } } ]
     },
     {
       "name": "Height",
       "kind": "Measure",
-      "display name": "Bar Height"
+      "displayName": "Bar Height"
     },
     {
       "name": "Heat",
       "kind": "Measure",
-      "display name": "Heat Intensity"
+      "displayName": "Heat Intensity"
     }
   ],
   "dataViewMappings": [
@@ -72,8 +72,7 @@
             ],
             "dataReductionAlgorithm": { "top": { } }
           }
-        },
-        "rowCount": { "preferred": { "min": 2 } }
+        }
       }
     }
   ],
@@ -98,7 +97,7 @@
         },
         "fillRule": {
           "displayName": "Color saturation",
-          "type": { "fillRule": { } },
+          "type": { "fill": { } },
           "rule": {
             "inputRole": "Gradient",
             "output": {

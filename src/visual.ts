@@ -28,12 +28,13 @@ declare var WebGLHeatmap;
 var GlobeMapCanvasLayers: JQuery[];
 
 module powerbi.extensibility.visual {
-    import IGeocoder = powerbi.extensibility.visual.IGeocoder;
-    import IGeocodeCoordinate = powerbi.extensibility.visual.IGeocodeCoordinate;
+    import IGeocoder = powerbi.extensibility.geocoder.IGeocoder;
+    import IGeocodeCoordinate = powerbi.extensibility.geocoder.IGeocodeCoordinate;
     import IPromise = powerbi.IPromise;
     import TouchRect = powerbi.extensibility.utils.svg.touch.Rectangle;
-    import ILocation = powerbi.extensibility.visual.ILocation;
+    import ILocation = powerbi.extensibility.geocoder.ILocation;
     import converterHelper = powerbi.extensibility.utils.dataview.converterHelper;
+    import ColorHelper = powerbi.extensibility.utils.color.ColorHelper;
 
     import ClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.ClassAndSelector;
     import createClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.createClassAndSelector;
@@ -275,10 +276,30 @@ module powerbi.extensibility.visual {
         ): GlobeMapSeriesDataPoint {
 
             let columns = dataView.categorical.values.grouped()[seriesIndex];
-            let label = converterHelper.getFormattedLegendLabel(source, <DataViewValueColumns>columns.values, null);
+            //let label = converterHelper.getFormattedLegendLabel(source, <DataViewValueColumns>columns.values, null);
+            let values: DataViewValueColumns = <DataViewValueColumns>columns.values;
+            let sourceForFormat = source;
+            let nameForFormat: PrimitiveValue = source.displayName;
+            if (source.groupName !== undefined) {
+                sourceForFormat = values.source;
+                nameForFormat = source.groupName;
+            }
+
+            let label = valueFormatter.format(nameForFormat, valueFormatter.getFormatString(sourceForFormat, null));
+
             let selector: ISelectionId = visualHost.createSelectionIdBuilder().createSelectionId();
-              
-            let identity = ISelectionIdBuilder.createWithId(columns.identity);
+
+            const categoryColumn: DataViewCategoryColumn = {
+                source: values[seriesIndex].source,
+                values: null,
+                identity: [values[seriesIndex].identity]
+            };
+            
+           let identity = visualHost.createSelectionIdBuilder()
+                .withCategory(categoryColumn, 0)
+                .withMeasure(values[seriesIndex].source.queryName)
+                .createSelectionId();  
+
             let category = <string>converterHelper.getSeriesName(source);
             let objects = <any>columns.objects;
             let color = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
@@ -707,7 +728,7 @@ module powerbi.extensibility.visual {
             this.globeMapLocationCache[renderDatum.placeKey] = location; //store empty object so we don't send AJAX request again
             this.locationsToLoad++;
 
-            geocoder = powerbi.extensibility.visual.createGeocoder();
+            geocoder = powerbi.extensibility.geocoder.createGeocoder();
 
             if (geocoder) {
                 (geocoder.geocode(
