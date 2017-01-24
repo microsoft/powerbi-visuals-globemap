@@ -843,7 +843,7 @@ module powerbi.extensibility.visual {
                 if (toolTipData.height.displayName) toolTipItems.push(toolTipData.height);
                 if (toolTipData.heat.displayName) toolTipItems.push(toolTipData.heat);
                 this.hoveredBar = object;
-          
+                debugger;
                 this.visualHost.tooltipService.show(toolTipData);
                 //this.tooltipServiceWrapper.
                 //TooltipManager.ToolTipInstance.show(toolTipItems, <TouchRect>{ x: this.mousePos.x, y: this.mousePos.y, width: 0, height: 0 });
