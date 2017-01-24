@@ -53,9 +53,6 @@ module powerbi.extensibility.visual {
     import SVGUtil = powerbi.extensibility.utils.svg;
     import AxisHelper = powerbi.extensibility.utils.chart.axis;
     import TextMeasurementService = powerbi.extensibility.utils.formatting.textMeasurementService;
-    import tooltip = powerbi.extensibility.utils.tooltip;
-    import TooltipEventArgs = powerbi.extensibility.utils.tooltip.TooltipEventArgs;
-    import ITooltipServiceWrapper = powerbi.extensibility.utils.tooltip.ITooltipServiceWrapper;
     import valueType = utils.type.ValueType;
     import DataViewObjectsParser = utils.dataview.DataViewObjectsParser;
     import IColorPalette = powerbi.extensibility.IColorPalette;
@@ -119,7 +116,9 @@ module powerbi.extensibility.visual {
         private animationFrameId: number;
         private cameraAnimationFrameId: number;
         private visualHost: IVisualHost
- 
+
+        private tooltipService: ITooltipService;
+
         private static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
             var categorical = GlobeMapColumns.getCategoricalColumns(dataView);
             if (!categorical || !categorical.Category || _.isEmpty(categorical.Category.values)
@@ -127,7 +126,7 @@ module powerbi.extensibility.visual {
                 return null;
             }
 
-            var properties:GlobeMapSettings = GlobeMapSettings.getDefault() as GlobeMapSettings;
+            var properties: GlobeMapSettings = GlobeMapSettings.getDefault() as GlobeMapSettings;
             var settings = GlobeMap.parseSettings(dataView);
             var groupedColumns = GlobeMapColumns.getGroupedValueColumns(dataView);
 
@@ -173,7 +172,7 @@ module powerbi.extensibility.visual {
                     }
                     for (var i = 0; i < groupedColumns.length; i++) {
                         var values = groupedColumns[i].Height.values;
-                        for (var j = 0; j < values.length; j++) { 
+                        for (var j = 0; j < values.length; j++) {
                             //calculating relative size of series
                             heightsBySeries[j][i] = <number>values[j] / heights[j];
                         }
@@ -294,11 +293,11 @@ module powerbi.extensibility.visual {
                 values: null,
                 identity: [values[seriesIndex].identity]
             };
-            
-           let identity = visualHost.createSelectionIdBuilder()
+
+            let identity = visualHost.createSelectionIdBuilder()
                 .withCategory(categoryColumn, 0)
                 .withMeasure(values[seriesIndex].source.queryName)
-                .createSelectionId();  
+                .createSelectionId();
 
             let category = <string>converterHelper.getSeriesName(source);
             let objects = <any>columns.objects;
@@ -339,18 +338,16 @@ module powerbi.extensibility.visual {
             return instances;
         }
 
-        private tooltipServiceWrapper: ITooltipServiceWrapper;
         constructor(options: VisualConstructorOptions) {
-            this.tooltipServiceWrapper = tooltip.createTooltipServiceWrapper(
-                options.host.tooltipService,
-                options.element);
-
             this.root = $("<div>").appendTo(options.element)
                 .attr('drag-resize-disabled', "true")
                 .css({
                     'position': "absolute"
                 });
+
             this.visualHost = options.host;
+            this.tooltipService = this.visualHost.tooltipService;
+
             this.layout = new VisualLayout();
             this.readyToRender = false;
 
@@ -681,7 +678,9 @@ module powerbi.extensibility.visual {
                         var position = vector.clone().multiplyScalar(GlobeMap.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
                         bar.position.set(position.x, position.y, position.z);
                         bar.lookAt(vector);
-                        (<any>bar).toolTipData = dataPointToolTip.length === 0 ? renderDatum.toolTipData : this.getToolTipDataForSeries(renderDatum.toolTipData, dataPointToolTip[j]);
+                        (<any>bar).toolTipData = dataPointToolTip.length === 0
+                            ? renderDatum.toolTipData
+                            : this.getToolTipDataForSeries(renderDatum.toolTipData, dataPointToolTip[j]);
 
                         this.barsGroup.add(bar);
 
@@ -823,7 +822,11 @@ module powerbi.extensibility.visual {
         }
 
         private intersectBars() {
-            if (!this.rayCaster || !this.barsGroup || !this.mousePosNormalized || !this.mousePos) {
+            if (!this.rayCaster
+                || !this.barsGroup
+                || !this.mousePosNormalized
+                || !this.mousePos) {
+
                 return;
             }
 
@@ -835,31 +838,66 @@ module powerbi.extensibility.visual {
             if (intersects && intersects.length > 0) {
                 //console.log(intersects[0], this.mousePos.x, this.mousePos.y);
                 var object = intersects[0].object;
-                if (!object || !(<any>object).toolTipData) return;
+
+                if (!object || !(<any>object).toolTipData) {
+                    return;
+                }
+
                 var toolTipData = (<any>object).toolTipData;
                 var toolTipItems: VisualTooltipDataItem[] = [];
-                if (toolTipData.location.displayName) toolTipItems.push(toolTipData.location);
-                if (toolTipData.series) toolTipItems.push(toolTipData.series);
-                if (toolTipData.height.displayName) toolTipItems.push(toolTipData.height);
-                if (toolTipData.heat.displayName) toolTipItems.push(toolTipData.heat);
+
+                if (toolTipData.location.displayName) {
+                    toolTipItems.push(toolTipData.location);
+                }
+
+                if (toolTipData.series) {
+                    toolTipItems.push(toolTipData.series);
+                }
+
+                if (toolTipData.height.displayName) {
+                    toolTipItems.push(toolTipData.height);
+                }
+
+                if (toolTipData.heat.displayName) {
+                    toolTipItems.push(toolTipData.heat);
+                }
+
                 this.hoveredBar = object;
-                debugger;
-                this.visualHost.tooltipService.show(toolTipData);
-                //this.tooltipServiceWrapper.
-                //TooltipManager.ToolTipInstance.show(toolTipItems, <TouchRect>{ x: this.mousePos.x, y: this.mousePos.y, width: 0, height: 0 });
+
+                const tooltipShowOptions: TooltipShowOptions = {
+                    coordinates: [
+                        this.mousePos.x,
+                        this.mousePos.y
+                    ],
+                    isTouchEvent: false,
+                    dataItems: toolTipItems,
+                    identities: []
+                };
+
+                this.visualHost.tooltipService.show(tooltipShowOptions);
             } else {
                 this.hoveredBar = null;
-                var hideOp: powerbi.extensibility.TooltipHideOptions = {
+                var hideOp: TooltipHideOptions = {
                     immediately: false,
                     isTouchEvent: false
                 }
-                this.visualHost.tooltipService.hide(hideOp);
-                //TooltipManager.ToolTipInstance.hide();
+
+                this.hideTooltip();
             }
         }
 
+        private hideTooltip(): void {
+            const tooltipHideOptions: TooltipHideOptions = {
+                immediately: true,
+                isTouchEvent: false
+            };
+
+            this.tooltipService.hide(tooltipHideOptions);
+        }
+
         private animateCamera(to: THREE.Vector3, done?: Function) {
-            //TooltipManager.ToolTipInstance.hide();
+            this.hideTooltip();
+
             if (!this.camera) return;
             cancelAnimationFrame(this.cameraAnimationFrameId);
             var startTime = Date.now();
@@ -928,11 +966,18 @@ module powerbi.extensibility.visual {
             }
 
             this.orbitControls = null;
-            if (this.rendererCanvas) $(this.rendererCanvas)
-                .off("mousemove mouseup mousedown mousewheel DOMMouseScroll");
+            if (this.rendererCanvas) {
+                $(this.rendererCanvas)
+                    .off("mousemove mouseup mousedown mousewheel DOMMouseScroll");
+            }
+
             this.rendererCanvas = null;
-            if (this.root) this.root.empty();
-            //TooltipManager.ToolTipInstance.hide();
+
+            if (this.root) {
+                this.root.empty();
+            }
+
+            this.hideTooltip();
         }
 
         private initZoomControl() {
