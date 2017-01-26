@@ -28,30 +28,10 @@ module powerbi.extensibility.visual {
     import DataViewObjectsParser = powerbi.extensibility.utils.dataview.DataViewObjectsParser;
 
     export class GlobeMapSettings extends DataViewObjectsParser {
-        //public lineoptions: LineSettings = new LineSettings();
         public dataPoint: DataPointSettings = new DataPointSettings();
-        //public counteroptions: CounterSettings = new CounterSettings();
-        //public misc: MiscSettings = new MiscSettings();
     }
-
-    //export class LineSettings {
-    //    public fill: string = "rgb(102, 212, 204)";
-    //    public lineThickness: number = 3;
-    //}
 
     export class DataPointSettings {
         public fill: string = "#005c55";
-        //public dotSizeMin: number = 4;
-        //public dotSizeMax: number = 38;
     }
-
-    //export class CounterSettings {
-    //    public counterTitle: string = "Total features";
-    //}
-
-    //export class MiscSettings {
-    //    public isAnimated: boolean = true;
-    //    public isStopped: boolean = true;
-    //    public duration: number = 20;
-    //}
 }

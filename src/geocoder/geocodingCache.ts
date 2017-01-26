@@ -59,10 +59,10 @@ module powerbi.extensibility.geocoder {
             this.maxCacheSizeOverflow = maxCacheSizeOverflow;
             this.localStorageService = localStorageService;
         }
-        
-        /**
-         * Retrieves the coordinate for the key from the cache, returning undefined on a cache miss.
-         */
+
+    /**
+    * Retrieves the coordinate for the key from the cache, returning undefined on a cache miss.
+    */
         public getCoordinates(key: string): IGeocodeCoordinate {
             // Check in-memory cache
             let pair = this.geocodeCache[key];
@@ -78,10 +78,9 @@ module powerbi.extensibility.geocoder {
             }
             return undefined;
         }
-        
-        /**
-         * Registers the query and coordinate to the cache.
-         */
+    /**
+    * Registers the query and coordinate to the cache.
+    */
         public registerCoordinates(key: string, coordinate: IGeocodeCoordinate): void {
             this.registerInMemory(key, coordinate);
             this.registerInStorage(key, coordinate);

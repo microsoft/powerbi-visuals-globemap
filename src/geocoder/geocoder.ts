@@ -169,9 +169,8 @@ module powerbi.extensibility.geocoder {
     }
     export const safeCharacters: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
 
-    /** Note: Used for test mockup */
-    //export let BingAjaxCall: BingAjaxService = $.ajax;
-
+ /** Note: Used for test mockup */
+ // export let BingAjaxCall: BingAjaxService = $.ajax;
     export const CategoryTypeArray = [
         "Address",
         "City",
@@ -366,8 +365,7 @@ module powerbi.extensibility.geocoder {
     function getBestLocation(data: BingGeocodeResponse, quality: (location: BingLocation) => number): BingLocation {
         let resources = data && !_.isEmpty(data.resourceSets) && data.resourceSets[0].resources;
         if (Array.isArray(resources)) {
-            let bestLocation = resources
-                .map(location => ({ location: location, value: quality(location) }))
+            let bestLocation = resources.map(location => ({ location: location, value: quality(location) }));
 
             return _.maxBy(bestLocation, (locationValue) => locationValue.value).location;
         }

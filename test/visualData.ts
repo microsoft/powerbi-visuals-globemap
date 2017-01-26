@@ -53,36 +53,4 @@ module powerbi.extensibility.visual.test {
         return getRandomUniqueDates(count, start, end).sort((a, b) => a.getTime() - b.getTime());
     }
 
-    export class LineDotChartData extends TestDataViewBuilder {
-        public static ColumnDate: string = "Date";
-        public static ColumnValue: string = "Value";
-
-        public valuesDate: Date[] = getRandomUniqueSortedDates(
-            50,
-            new Date(2014, 9, 12, 3, 9, 50),
-            new Date(2016, 3, 1, 2, 43, 3));
-        public valuesValue = helpers.getRandomNumbers(this.valuesDate.length, 0, 5361);
-
-        public getDataView(columnNames?: string[]): powerbi.DataView {
-            return this.createCategoricalDataViewBuilder([
-                {
-                    source: {
-                        displayName: LineDotChartData.ColumnDate,
-                        type: ValueType.fromDescriptor({ dateTime: true }),
-                        roles: { Date: true }
-                    },
-                    values: this.valuesDate
-                }
-            ], [
-                    {
-                        source: {
-                            displayName: "Values",
-                            type: ValueType.fromDescriptor({ integer: true }),
-                            roles: { Values: true }
-                        },
-                        values: this.valuesValue
-                    }
-                ], columnNames).build();
-        }
-    }
 }

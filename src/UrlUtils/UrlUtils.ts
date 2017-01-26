@@ -196,7 +196,7 @@ namespace powerbi.extensibility.utils {
 
             result += '?' + _.chain(parameters)
                 .toPairs()
-                .map(pair=> pair.join('='))
+                .map(pair => pair.join('='))
                 .value()
                 .join('&');
 
@@ -232,7 +232,7 @@ namespace powerbi.extensibility.utils {
             // path     = $3 = /pub/ietf/uri/
             // query    = $4 = <undefined>
             // fragment = $5 = Related
-            var matches = url.match(/^(?:([^:\/?#]+):)?(?:\/\/([^\/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?/);
+            let matches = url.match(/^(?:([^:\/?#]+):)?(?:\/\/([^\/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?/);
             if (matches)
                 return {
                     scheme: matches[1],

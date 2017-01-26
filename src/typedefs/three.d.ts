@@ -428,7 +428,7 @@ declare namespace THREE {
      * Camera with orthographic projection
      *
      * @example
-     * var camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );
+     * let camera = new THREE.OrthographicCamera( width / - 2, width / 2, height / 2, height / - 2, 1, 1000 );
      * scene.add( camera );
      *
      * @see <a href="https://github.com/mrdoob/three.js/blob/master/src/cameras/OrthographicCamera.js">src/cameras/OrthographicCamera.js</a>
@@ -489,7 +489,7 @@ declare namespace THREE {
      * Camera with perspective projection.
      *
      * # example
-     *     var camera = new THREE.PerspectiveCamera( 45, width / height, 1, 1000 );
+     *     let camera = new THREE.PerspectiveCamera( 45, width / height, 1, 1000 );
      *     scene.add( camera );
      *
      * @source https://github.com/mrdoob/three.js/blob/master/src/cameras/PerspectiveCamera.js
@@ -546,10 +546,10 @@ declare namespace THREE {
          *
          * then for each monitor you would call it like this:
          *
-         *     var w = 1920;
-         *     var h = 1080;
-         *     var fullWidth = w * 3;
-         *     var fullHeight = h * 2;
+         *     let w = 1920;
+         *     let h = 1080;
+         *     let fullWidth = w * 3;
+         *     let fullHeight = h * 2;
          *
          *     // A
          *     camera.setViewOffset( fullWidth, fullHeight, w * 0, h * 0, w, h );
@@ -604,7 +604,7 @@ declare namespace THREE {
         array: ArrayLike<number>;
         itemSize: number;
         dynamic: boolean;
-        updateRange: {offset:number, count:number};
+        updateRange: {offset: number, count: number};
         version: number;
         needsUpdate: boolean;
         count: number;
@@ -614,11 +614,11 @@ declare namespace THREE {
         copy(source: BufferAttribute): BufferAttribute;
         copyAt(index1: number, attribute: BufferAttribute, index2: number): BufferAttribute;
         copyArray(array: ArrayLike<number>): BufferAttribute;
-        copyColorsArray(colors: {r:number, g:number, b:number}[]): BufferAttribute;
-        copyIndicesArray(indices: {a:number, b:number, c:number}[]): BufferAttribute;
-        copyVector2sArray(vectors: {x:number, y:number}[]): BufferAttribute;
-        copyVector3sArray(vectors: {x:number, y:number, z:number}[]): BufferAttribute;
-        copyVector4sArray(vectors: {x:number, y:number, z:number, w:number}[]): BufferAttribute;
+        copyColorsArray(colors: {r: number, g: number, b: number}[]): BufferAttribute;
+        copyIndicesArray(indices: {a: number, b: number, c: number}[]): BufferAttribute;
+        copyVector2sArray(vectors: {x: number, y: number}[]): BufferAttribute;
+        copyVector3sArray(vectors: {x: number, y: number, z: number}[]): BufferAttribute;
+        copyVector4sArray(vectors: {x: number, y: number, z: number, w: number}[]): BufferAttribute;
         set(value: ArrayLike<number>, offset?: number): BufferAttribute;
         getX(index: number): number;
         setX(index: number, x: number): BufferAttribute;
@@ -734,8 +734,8 @@ declare namespace THREE {
 
         center(): Vector3;
 
-        setFromObject(object: Object3D) : void;
-        updateFromObject(object: Object3D) : void;
+        setFromObject(object: Object3D): void;
+        updateFromObject(object: Object3D): void;
 
         fromGeometry(geometry: Geometry, settings?: any): BufferGeometry;
 
@@ -892,7 +892,7 @@ declare namespace THREE {
      * JavaScript events for custom objects
      *
      * # Example
-     *     var Car = function () {
+     *     let Car = function () {
      *
      *         EventDispatcher.call( this );
      *         this.start = function () {
@@ -903,7 +903,7 @@ declare namespace THREE {
      *
      *     };
      *
-     *     var car = new Car();
+     *     let car = new Car();
      *     car.addEventListener( 'start', function ( event ) {
      *
      *         alert( event.message );
@@ -958,9 +958,9 @@ declare namespace THREE {
      * Triangle face.
      *
      * # Example
-     *     var normal = new THREE.Vector3( 0, 1, 0 );
-     *     var color = new THREE.Color( 0xffaa00 );
-     *     var face = new THREE.Face3( 0, 1, 2, normal, color, 0 );
+     *     let normal = new THREE.Vector3( 0, 1, 0 );
+     *     let color = new THREE.Color( 0xffaa00 );
+     *     let face = new THREE.Face3( 0, 1, 2, normal, color, 0 );
      *
      * @source https://github.com/mrdoob/three.js/blob/master/src/core/Face3.js
      */
@@ -1049,7 +1049,7 @@ declare namespace THREE {
      * Base class for geometries
      *
      * # Example
-     *     var geometry = new THREE.Geometry();
+     *     let geometry = new THREE.Geometry();
      *     geometry.vertices.push( new THREE.Vector3( -10, 10, 0 ) );
      *     geometry.vertices.push( new THREE.Vector3( -10, -10, 0 ) );
      *     geometry.vertices.push( new THREE.Vector3( 10, -10, 0 ) );
@@ -1255,7 +1255,7 @@ declare namespace THREE {
         dispose(): void;
 
 
-        //These properties do not exist in a normal Geometry class, but if you use the instance that was passed by JSONLoader, it will be added.
+        // These properties do not exist in a normal Geometry class, but if you use the instance that was passed by JSONLoader, it will be added.
         bones: Bone[];
         animation: AnimationClip;
         animations: AnimationClip[];
@@ -1290,7 +1290,7 @@ declare namespace THREE {
     export class InstancedBufferGeometry extends BufferGeometry {
         constructor();
 
-        groups: {start:number, count:number, instances:number}[];
+        groups: {start: number, count: number, instances: number}[];
         maxInstancedCount: number;
 
         addGroup(start: number, count: number, instances: number): void;
@@ -1674,7 +1674,7 @@ declare namespace THREE {
         linePrecision: number;
 
         set(origin: Vector3, direction: Vector3): void;
-        setFromCamera(coords: { x: number; y: number;}, camera: Camera ): void;
+        setFromCamera(coords: { x: number; y: number; }, camera: Camera ): void;
         intersectObject(object: Object3D, recursive?: boolean): Intersection[];
         intersectObjects(objects: Object3D[], recursive?: boolean): Intersection[];
     }
@@ -1744,7 +1744,7 @@ declare namespace THREE {
      * This light's color gets applied to all the objects in the scene globally.
      *
      * # example
-     *     var light = new THREE.AmbientLight( 0x404040 ); // soft white light
+     *     let light = new THREE.AmbientLight( 0x404040 ); // soft white light
      *     scene.add( light );
      *
      * @source https://github.com/mrdoob/three.js/blob/master/src/lights/AmbientLight.js
@@ -1767,7 +1767,7 @@ declare namespace THREE {
      *
      * @example
      * // White directional light at half intensity shining from the top.
-     * var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+     * let directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
      * directionalLight.position.set( 0, 1, 0 );
      * scene.add( directionalLight );
      *
@@ -1807,7 +1807,7 @@ declare namespace THREE {
      * Affects objects using {@link MeshLambertMaterial} or {@link MeshPhongMaterial}.
      *
      * @example
-     * var light = new THREE.PointLight( 0xff0000, 1, 100 );
+     * let light = new THREE.PointLight( 0xff0000, 1, 100 );
      * light.position.set( 50, 50, 50 );
      * scene.add( light );
      */
@@ -1927,9 +1927,8 @@ declare namespace THREE {
         static Handlers: LoaderHandler;
     }
 
-    export interface LoaderHandler{
+    export interface LoaderHandler {
         handlers: (RegExp | Loader)[];
-
         add(regex: RegExp, loader: Loader): void;
         get(file: string): Loader;
     }
@@ -2874,7 +2873,7 @@ declare namespace THREE {
      * Represents a color. See also {@link ColorUtils}.
      *
      * @example
-     * var color = new THREE.Color( 0xff0000 );
+     * let color = new THREE.Color( 0xff0000 );
      *
      * @see <a href="https://github.com/mrdoob/three.js/blob/master/src/math/Color.js">src/math/Color.js</a>
      */
@@ -3156,7 +3155,7 @@ declare namespace THREE {
         clone(): Euler;
         copy(euler: Euler): Euler;
         setFromRotationMatrix(m: Matrix4, order?: string, update?: boolean): Euler;
-        setFromQuaternion(q:Quaternion, order?: string, update?: boolean): Euler;
+        setFromQuaternion(q: Quaternion, order?: string, update?: boolean): Euler;
         setFromVector3( v: Vector3, order?: string ): Euler;
         reorder(newOrder: string): Euler;
         equals(euler: Euler): boolean;
@@ -3294,7 +3293,7 @@ declare namespace THREE {
         copy(m: Matrix): Matrix;
 
         /**
-         * multiplyScalar(s:number):T;
+         * multiplyScalar(s: number):T;
          */
         multiplyScalar(s: number): Matrix;
 
@@ -3376,13 +3375,13 @@ declare namespace THREE {
      *
      * @example
      * // Simple rig for rotating around 3 axes
-     * var m = new THREE.Matrix4();
-     * var m1 = new THREE.Matrix4();
-     * var m2 = new THREE.Matrix4();
-     * var m3 = new THREE.Matrix4();
-     * var alpha = 0;
-     * var beta = Math.PI;
-     * var gamma = Math.PI/2;
+     * let m = new THREE.Matrix4();
+     * let m1 = new THREE.Matrix4();
+     * let m2 = new THREE.Matrix4();
+     * let m3 = new THREE.Matrix4();
+     * let alpha = 0;
+     * let beta = Math.PI;
+     * let gamma = Math.PI/2;
      * m1.makeRotationX( alpha );
      * m2.makeRotationY( beta );
      * m3.makeRotationZ( gamma );
@@ -3616,9 +3615,9 @@ declare namespace THREE {
      * Implementation of a quaternion. This is used for rotating things without incurring in the dreaded gimbal lock issue, amongst other advantages.
      *
      * @example
-     * var quaternion = new THREE.Quaternion();
+     * let quaternion = new THREE.Quaternion();
      * quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ), Math.PI / 2 );
-     * var vector = new THREE.Vector3( 1, 0, 0 );
+     * let vector = new THREE.Vector3( 1, 0, 0 );
      * vector.applyQuaternion( quaternion );
      */
     export class Quaternion {
@@ -3858,7 +3857,7 @@ declare namespace THREE {
      * Those definitions will be changed when TypeScript innovates Generics to be type safe.
      *
      * @example
-     * var v:THREE.Vector = new THREE.Vector3();
+     * let v:THREE.Vector = new THREE.Vector3();
      * v.addVectors(new THREE.Vector2(0, 1), new THREE.Vector2(2, 3));    // invalid but compiled successfully
      */
     export interface Vector {
@@ -3892,12 +3891,12 @@ declare namespace THREE {
         subVectors(a: Vector, b: Vector): Vector;
 
         /**
-         * multiplyScalar(s:number):T;
+         * multiplyScalar(s: number):T;
          */
         multiplyScalar(s: number): Vector;
 
         /**
-         * divideScalar(s:number):T;
+         * divideScalar(s: number):T;
          */
         divideScalar(s: number): Vector;
 
@@ -3912,12 +3911,12 @@ declare namespace THREE {
         dot(v: Vector): number;
 
         /**
-         * lengthSq():number;
+         * lengthSq(): number;
          */
         lengthSq(): number;
 
         /**
-         * length():number;
+         * length(): number;
          */
         length(): number;
 
@@ -3929,24 +3928,24 @@ declare namespace THREE {
         /**
          * NOTE: Vector4 doesn't have the property.
          *
-         * distanceTo(v:T):number;
+         * distanceTo(v:T): number;
          */
         distanceTo?(v: Vector): number;
 
         /**
          * NOTE: Vector4 doesn't have the property.
          *
-         * distanceToSquared(v:T):number;
+         * distanceToSquared(v:T): number;
          */
         distanceToSquared?(v: Vector): number;
 
         /**
-         * setLength(l:number):T;
+         * setLength(l: number):T;
          */
         setLength(l: number): Vector;
 
         /**
-         * lerp(v:T, alpha:number):T;
+         * lerp(v:T, alpha: number):T;
          */
         lerp(v: Vector, alpha: number): Vector;
 
@@ -4122,9 +4121,9 @@ declare namespace THREE {
      * 3D vector.
      *
      * @example
-     * var a = new THREE.Vector3( 1, 0, 0 );
-     * var b = new THREE.Vector3( 0, 1, 0 );
-     * var c = new THREE.Vector3();
+     * let a = new THREE.Vector3( 1, 0, 0 );
+     * let b = new THREE.Vector3( 0, 1, 0 );
+     * let c = new THREE.Vector3();
      * c.crossVectors( a, b );
      *
      * @see <a href="https://github.com/mrdoob/three.js/blob/master/src/math/Vector3.js">src/math/Vector3.js</a>
@@ -4596,8 +4595,8 @@ declare namespace THREE {
     }
 
     enum LineMode {}
-    var LineStrip: LineMode; // deprecated
-    var LinePieces: LineMode; // deprecated
+    let LineStrip: LineMode; // deprecated
+    let LinePieces: LineMode; // deprecated
 
     export class Mesh extends Object3D {
         constructor(geometry?: Geometry, material?: Material);
@@ -4707,7 +4706,7 @@ declare namespace THREE {
 
     export interface Renderer {
         render(scene: Scene, camera: Camera): void;
-        setSize(width:number, height:number, updateStyle?:boolean): void;
+        setSize(width: number, height: number, updateStyle?: boolean): void;
         domElement: HTMLCanvasElement;
     }
 
@@ -4943,7 +4942,7 @@ declare namespace THREE {
         clearColor(): void;
         clearDepth(): void;
         clearStencil(): void;
-        clearTarget(renderTarget:WebGLRenderTarget, color: boolean, depth: boolean, stencil: boolean): void;
+        clearTarget(renderTarget: WebGLRenderTarget, color: boolean, depth: boolean, stencil: boolean): void;
         resetGLState(): void;
         dispose(): void;
 
@@ -4984,7 +4983,7 @@ declare namespace THREE {
         supportsBlendMinMax(): any; // deprecated
         supportsVertexTextures(): any; // deprecated
         supportsInstancedArrays(): any; // deprecated
-        enableScissorTest(boolean: any): any; // deprecated
+        // enableScissorTest(boolean: any): any; // deprecated
     }
 
     export interface RenderTarget {
@@ -5149,7 +5148,7 @@ declare namespace THREE {
         uv_pars_vertex: string;
         uv_vertex: string;
         worldpos_vertex: string;
-    }
+    };
 
     export interface Shader {
         uniforms: any;
@@ -5502,9 +5501,9 @@ declare namespace THREE {
     }
 
     export interface IFog {
-        name:string;
+        name: string;
         color: Color;
-        clone():IFog;
+        clone(): IFog;
     }
 
     /**
@@ -5513,7 +5512,7 @@ declare namespace THREE {
     export class Fog implements IFog {
         constructor(hex: number, near?: number, far?: number);
 
-        name:string;
+        name: string;
 
         /**
          * Fog color.
@@ -5836,7 +5835,7 @@ declare namespace THREE {
          * Returns a vector for point at relative position in curve according to arc length
          * getPointAt(u: number): T;
          */
-        getPointAt(u: number):T;
+        getPointAt(u: number): T;
 
         /**
          * Get sequence of points using getPoint( t )
@@ -6352,7 +6351,7 @@ declare namespace THREE {
             bevelEnabled: boolean;
             bevelThickness: number;
             bevelSize: number;
-        }
+        };
     }
 
     export class TorusBufferGeometry extends BufferGeometry {

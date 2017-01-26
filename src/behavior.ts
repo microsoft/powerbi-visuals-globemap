@@ -29,5 +29,5 @@ module powerbi.extensibility.visual {
     import IInteractiveBehavior = powerbi.extensibility.utils.interactivity.IInteractiveBehavior;
     import IInteractivityService = powerbi.extensibility.utils.interactivity.IInteractivityService;
     import ISelectionHandler = powerbi.extensibility.utils.interactivity.ISelectionHandler;
-    import SelectableDataPoint = powerbi.extensibility.utils.interactivity.SelectableDataPoint;   
+    import SelectableDataPoint = powerbi.extensibility.utils.interactivity.SelectableDataPoint;
 }
