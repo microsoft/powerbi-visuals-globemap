@@ -25,7 +25,7 @@
     "@types/jasmine": "2.5.37",
     "@types/jasmine-jquery": "1.5.28",
     "@types/lodash": "4.14.43",
-    "@types/three": "0.0.29",
+    "@types/three": "0.0.19",
     "bingmaps": "1.0.12",
     "d3": "3.5.5",
     "globalize": "0.1.0-a2",
@@ -45,11 +45,6 @@
     "powerbi-visuals-utils-testutils": "0.2.2",
     "three": "0.75.0",
     "tslint": "3.15.1",
-    "typings": "1.4.0",
-    "webgl-heatmap": "^0.2.3"
-  },
-  "dependencies": {
-    "@types/three": "0.0.19",
-    "three": "0.75.0"
+    "typings": "1.4.0"
   }
 }

@@ -48,8 +48,8 @@ module powerbi.extensibility.geocoder {
 
         /** Maximum cache overflow of cached geocode data to kick the cache reducing. */
         MaxCacheSizeOverflow: 100,
-
-        BingKey: "AoW85FdF-eTJavFmWhZjaQ970kwG1FuainbyVSlP5HglkbhVVIFOyNwlaQxAIj-S",
+        // TODO: Add your Bing key here
+        BingKey: "AlzEsHuemcvyHL9zokjJx85LFxp8sy4Ch2aSwrmn6AKCojiBUahyJzNwoV0oRlvm"
     };
 
     export enum JQueryPromiseState {
@@ -117,18 +117,16 @@ module powerbi.extensibility.geocoder {
         }
 
         public tryGeocodeImmediate(query: string, category?: string): IGeocodeCoordinate {
-            let result = GeocodeCacheManager.getCoordinates(new GeocodeQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), query, category).key);
-            return result;
+            return GeocodeCacheManager.getCoordinates(new GeocodeQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), query, category).key);
         }
 
         public tryGeocodeBoundaryImmediate(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData: number = 3): IGeocodeBoundaryCoordinate {
-            let result = GeocodeCacheManager.getCoordinates(new GeocodeBoundaryQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, category, levelOfDetail, maxGeoData).key);
-            return <IGeocodeBoundaryCoordinate>result;
+            return GeocodeCacheManager.getCoordinates(new GeocodeBoundaryQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, category, levelOfDetail, maxGeoData).key);
         }
 
         private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): any {
-            let result = GeocodeCacheManager.getCoordinates(geocodeQuery.getKey());
-            let deferred = $.Deferred();
+            let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(geocodeQuery.getKey());
+            let deferred: JQueryDeferred<{}> = $.Deferred();
 
             if (result) {
                 deferred.resolve(result);
@@ -139,8 +137,9 @@ module powerbi.extensibility.geocoder {
 
                 if (options && options.timeout) {
                     options.timeout.finally(() => {
-                        if (item.deferred.state() === JQueryPromiseState[JQueryPromiseState.pending])
+                        if (item.deferred.state() === JQueryPromiseState[JQueryPromiseState.pending]) {
                             item.deferred.reject();
+                        }
                     });
                 }
             }
@@ -212,7 +211,6 @@ module powerbi.extensibility.geocoder {
     }
 
     export interface IGeocodeQuery {
-        // return undefined|null|"" if result should not be cached
         getKey(): string;
         getUrl(): string;
         getResult(data: any): IGeocodeResult;
@@ -254,7 +252,7 @@ module powerbi.extensibility.geocoder {
         }
 
         public getBingEntity(): string {
-            let category = this.category.toLowerCase();
+            let category: string = this.category.toLowerCase();
             if (!categoryToBingEntity) {
                 categoryToBingEntity = {};
                 categoryToBingEntity[CategoryTypes.Continent.toLowerCase()] = BingEntities.Continent;
@@ -273,8 +271,8 @@ module powerbi.extensibility.geocoder {
                 key: Settings.BingKey,
             };
 
-            let entityType = this.getBingEntity();
-            let queryAdded = false;
+            let entityType: string = this.getBingEntity();
+            let queryAdded: boolean = false;
             if (entityType) {
                 if (entityType === BingEntities.Postcode) {
                     parameters["includeEntityTypes"] = "Postcode,Postcode1,Postcode2,Postcode3,Postcode4";
@@ -309,7 +307,7 @@ module powerbi.extensibility.geocoder {
                 }
             }
 
-            let cultureName = navigator["userLanguage"] || navigator["language"];
+            let cultureName: any = navigator["userLanguage"] || navigator["language"];
             cultureName = mapLocalesForBing(cultureName);
             if (cultureName) {
                 parameters["c"] = cultureName;
@@ -324,9 +322,9 @@ module powerbi.extensibility.geocoder {
         }
 
         public getResult(data: BingGeocodeResponse): IGeocodeResult {
-            let location = getBestLocation(data, location => this.locationQuality(location));
+            let location: BingLocation = getBestLocation(data, location => this.locationQuality(location));
             if (location) {
-                let pointData = location.point.coordinates;
+                let pointData: number[] = location.point.coordinates;
                 let coordinates: IGeocodeCoordinate = {
                     latitude: pointData && pointData[0],
                     longitude: pointData && pointData[1]
@@ -339,13 +337,13 @@ module powerbi.extensibility.geocoder {
         }
 
         private locationQuality(location: BingLocation): number {
-            let quality = 0;
+            let quality: number = 0;
 
             // two letter ISO country query is most important
             if (this.category === CategoryTypes.CountryRegion) {
                 let iso2: string = location.address && location.address.countryRegionIso2;
                 if (iso2) {
-                    let queryString = this.query.toLowerCase();
+                    let queryString: string = this.query.toLowerCase();
                     if (queryString.length === 2 && queryString === iso2.toLowerCase()) {
                         quality += 2;
                     }
@@ -363,7 +361,7 @@ module powerbi.extensibility.geocoder {
 
     // TODO: Double check this function
     function getBestLocation(data: BingGeocodeResponse, quality: (location: BingLocation) => number): BingLocation {
-        let resources = data && !_.isEmpty(data.resourceSets) && data.resourceSets[0].resources;
+        let resources: BingLocation[] = data && !_.isEmpty(data.resourceSets) && data.resourceSets[0].resources;
         if (Array.isArray(resources)) {
             let bestLocation = resources.map(location => ({ location: location, value: quality(location) }));
 
@@ -401,18 +399,19 @@ module powerbi.extensibility.geocoder {
                 include: 'ciso2'
             };
 
-            if (!_.isEmpty(this.entities))
+            if (!_.isEmpty(this.entities)) {
                 parameters['includeEntityTypes'] = this.entities.join();
+            }
 
             return UrlUtils.setQueryParameters(url, parameters, /*keepExisting*/true);
         }
 
         public getResult(data: BingGeocodeResponse): IGeocodeResult {
-            let location = getBestLocation(data, location => this.entities.indexOf(location.entityType) === -1 ? 0 : 1);
+            let location: BingLocation = getBestLocation(data, location => this.entities.indexOf(location.entityType) === -1 ? 0 : 1);
             if (location) {
-                let pointData = location.point.coordinates;
-                let addressData = location.address || {};
-                let name = location.name;
+                let pointData: number[] = location.point.coordinates;
+                let addressData: BingAddress = location.address || {};
+                let name: string = location.name;
                 let coordinates: IGeocodeResource = {
                     latitude: pointData[0],
                     longitude: pointData[1],
@@ -468,16 +467,16 @@ module powerbi.extensibility.geocoder {
                 $format: "json",
             };
 
-            let entityType = this.getBingEntity();
+            let entityType: string = this.getBingEntity();
 
             if (!entityType) {
                 return null;
             }
 
-            let cultureName = navigator["userLanguage"] || navigator["language"];
+            let cultureName: any = navigator["userLanguage"] || navigator["language"];
             cultureName = mapLocalesForBing(cultureName);
-            let cultures = cultureName.split("-");
-            let data = [this.latitude, this.longitude, this.levelOfDetail, "'" + entityType + "'", 1, 0, "'" + cultureName + "'"];
+            let cultures: any = cultureName.split("-");
+            let data: any = [this.latitude, this.longitude, this.levelOfDetail, "'" + entityType + "'", 1, 0, "'" + cultureName + "'"];
             if (cultures.length > 1) {
                 data.push("'" + cultures[1] + "'");
             }
@@ -486,10 +485,10 @@ module powerbi.extensibility.geocoder {
         }
 
         public getResult(data: BingGeoboundaryResponse): IGeocodeResult {
-            let result = data;
+            let result: BingGeoboundaryResponse = data;
             if (result && result.d && Array.isArray(result.d.results) && result.d.results.length > 0) {
-                let entity = result.d.results[0];
-                let primitives = entity.Primitives;
+                let entity: BingGeoboundary = result.d.results[0];
+                let primitives: BingGeoboundaryPrimitive[] = entity.Primitives;
                 if (primitives && primitives.length > 0) {
                     let coordinates: IGeocodeBoundaryCoordinate = {
                         latitude: this.latitude,
@@ -507,13 +506,13 @@ module powerbi.extensibility.geocoder {
                         return 0;
                     });
 
-                    let maxGeoData = Math.min(primitives.length, this.maxGeoData);
+                    let maxGeoData: number = Math.min(primitives.length, this.maxGeoData);
 
                     for (let i = 0; i < maxGeoData; i++) {
-                        let ringStr = primitives[i].Shape;
-                        let ringArray = ringStr.split(",");
+                        let ringStr: string = primitives[i].Shape;
+                        let ringArray: string[] = ringStr.split(",");
 
-                        for (let j = 1; j < ringArray.length; j++) {
+                        for (let j: number = 1; j < ringArray.length; j++) {
                             coordinates.locations.push({ nativeBing: ringArray[j] });
                         }
                     }
@@ -544,10 +543,10 @@ module powerbi.extensibility.geocoder {
         let queues: _.Dictionary<GeocodeQueue> = {};
 
         function ensureQueue(queueName: string): GeocodeQueue {
-            let queue = queues[queueName];
-            if (!queue)
+            let queue: GeocodeQueue = queues[queueName];
+            if (!queue) {
                 queues[queueName] = queue = new GeocodeQueue();
-
+            }
             return queue;
         }
 
@@ -556,8 +555,9 @@ module powerbi.extensibility.geocoder {
         }
 
         export function reset(): void {
-            for (let queueName in queues)
+            for (let queueName in queues) {
                 queues[queueName].reset();
+            }
 
             queues = {};
         }
@@ -576,7 +576,7 @@ module powerbi.extensibility.geocoder {
         private dequeueTimeout: number;
 
         public reset(): void {
-            let timeout = this.dequeueTimeout;
+            let timeout: number = this.dequeueTimeout;
             if (timeout) {
                 this.dequeueTimeout = undefined;
                 clearTimeout(timeout);
@@ -604,16 +604,18 @@ module powerbi.extensibility.geocoder {
         private inDequeue = false;
 
         private dequeue(): void {
-            if (this.inDequeue || this.dequeueTimeout)
+            if (this.inDequeue || this.dequeueTimeout) {
                 return;
+            }
 
             try {
                 this.inDequeue = true;
 
                 while (this.entries.length !== 0 && this.activeEntries.length < Settings.MaxBingRequest) {
                     let entry = this.entries.shift();
-                    if (!entry.isCompleted)
+                    if (!entry.isCompleted) {
                         this.makeRequest(entry);
+                    }
                 }
             }
             finally {
@@ -632,7 +634,7 @@ module powerbi.extensibility.geocoder {
 
         private cancel(entry: GeocodeQueueEntry): void {
             if (!entry.jsonp) {
-                let request = entry.request;
+                let request: BingAjaxRequest = entry.request;
                 if (request) {
                     entry.request = null;
                     request.abort();
@@ -660,8 +662,8 @@ module powerbi.extensibility.geocoder {
             this.scheduleDequeue();
         }
 
-        private makeRequest(entry: GeocodeQueueEntry) {
-            let result = GeocodeCacheManager.getCoordinates(entry.item.query.getKey());
+        private makeRequest(entry: GeocodeQueueEntry): void {
+            let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(entry.item.query.getKey());
             if (result) {
                 this.complete(entry, { coordinates: result });
                 return;
@@ -677,7 +679,7 @@ module powerbi.extensibility.geocoder {
 
             entry.jsonp = true;
 
-            let url = entry.item.query.getUrl();
+            let url: string = entry.item.query.getUrl();
             if (!url) {
                 this.complete(entry, { error: new Error("Unsupported query.") });
                 return;
@@ -712,20 +714,23 @@ module powerbi.extensibility.geocoder {
         let geocodingCache: IGeocodingCache;
 
         function ensureCache(): IGeocodingCache {
-            if (!geocodingCache)
+            if (!geocodingCache) {
                 geocodingCache = createGeocodingCache(Settings.MaxCacheSize, Settings.MaxCacheSizeOverflow);
+            }
 
             return geocodingCache;
         }
 
         export function getCoordinates(key: string): IGeocodeCoordinate {
-            if (key)
+            if (key) {
                 return ensureCache().getCoordinates(key);
+            }
         }
 
         export function registerCoordinates(key: string, coordinates: IGeocodeCoordinate | IGeocodeBoundaryCoordinate): void {
-            if (key)
+            if (key) {
                 return ensureCache().registerCoordinates(key, coordinates);
+            }
         }
 
         export function reset(cache: IGeocodingCache) {
@@ -734,8 +739,9 @@ module powerbi.extensibility.geocoder {
     }
 
     export function resetStaticGeocoderState(cache?: IGeocodingCache): void {
-        if (cache !== undefined)
+        if (cache !== undefined) {
             GeocodeCacheManager.reset(cache);
+        }
         GeocodeQueueManager.reset();
         categoryToBingEntity = null;
     }

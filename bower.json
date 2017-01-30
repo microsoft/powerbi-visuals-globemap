@@ -3,7 +3,7 @@
   "description": "GlobeMap",
   "main": "",
   "authors": [
-    "[object Object]"
+    "Microsoft"   
   ],
   "license": "MIT",
   "homepage": "https://github.com/Microsoft/PowerBI-visuals-globemap",
@@ -15,6 +15,6 @@
     "tests"
   ],
   "dependencies": {
-    "webgl-heatmap": "https://github.com/pyalot/webgl-heatmap"
+    "webgl-heatmap": "0.0.1"
   }
 }

@@ -76,12 +76,12 @@ module powerbi.extensibility.visual {
             this.previousOriginalViewportValue = _.clone(this.originalViewportValue);
             this.originalViewportValue = _.clone(value);
             this.setUpdateObject(value,
-                v => this.viewportValue = v,
-                o => VisualLayout.restrictToMinMax(o, this.minViewport));
+                (v: IViewport) => this.viewportValue = v,
+                (o: any) => VisualLayout.restrictToMinMax(o, this.minViewport));
         }
 
         public set margin(value: IMargin) {
-            this.setUpdateObject(value, v => this.marginValue = v, VisualLayout.restrictToMinMax);
+            this.setUpdateObject(value, (v: IMargin) => this.marginValue = v, VisualLayout.restrictToMinMax);
         }
 
         // Returns true if viewport has updated after last change.
@@ -108,12 +108,14 @@ module powerbi.extensibility.visual {
 
         private setUpdateObject<T>(object: T, setObjectFn: (T) => void, beforeUpdateFn?: (T) => void): void {
             object = _.clone(object);
-            setObjectFn(VisualLayout.createNotifyChangedObject(object, o => {
+            setObjectFn(VisualLayout.createNotifyChangedObject(object, (o: T) => {
                 if (beforeUpdateFn) beforeUpdateFn(object);
                 this.update();
             }));
 
-            if (beforeUpdateFn) beforeUpdateFn(object);
+            if (beforeUpdateFn) {
+                beforeUpdateFn(object);
+            }
             this.update();
         }
 

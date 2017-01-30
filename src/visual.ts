@@ -118,7 +118,7 @@ module powerbi.extensibility.visual {
         private visualHost: IVisualHost;
 
         private tooltipService: ITooltipService;
-
+        private static datapointShiftPoint: number = 0.01;
         private static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
             let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
             if (!categorical || !categorical.Category || _.isEmpty(categorical.Category.values)
@@ -134,7 +134,11 @@ module powerbi.extensibility.visual {
             let locations: any = [];
             let colorHelper: ColorHelper = new ColorHelper(colors, null, properties.dataPoint.fill);
 
-            let locationType: any, heights: any, heightsBySeries: any, toolTipDataBySeries: any, heats: any;
+            let locationType: any,
+                heights: any,
+                heightsBySeries: any,
+                toolTipDataBySeries: any,
+                heats: any;
 
             if (categorical.Category && categorical.Category.values) {
                 locations = categorical.Category.values;
@@ -157,11 +161,17 @@ module powerbi.extensibility.visual {
                             dataView, groupedColumns[i].Height.source, i, null, colorHelper, colors, visualHost);
                         seriesDataPoints[i].color = settings.dataPoint.fill;
                         for (let j: number = 0; j < values.length; j++) {
-                            if (!heights[j]) heights[j] = 0;
+                            if (!heights[j]) {
+                                heights[j] = 0;
+                            }
                             heights[j] += values[j] ? values[j] : 0;
-                            if (!heightsBySeries[j]) heightsBySeries[j] = [];
+                            if (!heightsBySeries[j]) {
+                                heightsBySeries[j] = [];
+                            }
                             heightsBySeries[j][i] = values[j];
-                            if (!toolTipDataBySeries[j]) toolTipDataBySeries[j] = [];
+                            if (!toolTipDataBySeries[j]) {
+                                toolTipDataBySeries[j] = [];
+                            }
                             toolTipDataBySeries[j][i] = {
                                 displayName: categorical.Series && categorical.Series.source.displayName,
                                 value: dataView.categorical.values.grouped()[i].name,
@@ -194,7 +204,9 @@ module powerbi.extensibility.visual {
                     for (let i: number = 0; i < groupedColumns.length; i++) {
                         let values: any = groupedColumns[i].Heat.values;
                         for (let j = 0; j < values.length; j++) {
-                            if (!heats[j]) heats[j] = 0;
+                            if (!heats[j]) {
+                                heats[j] = 0;
+                            }
                             heats[j] += values[j] ? values[j] : 0;
                         }
                     }
@@ -235,7 +247,7 @@ module powerbi.extensibility.visual {
                         placeKey: placeKey,
                         place: place,
                         locationType: locationType,
-                        height: height ? height || 0.01 : undefined,
+                        height: height ? height || GlobeMap.datapointShiftPoint : undefined,
                         heightBySeries: heightsBySeries[i],
                         seriesToolTipData: toolTipDataBySeries ? toolTipDataBySeries[i] : undefined,
                         heat: heat || 0,
@@ -259,8 +271,7 @@ module powerbi.extensibility.visual {
         }
 
         private static parseSettings(dataView: DataView): GlobeMapSettings {
-            let settings: GlobeMapSettings = GlobeMapSettings.parse(dataView) as GlobeMapSettings;
-            return settings;
+            return GlobeMapSettings.parse(dataView) as GlobeMapSettings;
         }
 
         private static createDataPointForEnumeration(
@@ -273,7 +284,7 @@ module powerbi.extensibility.visual {
             visualHost: IVisualHost
         ): GlobeMapSeriesDataPoint {
 
-            let columns = dataView.categorical.values.grouped()[seriesIndex];
+            let columns: DataViewValueColumnGroup = dataView.categorical.values.grouped()[seriesIndex];
             let values: DataViewValueColumns = <DataViewValueColumns>columns.values;
             let sourceForFormat: DataViewMetadataColumn = source;
             let nameForFormat: PrimitiveValue = source.displayName;
@@ -283,8 +294,6 @@ module powerbi.extensibility.visual {
             }
 
             let label: string = valueFormatter.format(nameForFormat, valueFormatter.getFormatString(sourceForFormat, null));
-
-            let selector: ISelectionId = visualHost.createSelectionIdBuilder().createSelectionId();
 
             const categoryColumn: DataViewCategoryColumn = {
                 source: values[seriesIndex].source,
@@ -312,8 +321,7 @@ module powerbi.extensibility.visual {
         }
 
         public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-            let instances: VisualObjectInstance[] | VisualObjectInstanceEnumerationObject = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
-            return instances;
+            return GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
         }
 
         constructor(options: VisualConstructorOptions) {
@@ -349,24 +357,26 @@ module powerbi.extensibility.visual {
             this.readyToRender = true;
             this.initRayCaster();
         }
-
+        private static cameraFov: number = 35;
+        private static cameraNear: number = 0.1;
+        private static cameraFar: number = 10000;
+        private static clearColor: number = 0xbac4d2;
+        private static ambientLight: number = 0x000000;
+        private static directionalLight: number = 0xffffff;
+        private static directionalLightIntensity: number = 0.4;
         private initScene(): void {
             this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-            this.rendererContainer = $("<div>").appendTo(this.root).css({
-                'width': "100%",
-                'height': "100%",
-                'position': "relative"
-            });
+            this.rendererContainer = $("<div>").appendTo(this.root).addClass("globeMapView");
 
             this.rendererContainer.append(this.renderer.domElement);
             this.rendererCanvas = this.renderer.domElement;
-            this.camera = new THREE.PerspectiveCamera(35, this.layout.viewportIn.width / this.layout.viewportIn.height, 0.1, 10000);
+            this.camera = new THREE.PerspectiveCamera(GlobeMap.cameraFov, this.layout.viewportIn.width / this.layout.viewportIn.height, GlobeMap.cameraNear, GlobeMap.cameraFar);
             this.orbitControls = new THREE.OrbitControls(this.camera, this.rendererCanvas);
             this.orbitControls.enablePan = false;
             this.scene = new THREE.Scene();
 
             this.renderer.setSize(this.layout.viewportIn.width, this.layout.viewportIn.height);
-            this.renderer.setClearColor(0xbac4d2, 1);
+            this.renderer.setClearColor(GlobeMap.clearColor, 1);
             this.camera.position.z = GlobeMap.GlobeSettings.cameraRadius;
 
             this.orbitControls.maxDistance = GlobeMap.GlobeSettings.cameraRadius;
@@ -375,9 +385,9 @@ module powerbi.extensibility.visual {
             this.orbitControls.zoomSpeed = GlobeMap.GlobeSettings.zoomSpeed;
             this.orbitControls.autoRotate = GlobeMap.GlobeSettings.autoRotate;
 
-            let ambientLight: THREE.AmbientLight = new THREE.AmbientLight(0x000000);
-            let light1: THREE.DirectionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
-            let light2: THREE.DirectionalLight = new THREE.DirectionalLight(0xffffff, 0.4);
+            let ambientLight: THREE.AmbientLight = new THREE.AmbientLight(GlobeMap.ambientLight);
+            let light1: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
+            let light2: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
             let earth: THREE.Mesh = this.earth = this.createEarth();
 
             this.scene.add(ambientLight);
@@ -393,7 +403,9 @@ module powerbi.extensibility.visual {
                     if (this.renderLoopEnabled) {
                         this.animationFrameId = requestAnimationFrame(render);
                     }
-                    if (!this.shouldRender()) return;
+                    if (!this.shouldRender()) {
+                        return;
+                    }
                     this.orbitControls.update();
                     this.setEarthTexture();
                     if (this.heatmap && this.heatmap.display) {
@@ -432,14 +444,16 @@ module powerbi.extensibility.visual {
             return mesh;
         }
 
+        private static dollyX: number = 0.95;
         public zoomClicked(zoomDirection: any): void {
-            if (this.orbitControls.enabled === false)
+            if (this.orbitControls.enabled === false) {
                 return;
+            }
 
             if (zoomDirection === -1) {
-                this.orbitControls.dollyOut(Math.pow(0.95, GlobeMap.GlobeSettings.zoomSpeed));
+                this.orbitControls.dollyOut(Math.pow(GlobeMap.dollyX, GlobeMap.GlobeSettings.zoomSpeed));
             } else if (zoomDirection === 1) {
-                this.orbitControls.dollyIn(Math.pow(0.95, GlobeMap.GlobeSettings.zoomSpeed));
+                this.orbitControls.dollyIn(Math.pow(GlobeMap.dollyX, GlobeMap.GlobeSettings.zoomSpeed));
             }
 
             this.orbitControls.update();
@@ -472,7 +486,7 @@ module powerbi.extensibility.visual {
             let createTexture: (canvas: JQuery) => THREE.Texture = (canvas: JQuery) => {
                 let texture: THREE.Texture = new THREE.Texture(<HTMLCanvasElement>canvas.get(0));
                 texture.needsUpdate = true;
-                canvas.on("ready", (e, resolution) => {
+                canvas.on("ready", () => {
                     texture.needsUpdate = true;
                     this.needsRender = true;
                 });
@@ -511,16 +525,21 @@ module powerbi.extensibility.visual {
 
         private setEarthTexture(): void {
             // get distance as arbitrary value from 0-1
-            if (!this.camera) return;
+            if (!this.camera) {
+                return;
+            }
             let maxDistance: number = GlobeMap.GlobeSettings.cameraRadius - GlobeMap.GlobeSettings.earthRadius;
             let distance: number = (this.camera.position.length() - GlobeMap.GlobeSettings.earthRadius) / maxDistance;
-
             let texture: THREE.Texture;
-            if (distance <= 1 / 5) {
+            let oneOfFive: number = 1 / 5;
+            let twoOfFive: number = 2 / 5;
+            let threeOfFive: number = 3 / 5;
+
+            if (distance <= oneOfFive) {
                 texture = this.mapTextures[3];
-            } else if (distance <= 2 / 5) {
+            } else if (distance <= twoOfFive) {
                 texture = this.mapTextures[2];
-            } else if (distance <= 3 / 5) {
+            } else if (distance <= threeOfFive) {
                 texture = this.mapTextures[1];
             } else {
                 texture = this.mapTextures[0];
@@ -538,10 +557,16 @@ module powerbi.extensibility.visual {
         }
 
         public update(options: VisualUpdateOptions): void {
+
+            if (options.dataViews === undefined || options.dataViews === null) {
+                return;
+            }
+
             this.layout.viewport = options.viewport;
             this.root.css(this.layout.viewportIn);
+            let sixPointsToAdd: number = 6;
             this.zoomContainer.style({
-                'padding-left': (this.layout.viewportIn.width - parseFloat(this.zoomControl.attr("width")) + 6) + "px", // Fix for chrome
+                'padding-left': (this.layout.viewportIn.width - parseFloat(this.zoomControl.attr("width")) + sixPointsToAdd) + "px", // Fix for chrome
                 'display': this.layout.viewportIn.height > $(this.zoomContainer.node()).height()
                     && this.layout.viewportIn.width > $(this.zoomContainer.node()).width()
                     ? null : 'none'
@@ -627,9 +652,9 @@ module powerbi.extensibility.visual {
                     let barHeight: number = GlobeMap.GlobeSettings.barHeight * renderDatum.height;
                     // this array holds the relative series values to the actual measure for example [0.2,0.3,0.5]
                     // this is how we draw the vectors relativly to the complete value one on top of another. 
-                    let measuresBySeries = [];
+                    let measuresBySeries: any = [];
                     // this array holds the original values of the series for the tool tips
-                    let dataPointToolTip = [];
+                    let dataPointToolTip: any = [];
                     if (renderDatum.heightBySeries) {
                         for (let c: number = 0; c < renderDatum.heightBySeries.length; c++) {
                             if (renderDatum.heightBySeries[c]) {
@@ -674,7 +699,7 @@ module powerbi.extensibility.visual {
             this.needsRender = true;
         }
 
-        private getBarMaterialByIndex(index): THREE.MeshPhongMaterial {
+        private getBarMaterialByIndex(index: number): THREE.MeshPhongMaterial {
             return new THREE.MeshPhongMaterial({ color: this.data.seriesDataPoints[index].color });
         }
 
@@ -733,7 +758,7 @@ module powerbi.extensibility.visual {
             let mouseDownTime: number;
             let elementStyle: CSSStyleDeclaration = window.getComputedStyle(element);
 
-            $(this.rendererCanvas).on("mousemove", (event) => {
+            $(this.rendererCanvas).on("mousemove", (event: JQueryEventObject) => {
                 let elementViewHeight: number = element.offsetHeight - element.offsetTop
                     - parseFloat(elementStyle.paddingTop)
                     - parseFloat(elementStyle.paddingBottom);
@@ -751,10 +776,10 @@ module powerbi.extensibility.visual {
                 this.mousePosNormalized = new THREE.Vector2(fractionalPositionX * 2 - 1, -fractionalPositionY * 2 + 1);
 
                 this.needsRender = true;
-            }).on("mousedown", (event) => {
+            }).on("mousedown", (event: JQueryEventObject) => {
                 cancelAnimationFrame(this.cameraAnimationFrameId);
                 mouseDownTime = Date.now();
-            }).on("mouseup", (event) => {
+            }).on("mouseup", (event: JQueryEventObject) => {
 
                 // Debounce slow clicks
                 if ((Date.now() - mouseDownTime) > GlobeMap.GlobeSettings.clickInterval) {
@@ -846,10 +871,6 @@ module powerbi.extensibility.visual {
                 this.visualHost.tooltipService.show(tooltipShowOptions);
             } else {
                 this.hoveredBar = null;
-                let hideOp: TooltipHideOptions = {
-                    immediately: false,
-                    isTouchEvent: false
-                };
                 this.hideTooltip();
             }
         }
@@ -866,7 +887,9 @@ module powerbi.extensibility.visual {
         private animateCamera(to: THREE.Vector3, done?: Function) {
             this.hideTooltip();
 
-            if (!this.camera) return;
+            if (!this.camera) {
+                return;
+            }
             cancelAnimationFrame(this.cameraAnimationFrameId);
             let startTime: number = Date.now();
             let duration: number = GlobeMap.GlobeSettings.cameraAnimDuration;
@@ -874,22 +897,27 @@ module powerbi.extensibility.visual {
             let startPos: THREE.Vector3 = this.camera.position.clone().normalize();
             let endPos: THREE.Vector3 = to.clone().normalize();
             let length: number = this.camera.position.length();
-
+            let two: number = 2;
+            let one: number = 2;
             let easeInOut = (t) => {
-                t *= 2;
-                if (t < 1) return (t * t * t) / 2;
-                t -= 2;
-                return (t * t * t + 2) / 2;
+                t *= two;
+                if (t < one) {
+                    return (t * t * t) / two;
+                }
+                t -= two;
+                return (t * t * t + two) / two;
             };
 
             let onUpdate: any = () => {
                 let now: number = Date.now();
                 let t: number = (now - startTime) / duration;
-                if (t > 1) t = 1;
+                if (t > one) {
+                    t = one;
+                }
                 t = easeInOut(t);
 
                 let pos: THREE.Vector3 = new THREE.Vector3()
-                    .add(startPos.clone().multiplyScalar(1 - t))
+                    .add(startPos.clone().multiplyScalar(one - t))
                     .add(endPos.clone().multiplyScalar(t))
                     .normalize()
                     .multiplyScalar(length);
@@ -920,8 +948,9 @@ module powerbi.extensibility.visual {
             if (this.renderer) {
                 if (this.renderer.context) {
                     let extension: any = this.renderer.context.getExtension('WEBGL_lose_context');
-                    if (extension)
+                    if (extension) {
                         extension.loseContext();
+                    }
                     this.renderer.context = null;
                 }
                 this.renderer.domElement = null;
@@ -948,53 +977,133 @@ module powerbi.extensibility.visual {
             this.hideTooltip();
         }
 
+        private static zoomControlRatio: number = 8.5;
+        private static radiusRatio: number = 3;
+        private static gapRadiusRatio: number = 2;
         private initZoomControl() {
             let radius: number = 17;
-            let zoomControlWidth: number = radius * 8.5;
-            let zoomControlHeight: number = radius * 8.5;
-            let startX: number = radius * 3;
-            let startY: number = radius + 3;
-            let gap: number = radius * 2;
+            let zoomControlWidth: number = radius * GlobeMap.zoomControlRatio;
+            let zoomControlHeight: number = radius * GlobeMap.zoomControlRatio;
+            let startX: number = radius * GlobeMap.radiusRatio;
+            let startY: number = radius + GlobeMap.radiusRatio;
+            let gap: number = radius * GlobeMap.gapRadiusRatio;
 
             this.zoomContainer = d3.select(this.root[0])
                 .append('div')
-                .style({
-                    'position': "absolute",
-                    'bottom': "-5px",
-                    'z-index': "1000",
-                    'pointer-events': "none"
-                });
+                .classed('zoomContainer', true);
 
             this.zoomControl = this.zoomContainer.append("svg").attr({
                 'width': zoomControlWidth,
-                'height': zoomControlHeight,
-                'pointer-events': "all"
-            });
+                'height': zoomControlHeight                
+            }).classed('zoomContainerSvg', true);
 
-            let bottom: d3.Selection<any> = this.zoomControl.append("g").on("mousedown", () => onMouseDown(() => this.rotateCam(0, -5)));
-            bottom.append("circle").attr({ cx: startX + gap, cy: startY + (2 * gap), r: radius, fill: "white", opacity: 0.5, stroke: 'gray' });
-            bottom.append("path").attr({ d: "M" + (startX + (2 * radius)) + " " + (startY + (radius * 4.7)) + " l12 -20 a40,70 0 0,1 -24,0z", fill: "gray" });
+            let bottom: d3.Selection<any> = this.zoomControl.append("g")
+                .on("mousedown", () => onMouseDown(() => this.rotateCam(0, -5)));
 
-            let left: d3.Selection<any> = this.zoomControl.append("g").on("mousedown", () => onMouseDown(() => this.rotateCam(5, 0)));
-            left.append("circle").attr({ cx: startX, cy: startY + gap, r: radius, fill: "white", stroke: "gray", opacity: 0.5 });
-            left.append("path").attr({ d: "M" + (startX - radius / 1.5) + " " + (startY + (radius * 2)) + " l20 -12 a70,40 0 0,0 0,24z", fill: "gray" });
+            bottom.append("circle")
+                .attr({
+                    cx: startX + gap,
+                    cy: startY + (2 * gap),
+                    r: radius
+                })
+                .classed('zoomControlCircle', true);
+            bottom.append("path")
+                .attr({
+                    d: "M" + (startX + (2 * radius)) + " " + (startY + (radius * 4.7)) + " l12 -20 a40,70 0 0,1 -24,0z",
+                    fill: "gray"
+                });
 
-            let top: d3.Selection<any> = this.zoomControl.append("g").on("mousedown", () => onMouseDown(() => this.rotateCam(0, 5)));
-            top.append("circle").attr({ cx: startX + gap, cy: startY, r: radius, fill: "white", stroke: "gray", opacity: 0.5 });
-            top.append("path").attr({ d: "M" + (startX + (2 * radius)) + " " + (startY - (radius / 1.5)) + " l12 20 a40,70 0 0,0 -24,0z", fill: "gray" });
+            let left: d3.Selection<any> = this.zoomControl
+                .append("g")
+                .on("mousedown", () => onMouseDown(() => this.rotateCam(5, 0)));
+            left.append("circle")
+                .attr({
+                    cx: startX,
+                    cy: startY + gap,
+                    r: radius
+                })
+                .classed('zoomControlCircle', true);
+            left.append("path")
+                .attr({
+                    d: "M" + (startX - radius / 1.5) + " " + (startY + (radius * 2)) + " l20 -12 a70,40 0 0,0 0,24z"
+                })
+                .classed('zoomControlPath', true);
 
-            let right: d3.Selection<any> = this.zoomControl.append("g").on("mousedown", () => onMouseDown(() => this.rotateCam(-5, 0)));
-            right.append("circle").attr({ cx: startX + (2 * gap), cy: startY + gap, r: radius, fill: "white", stroke: "gray", opacity: 0.5 });
-            right.append("path").attr({ d: "M" + (startX + (4.7 * radius)) + " " + (startY + (radius * 2)) + " l-20 -12 a70,40 0 0,1 0,24z", fill: "gray" });
+            let top: d3.Selection<any> = this.zoomControl
+                .append("g")
+                .on("mousedown", () => onMouseDown(() => this.rotateCam(0, 5)));
+            top
+                .append("circle").attr({
+                    cx: startX + gap,
+                    cy: startY,
+                    r: radius
+                })
+                .classed('zoomControlCircle', true);
+            top
+                .append("path").attr({
+                    d: "M" + (startX + (2 * radius)) + " " + (startY - (radius / 1.5)) + " l12 20 a40,70 0 0,0 -24,0z"
+                }).classed('zoomControlPath', true);
 
-            let zoomIn: d3.Selection<any> = this.zoomControl.append("g").on("mousedown", () => onMouseDown(() => this.zoomClicked(-1)));
-            zoomIn.append("circle").attr({ cx: startX + 4 * radius, cy: startY + 6 * radius, r: radius, fill: "white", stroke: "gray", opacity: 0.5 });
-            zoomIn.append("rect").attr({ x: startX + 3.5 * radius, y: startY + 5.9 * radius, width: radius, height: radius / 3, fill: "gray" });
-            zoomIn.append("rect").attr({ x: startX + (4 * radius) - radius / 6, y: startY + 5.55 * radius, width: radius / 3, height: radius, fill: "gray" });
+            let right: d3.Selection<any> = this.zoomControl
+                .append("g")
+                .on("mousedown", () => onMouseDown(() => this.rotateCam(-5, 0)));
+            right
+                .append("circle").attr({
+                    cx: startX + (2 * gap),
+                    cy: startY + gap,
+                    r: radius
+                })
+                .classed('zoomControlCircle', true);
+            right
+                .append("path").attr({
+                    d: "M" + (startX + (4.7 * radius)) + " " + (startY + (radius * 2)) + " l-20 -12 a70,40 0 0,1 0,24z"
+                }).classed('zoomControlPath', true);
 
-            let zoomOut: d3.Selection<any> = this.zoomControl.append("g").on("mousedown", () => onMouseDown(() => this.zoomClicked(1)));
-            zoomOut.append("circle").attr({ cx: startX, cy: startY + 6 * radius, r: radius, fill: "white", stroke: "gray", opacity: "0.50" });
-            zoomOut.append("rect").attr({ x: startX - (radius / 2), y: startY + 5.9 * radius, width: radius, height: radius / 3, fill: "gray" });
+            let zoomIn: d3.Selection<any> = this.zoomControl
+                .append("g")
+                .on("mousedown", () => onMouseDown(() => this.zoomClicked(-1)));
+            zoomIn.append("circle")
+                .attr({
+                    cx: startX + 4 * radius,
+                    cy: startY + 6 * radius,
+                    r: radius
+                })
+                .classed('zoomControlCircle', true);
+            zoomIn.append("rect")
+                .attr({
+                    x: startX + 3.5 * radius,
+                    y: startY + 5.9 * radius,
+                    width: radius,
+                    height: radius / 3,
+                    fill: "gray"
+                });
+            zoomIn.append("rect")
+                .attr({
+                    x: startX + (4 * radius) - radius / 6,
+                    y: startY + 5.55 * radius,
+                    width: radius / 3,
+                    height: radius
+                })
+                .classed('zoomControlPath', true);
+
+            let zoomOut: d3.Selection<any> = this.zoomControl
+                .append("g")
+                .on("mousedown", () => onMouseDown(() => this.zoomClicked(1)));
+            zoomOut
+                .append("circle").attr({
+                    cx: startX,
+                    cy: startY + 6 * radius,
+                    r: radius
+                })
+                .classed('zoomControlCircle', true);
+            zoomOut.append("rect")
+                .attr({
+                    x: startX - (radius / 2),
+                    y: startY + 5.9 * radius,
+                    width: radius,
+                    height: radius / 3
+                })
+                .classed('zoomControlPath', true);
 
             function onMouseDown(callback: () => void) {
                 (d3.event as MouseEvent).stopPropagation();
@@ -1016,14 +1125,17 @@ module powerbi.extensibility.visual {
 
                 this.t = 0;
 
-                let x: number, y: number, vertices = [], uvs = [];
+                let x: number,
+                    y: number,
+                    vertices = [],
+                    uvs = [];
 
                 function interplolate(a, b, t) {
                     return (1 - t) * a + t * b;
                 }
 
                 // interpolates between sphere and plane
-                function interpolateVertex(u, v, t) {
+                function interpolateVertex(u: number, v: number, t: number) {
                     let maxLng: number = Math.PI * 2;
                     let maxLat: number = Math.PI;
                     let radius: number = this.radius;

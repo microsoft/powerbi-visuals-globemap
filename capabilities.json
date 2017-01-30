@@ -25,14 +25,14 @@
       "name": "X",
       "kind": "Measure",
       "displayName": "Longitude",
-      "description": "Use to override the longitude of locations",
+      "description": "Used to override the longitude of locations",
       "preferredTypes": [ { "geography": { "longitude": true } } ]
     },
     {
       "name": "Y",
       "kind": "Measure",
       "displayName": "Latitude",
-      "description": "Use to override the latitude of locations",
+      "description": "Used to override the latitude of locations",
       "preferredTypes": [ { "geography": { "latitude": true } } ]
     },
     {

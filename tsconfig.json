@@ -26,7 +26,6 @@
     "src/settings.ts",
     "src/columns.ts",
     "src/visualLayout.ts",
-    "src/behavior.ts",
     "src/geocoder/geocoderInterfaces.ts",
     "src/geocoder/geocodingCache.ts",
     "src/geocoder/geocoder.ts",

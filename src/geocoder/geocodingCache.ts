@@ -40,8 +40,9 @@ module powerbi.extensibility.geocoder {
     }
 
     export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService?: IStorageService): IGeocodingCache {
-        if (!localStorageService)
+        if (!localStorageService) {
             localStorageService = localStorageService;
+        }
         return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, localStorageService);
     }
 
@@ -65,7 +66,7 @@ module powerbi.extensibility.geocoder {
     */
         public getCoordinates(key: string): IGeocodeCoordinate {
             // Check in-memory cache
-            let pair = this.geocodeCache[key];
+            let pair: GeocodeCacheEntry = this.geocodeCache[key];
             if (pair) {
                 ++pair.hitCount;
                 return pair.coordinate;
@@ -87,21 +88,21 @@ module powerbi.extensibility.geocoder {
         }
 
         private registerInMemory(key: string, coordinate: IGeocodeCoordinate): void {
-            let geocodeCache = this.geocodeCache;
-            let maxCacheSize = this.maxCacheSize;
-            let maxCacheCount = maxCacheSize + this.maxCacheSizeOverflow;
+            let geocodeCache: _.Dictionary<GeocodeCacheEntry> = this.geocodeCache;
+            let maxCacheSize: number = this.maxCacheSize;
+            let maxCacheCount: number = maxCacheSize + this.maxCacheSizeOverflow;
 
             // are we about to exceed the maximum?
             if (this.geocodeCacheCount >= maxCacheCount) {
-                let keys = Object.keys(geocodeCache);
-                let cacheSize = keys.length;
+                let keys: string[] = Object.keys(geocodeCache);
+                let cacheSize: number = keys.length;
 
                 // sort keys in *descending* hitCount order
                 keys.sort((a: string, b: string) => {
-                    let cachedA = geocodeCache[a];
-                    let cachedB = geocodeCache[b];
-                    let ca = cachedA ? cachedA.hitCount : 0;
-                    let cb = cachedB ? cachedB.hitCount : 0;
+                    let cachedA: GeocodeCacheEntry = geocodeCache[a];
+                    let cachedB: GeocodeCacheEntry = geocodeCache[b];
+                    let ca: number = cachedA ? cachedA.hitCount : 0;
+                    let cb: number = cachedB ? cachedB.hitCount : 0;
                     return ca < cb ? 1 : (ca > cb ? -1 : 0);
                 });
 
@@ -110,13 +111,15 @@ module powerbi.extensibility.geocoder {
                 // - after awhile we get lots of keys whose cached value is undefined. 
                 //   when there are "too many," make a whole new memory cache.
                 if (cacheSize < 2 * maxCacheCount) {
-                    for (let i = maxCacheSize; i < cacheSize; i++)
+                    for (let i = maxCacheSize; i < cacheSize; i++) {
                         geocodeCache[keys[i]] = undefined;
+                    }
                 }
                 else {
                     let newGeocodeCache: _.Dictionary<GeocodeCacheEntry> = {};
-                    for (let i = 0; i < maxCacheSize; ++i)
+                    for (let i = 0; i < maxCacheSize; ++i) {
                         newGeocodeCache[keys[i]] = geocodeCache[keys[i]];
+                    }
 
                     geocodeCache = this.geocodeCache = newGeocodeCache;
                 }

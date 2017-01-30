@@ -30,21 +30,25 @@ namespace powerbi.extensibility.utils {
         export const escape: (s: string) => string = window['escape'];
         export const unescape: (s: string) => string = window['unescape'];
     }
+
     export interface TextMatch {
         start: number;
         end: number;
         text: string;
     }
+
     export module UrlUtils {
         const urlRegex = /http[s]?:\/\/(\S)+/gi;
 
         export function isValidUrl(value: string): boolean {
-            if (_.isEmpty(value))
+            if (_.isEmpty(value)) {
                 return false;
+            }
 
-            let match = RegExpExtensions.run(urlRegex, value);
-            if (!!match && match.index === 0)
+            let match: RegExpExecArray = RegExpExtensions.run(urlRegex, value);
+            if (!!match && match.index === 0) {
                 return true;
+            }
 
             return false;
         }
@@ -54,24 +58,23 @@ namespace powerbi.extensibility.utils {
          * @returns Whether the provided url is valid.
          **/
         export function isValidImageUrl(url: string): boolean {
-            // VSTS: 7252099 / 7112236
             // For now, passes for any valid Url
-
             return isValidUrl(url);
         }
 
         export function findAllValidUrls(text: string): TextMatch[] {
-            if (_.isEmpty(text))
+            if (_.isEmpty(text)) {
                 return [];
+            }
 
             // Find all urls in the text.
             // TODO: This could potentially be expensive, maybe include a cap here for text with many urls?
             let urlRanges: TextMatch[] = [];
             let matches: RegExpExecArray;
-            let start = 0;
+            let start: number = 0;
             while ((matches = RegExpExtensions.run(urlRegex, text, start)) !== null) {
-                let url = matches[0];
-                let end = matches.index + url.length;
+                let url: any = matches[0];
+                let end: number = matches.index + url.length;
                 urlRanges.push({
                     start: matches.index,
                     end: end,
@@ -88,16 +91,18 @@ namespace powerbi.extensibility.utils {
         }
 
         export function getBase64ContentFromDataUri(uri: string): string {
-            if (!isDataUri(uri))
+            if (!isDataUri(uri)) {
                 throw new Error("Expected data uri");
+            }
 
             // Locate the base 64 content from the URL (e.g. "data:image/png;base64,xxxxx=")
             const base64Token = ";base64,";
-            let indexBase64TokenStart = uri.indexOf(base64Token);
-            if (indexBase64TokenStart < 0)
+            let indexBase64TokenStart: number = uri.indexOf(base64Token);
+            if (indexBase64TokenStart < 0) {
                 throw new Error("Expected base 64 content in data url");
+            }
 
-            let indexBase64Start = indexBase64TokenStart + base64Token.length;
+            let indexBase64Start: number = indexBase64TokenStart + base64Token.length;
             return uri.substr(indexBase64Start, uri.length - indexBase64Start);
         }
 
@@ -123,11 +128,12 @@ namespace powerbi.extensibility.utils {
 
         // exported for testing
         export function escapeSlow(s: string): string {
-            if (!s)
+            if (!s) {
                 return s;
+            }
 
             return s.replace(/[^*+\-./0123456789@ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz]/g, unescaped => {
-                let escaped = unescaped.charCodeAt(0).toString(16).toUpperCase();
+                let escaped: any = unescaped.charCodeAt(0).toString(16).toUpperCase();
                 switch (escaped.length) {
                     case 1: return '%0' + escaped;
                     case 2: return '%' + escaped;
@@ -139,8 +145,9 @@ namespace powerbi.extensibility.utils {
 
         // exported for testing
         export function unescapeSlow(s: string): string {
-            if (!s)
+            if (!s) {
                 return s;
+            }
 
             return s.replace(/%([0-9a-fA-F]{2})|%u([0-9a-fA-F]{4})/g, (_, short, long) => {
                 return String.fromCharCode(parseInt(short || long, 16));
@@ -184,15 +191,16 @@ namespace powerbi.extensibility.utils {
          * @param keepExisting if true, existing query parameters will be maintained, even if specified in the parameters argument. Else, all existing parameters are removed
          */
         export function setQueryParameters(url: string, parameters: _.Dictionary<string>, keepExisting = false): string {
-            const splitUrl = splitUrlAndQuery(url);
-            let result = splitUrl.baseUrl;
+            const splitUrl: any = splitUrlAndQuery(url);
+            let result: string = splitUrl.baseUrl;
 
             if (keepExisting) {
                 _.assign(parameters, splitUrl.queryParameters);
             }
 
-            if (_.isEmpty(parameters))
+            if (_.isEmpty(parameters)) {
                 return result;
+            }
 
             result += '?' + _.chain(parameters)
                 .toPairs()
@@ -205,8 +213,8 @@ namespace powerbi.extensibility.utils {
 
         /** Given a URL, split it into the base URL (everything before the query string) and its collection of query string parameters */
         export function splitUrlAndQuery(url: string): { baseUrl: string, queryParameters: _.Dictionary<string> } {
-            const queryString = getQueryString(url);
-            const baseUrl = queryString ? url.slice(0, url.lastIndexOf(queryString)) : url;
+            const queryString: string = getQueryString(url);
+            const baseUrl: string = queryString ? url.slice(0, url.lastIndexOf(queryString)) : url;
 
             return {
                 baseUrl: baseUrl,
@@ -232,8 +240,8 @@ namespace powerbi.extensibility.utils {
             // path     = $3 = /pub/ietf/uri/
             // query    = $4 = <undefined>
             // fragment = $5 = Related
-            let matches = url.match(/^(?:([^:\/?#]+):)?(?:\/\/([^\/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?/);
-            if (matches)
+            let matches: RegExpMatchArray = url.match(/^(?:([^:\/?#]+):)?(?:\/\/([^\/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?/);
+            if (matches) {
                 return {
                     scheme: matches[1],
                     host: matches[2],
@@ -241,28 +249,30 @@ namespace powerbi.extensibility.utils {
                     query: matches[4],
                     fragment: matches[5]
                 };
+            }
         }
 
         export function getHost(url: string): string {
-            let parsed = parseUrl(url);
+            let parsed: ParsedUrl = parseUrl(url);
             return parsed && parsed.host;
         }
 
-        const HostnameRegex = /https?:\/\/[^\/]+/i;
+        const HostnameRegex: any = /https?:\/\/[^\/]+/i;
 
         /**
          * Returns everything in a URL after the hostname. Per RFC 3986, this is known as the absolute path reference.
          * @example for "https://foo.bar/hello/world", return "/hello/world".
          */
         export function getAbsolutePath(url: string): string {
-            if (!url)
+            if (!url) {
                 return url;
+            }
 
             return url.replace(HostnameRegex, '');
         }
 
         function getQueryString(url: string): string {
-            let elem = document.createElement('a');
+            let elem: HTMLAnchorElement = document.createElement('a');
             elem.href = url;
 
             return elem.search;
@@ -270,14 +280,15 @@ namespace powerbi.extensibility.utils {
 
         /** Parses a query string of the form ?param1=value1&param2=value2 into its invidual parameters. The leading ? is not required */
         function parseQueryString(queryString: string): _.Dictionary<string> {
-            if (!queryString)
+            if (!queryString) {
                 return null;
+            }
 
             if (_.startsWith(queryString, '?')) {
                 queryString = queryString.substring(1);
             }
 
-            let params = queryString.split("&");
+            let params: string[] = queryString.split("&");
 
             let result: _.Dictionary<string> = {};
             for (let keyEqualsValue of params) {
