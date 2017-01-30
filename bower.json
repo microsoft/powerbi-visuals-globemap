@@ -1,0 +1,20 @@
+{
+  "name": "powerbi-visuals-globemap",
+  "description": "GlobeMap",
+  "main": "",
+  "authors": [
+    "[object Object]"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/Microsoft/PowerBI-visuals-globemap",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "webgl-heatmap": "https://github.com/pyalot/webgl-heatmap"
+  }
+}

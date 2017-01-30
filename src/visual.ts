@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 
-let WebGLHeatmap: any = window['WebGLHeatmap'];
+let WebGLHeatmap: any = window['createWebGLHeatmap'];
 let GlobeMapCanvasLayers: JQuery[];
 
 module powerbi.extensibility.visual {
