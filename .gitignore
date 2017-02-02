@@ -1,0 +1,8 @@
+node_modules
+bower_components
+.DS_Store
+.tmp
+dist
+typings
+.api
+*.log
