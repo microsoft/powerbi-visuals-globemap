@@ -464,7 +464,6 @@ module powerbi.extensibility.visual {
             if (!this.orbitControls.enabled) {
                 return;
             }
-
             this.orbitControls.rotateLeft(2 * Math.PI * deltaX / this.rendererCanvas.offsetHeight * GlobeMap.GlobeSettings.rotateSpeed);
             this.orbitControls.rotateUp(2 * Math.PI * deltaY / this.rendererCanvas.offsetHeight * GlobeMap.GlobeSettings.rotateSpeed);
             this.orbitControls.update();
@@ -994,7 +993,7 @@ module powerbi.extensibility.visual {
 
             this.zoomControl = this.zoomContainer.append("svg").attr({
                 'width': zoomControlWidth,
-                'height': zoomControlHeight                
+                'height': zoomControlHeight
             }).classed('zoomContainerSvg', true);
 
             let bottom: d3.Selection<any> = this.zoomControl.append("g")

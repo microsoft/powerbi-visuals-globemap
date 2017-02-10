@@ -49,7 +49,7 @@ module powerbi.extensibility.geocoder {
         /** Maximum cache overflow of cached geocode data to kick the cache reducing. */
         MaxCacheSizeOverflow: 100,
         // TODO: Add your Bing key here
-        BingKey: "AlzEsHuemcvyHL9zokjJx85LFxp8sy4Ch2aSwrmn6AKCojiBUahyJzNwoV0oRlvm"
+        BingKey: "AoW85FdF-eTJavFmWhZjaQ970kwG1FuainbyVSlP5HglkbhVVIFOyNwlaQxAIj-S" // "AlzEsHuemcvyHL9zokjJx85LFxp8sy4Ch2aSwrmn6AKCojiBUahyJzNwoV0oRlvm"
     };
 
     export enum JQueryPromiseState {
@@ -131,6 +131,7 @@ module powerbi.extensibility.geocoder {
             if (result) {
                 deferred.resolve(result);
             } else {
+               // debugger;
                 let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
 
                 GeocodeQueueManager.enqueue(queueName, item);
@@ -662,6 +663,23 @@ module powerbi.extensibility.geocoder {
             this.scheduleDequeue();
         }
 
+    private localJsonpCallback(json) {
+        // debugger;
+        //     if (!json.Error) {
+             
+        //     }
+        //  else {
+               
+        //     }
+        debugger;
+        console.log(json);
+    }
+    
+    private jsonCallback(json){
+        debugger;
+  console.log(json);
+}
+
         private makeRequest(entry: GeocodeQueueEntry): void {
             let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(entry.item.query.getKey());
             if (result) {
@@ -674,7 +692,8 @@ module powerbi.extensibility.geocoder {
             let config: JQueryAjaxSettings = {
                 type: "GET",
                 dataType: "jsonp",
-                jsonp: "jsonp"
+                jsonp: "jsonp" ,
+                jsonpCallback: this.localJsonpCallback
             };
 
             entry.jsonp = true;
@@ -689,24 +708,24 @@ module powerbi.extensibility.geocoder {
 
             entry.request = $.ajax(url, config);
 
-            entry.request.always(() => {
-                _.pull(this.activeEntries, entry);
-            });
+            // entry.request.always(() => {
+            //     _.pull(this.activeEntries, entry);
+            // });
 
-            entry.request.then(
-                (data) => {
-                    entry.request = null;
-                    try {
-                        this.complete(entry, entry.item.query.getResult(data));
-                    }
-                    catch (error) {
-                        this.complete(entry, { error: error });
-                    }
-                },
-                (error) => {
-                    entry.request = null;
-                    this.complete(entry, { error: new Error(error && error.statusText || 'cancelled') });
-                });
+            // entry.request.then(
+            //     (data) => {
+            //         entry.request = null;
+            //         try {
+            //             this.complete(entry, entry.item.query.getResult(data));
+            //         }
+            //         catch (error) {
+            //             this.complete(entry, { error: error });
+            //         }
+            //     },
+            //     (error) => {
+            //         entry.request = null;
+            //         this.complete(entry, { error: new Error(error && error.statusText || 'cancelled') });
+            //     });
         }
     }
 

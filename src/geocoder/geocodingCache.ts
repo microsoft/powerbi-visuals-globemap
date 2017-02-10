@@ -41,7 +41,7 @@ module powerbi.extensibility.geocoder {
 
     export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService?: IStorageService): IGeocodingCache {
         if (!localStorageService) {
-            localStorageService = localStorageService;
+            localStorageService =   new powerbi.extensibility.utils.formatting.LocalStorageService();
         }
         return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, localStorageService);
     }
@@ -72,11 +72,11 @@ module powerbi.extensibility.geocoder {
                 return pair.coordinate;
             }
             // Check local storage cache
-            pair = this.localStorageService.getData(key);
-            if (pair) {
-                this.registerInMemory(key, pair.coordinate);
-                return pair.coordinate;
-            }
+                pair = this.localStorageService.getData(key);
+                if (pair) {
+                    this.registerInMemory(key, pair.coordinate);
+                    return pair.coordinate;
+                }
             return undefined;
         }
     /**
