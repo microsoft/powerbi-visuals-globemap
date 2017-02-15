@@ -52,7 +52,7 @@ module powerbi.extensibility.geocoder {
         /** Maximum cache overflow of cached geocode data to kick the cache reducing. */
         MaxCacheSizeOverflow: 100,
         // TODO: Add your Bing key here
-        BingKey: "AoW85FdF-eTJavFmWhZjaQ970kwG1FuainbyVSlP5HglkbhVVIFOyNwlaQxAIj-S" // "AlzEsHuemcvyHL9zokjJx85LFxp8sy4Ch2aSwrmn6AKCojiBUahyJzNwoV0oRlvm"
+        BingKey: "AlzEsHuemcvyHL9zokjJx85LFxp8sy4Ch2aSwrmn6AKCojiBUahyJzNwoV0oRlvm"
     };
 
     export enum JQueryPromiseState {
@@ -134,7 +134,6 @@ module powerbi.extensibility.geocoder {
             if (result) {
                 deferred.resolve(result);
             } else {
-               // debugger;
                 let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
 
                 GeocodeQueueManager.enqueue(queueName, item);
@@ -677,7 +676,21 @@ module powerbi.extensibility.geocoder {
                 return;
             }
 
-            GeocodeCallback = (data) => this.jsonCallback(data);
+            GeocodeCallback = (data) => {
+                debugger;
+            entry.request.always(() => {
+                _.pull(this.activeEntries, entry);
+                entry.request = null;
+            });
+                    try {
+                        this.complete(entry, entry.item.query.getResult(data));
+                    }
+                    catch (error) {
+                        this.complete(entry, { error: error });
+                    }
+                
+
+            };
 
             entry.jsonp = true;
 
@@ -696,24 +709,7 @@ module powerbi.extensibility.geocoder {
                 jsonp: "jsonp",
                 jsonpCallback: "GeocodeCallback",
             });
-            // entry.request.always(() => {
-            //     _.pull(this.activeEntries, entry);
-            // });
 
-            // entry.request.then(
-            //     (data) => {
-            //         entry.request = null;
-            //         try {
-            //             this.complete(entry, entry.item.query.getResult(data));
-            //         }
-            //         catch (error) {
-            //             this.complete(entry, { error: error });
-            //         }
-            //     },
-            //     (error) => {
-            //         entry.request = null;
-            //         this.complete(entry, { error: new Error(error && error.statusText || 'cancelled') });
-            //     });
         }
     }
 
