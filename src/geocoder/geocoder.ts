@@ -665,11 +665,8 @@ module powerbi.extensibility.geocoder {
             this.scheduleDequeue();
         }
 
-        private jsonCallback(json) {
-            console.log("jsonCallback result", json);
-        }
-
         private makeRequest(entry: GeocodeQueueEntry): void {
+            debugger;
             let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(entry.item.query.getKey());
             if (result) {
                 this.complete(entry, { coordinates: result });
@@ -677,19 +674,15 @@ module powerbi.extensibility.geocoder {
             }
 
             GeocodeCallback = (data) => {
-                debugger;
-            entry.request.always(() => {
-                _.pull(this.activeEntries, entry);
-                entry.request = null;
-            });
-                    try {
-                        this.complete(entry, entry.item.query.getResult(data));
-                    }
-                    catch (error) {
-                        this.complete(entry, { error: error });
-                    }
-                
-
+                entry.request.always(() => {
+                    _.pull(this.activeEntries, entry);
+                    entry.request = null;
+                });
+                try {
+                    this.complete(entry, entry.item.query.getResult(data));
+                } catch (error) {
+                    this.complete(entry, { error: error });
+                }
             };
 
             entry.jsonp = true;

@@ -26,6 +26,7 @@
 
 let WebGLHeatmap: any = window['createWebGLHeatmap'];
 let GlobeMapCanvasLayers: JQuery[];
+declare var GeocodeCallback2;
 
 module powerbi.extensibility.visual {
     import IGeocoder = powerbi.extensibility.geocoder.IGeocoder;
@@ -35,7 +36,6 @@ module powerbi.extensibility.visual {
     import ILocation = powerbi.extensibility.geocoder.ILocation;
     import converterHelper = powerbi.extensibility.utils.dataview.converterHelper;
     import ColorHelper = powerbi.extensibility.utils.color.ColorHelper;
-
     import ClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.ClassAndSelector;
     import createClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.createClassAndSelector;
     import DataViewObjectPropertyTypeDescriptor = powerbi.DataViewPropertyValue;
@@ -598,12 +598,101 @@ module powerbi.extensibility.visual {
             }
         }
 
+        private CallPostService(requestUrl, postData, responseType, callback) {
+            responseType = (responseType) ? responseType : '';
+
+        GeocodeCallback2 = (data) => {
+               debugger;
+            };
+debugger;
+            $.ajax({
+//  url: url,
+                dataType: 'jsonp',
+//                 crossDomain: true,
+//                 jsonp: "jsonp",
+                type: 'POST',
+                url:  requestUrl + '&responseType=' + responseType,
+                crossDomain: true,
+                //dataType: "xml",
+                contentType: 'text/plain',
+                data: postData,
+                processData: false,
+                jsonp: "jsonp",
+                jsonpCallback: "GeocodeCallback2",
+                 success: function (r) {
+                     debugger;
+                     //callback(r);
+                 },
+                error: function (e) {
+                    debugger;
+                   // document.getElementById('outputDiv').innerHTML = e.responseText;
+                }
+            });
+        }
+
+
+        private bingMapsKey:string = 'AlzEsHuemcvyHL9zokjJx85LFxp8sy4Ch2aSwrmn6AKCojiBUahyJzNwoV0oRlvm';
+
         private renderMagic(): void {
+
+            debugger;
+            // var map = new Microsoft.Maps.Map(document.getElementById('myMap'), { 
+            //     credentials: 'Your Bing Maps Key',
+            //     center: new Microsoft.Maps.Location(47.614, -122.165),
+            //     zoom: 11
+            // });
+            //Create an array of locations to get the boundaries of 
+            var dataValues = ['1,en-US,,16630 Redmond Way,WA,USA,,,Redmond,98052,,,,,,,,,,,,,,,,,,,,,,', 
+            '2,en-US,,16552 NE 74th St,WA,,,,Redmond,,,High,,,,,,,,,,,,,,,,,,,,,,', 
+            '3,en-US,Seattle Space Needle,,,,,,,,,,,,,,,,,,,,,,,,,,,,', 
+            '4,en-US,,,,,,,,,,,,,,,,,,,,,,,,,,,,,', 
+            '5,en-US,,W Jefferson Blvd,CA,,,,Los Angeles,90007,,,,,,,,,,,,,,,,,,,,,,,,',
+            '6,en-US,,,CA,,,,Los angeles,,,,,,,,,,,,,,,,,,,,,,,,,',
+            '7,en-ca,Montreal Canada,,,,,,,,,,,,,,,,,,,,,,,,,,,,',
+            '8,en-CA,,444 Kirkpatrick Cres NW,AB,Canada,,,Edmonton,,,,,,,,,,,,,,,,,,,,,,,,',
+            '9,en-gb,BD4 9JB,,,,,,,,,,,,,,,,,,,,,,,,,,,,',
+            '10,en-us,,,,,,,,,,,,,,,,,,,,,,,,,,,,47.673099,-122.11871',
+            '11,en-ca,,,,,,,,,,,,,,,,,,,,,,,,,,,,53.48021728,-113.4030925',
+            '12,en-gb,,,,,,,,,,,,,,,,,,,,,,,,,,,,53.77848387,-1.719561517'];
+
+            
+            var geoDataRequestOptions = {
+                entityType: 'Postcode1'
+            };
+            // Microsoft.Maps.loadModule('Microsoft.Maps.SpatialDataService', function () {
+            //     //Use the GeoData API manager to get the boundary
+            //     Microsoft.Maps.SpatialDataService.GeoDataAPIManager.getBoundary(zipCodes, geoDataRequestOptions, null, function (data) {
+
+            //         if (data.results && data.results.length > 0) {
+            //             //map.entities.push(data.results[0].Polygons);
+            //         }
+            //     });
+            // });
+
+
+
             if (!this.data) {
                 return;
             }
+            
+            let notFilledDataRows = [];
+            let dataRequest =[];
+            let index:number = 1;
+            //this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d));
+            this.data.dataPoints.forEach(d => {
+                if(d.location == undefined || d.location.latitude == undefined){
+                      notFilledDataRows.push(d);
+                      dataRequest.push(index+',,,'+d.placeKey+',,,,,,,,,,,,,,,,,,,,,,,,,,,,');
+                      index++;
+                }
+            });
 
-            this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d));
+            var request = 'https://spatial.virtualearth.net/REST/v1/dataflows/geocode?input=CSV&key=' + this.bingMapsKey;
+            //Call service
+            this.CallPostService(request, dataValues, 'csv', function (r) {
+                //document.getElementById('outputDiv').innerHTML = r;
+            });
+            // check all data points and combine all empty to later send one requests for lattitude and longitude
             this.data.dataPoints.forEach(d => d.location = d.location || this.globeMapLocationCache[d.placeKey]);
 
             if (!this.readyToRender) {

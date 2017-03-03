@@ -18,7 +18,7 @@
     "node_modules/powerbi-visuals-utils-chartutils/lib/index.d.ts",
     "node_modules/powerbi-visuals-utils-dataviewutils/lib/index.d.ts",
     "node_modules/powerbi-visuals-utils-colorutils/lib/index.d.ts",
-    "node_modules/bingmaps/scripts/MicrosoftMaps/Microsoft.Maps.d.ts",
+    "node_modules/bingmaps/scripts/MicrosoftMaps/Microsoft.Maps.All.d.ts",
     "src/UrlUtils/UrlUtils.ts",
     "node_modules/@types/three/index.d.ts",
     "node_modules/@types/three/three-orbitcontrols.d.ts",
