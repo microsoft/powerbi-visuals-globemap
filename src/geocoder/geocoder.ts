@@ -2,7 +2,7 @@
  *  Power BI Visualizations
  *
  *  Copyright (c) Microsoft Corporation
- *  All rights reserved. 
+ *  All rights reserved.
  *  MIT License
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -11,18 +11,21 @@
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  *  copies of the Software, and to permit persons to whom the Software is
  *  furnished to do so, subject to the following conditions:
- *   
- *  The above copyright notice and this permission notice shall be included in 
+ *
+ *  The above copyright notice and this permission notice shall be included in
  *  all copies or substantial portions of the Software.
- *   
- *  THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+ *
+ *  THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
  *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+
+declare var GeocodeCallback;
+
 module powerbi.extensibility.geocoder {
     import UrlUtils = powerbi.extensibility.utils.UrlUtils;
 
@@ -663,18 +666,23 @@ module powerbi.extensibility.geocoder {
         }
 
         private makeRequest(entry: GeocodeQueueEntry): void {
+            debugger;
             let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(entry.item.query.getKey());
             if (result) {
                 this.complete(entry, { coordinates: result });
                 return;
             }
 
-            // Unfortunately the Bing service doesn't support CORS, only jsonp. This issue must be raised and revised.
-            // VSTS: 1396088 - Tracking: Ask: Bing geocoding to support CORS
-            let config: JQueryAjaxSettings = {
-                type: "GET",
-                dataType: "jsonp",
-                jsonp: "jsonp"
+            GeocodeCallback = (data) => {
+                entry.request.always(() => {
+                    _.pull(this.activeEntries, entry);
+                    entry.request = null;
+                });
+                try {
+                    this.complete(entry, entry.item.query.getResult(data));
+                } catch (error) {
+                    this.complete(entry, { error: error });
+                }
             };
 
             entry.jsonp = true;
@@ -687,26 +695,14 @@ module powerbi.extensibility.geocoder {
 
             this.activeEntries.push(entry);
 
-            entry.request = $.ajax(url, config);
-
-            entry.request.always(() => {
-                _.pull(this.activeEntries, entry);
+            entry.request = $.ajax({
+                url: url,
+                dataType: 'jsonp',
+                crossDomain: true,
+                jsonp: "jsonp",
+                jsonpCallback: "GeocodeCallback",
             });
 
-            entry.request.then(
-                (data) => {
-                    entry.request = null;
-                    try {
-                        this.complete(entry, entry.item.query.getResult(data));
-                    }
-                    catch (error) {
-                        this.complete(entry, { error: error });
-                    }
-                },
-                (error) => {
-                    entry.request = null;
-                    this.complete(entry, { error: new Error(error && error.statusText || 'cancelled') });
-                });
         }
     }
 

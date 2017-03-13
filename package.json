@@ -26,7 +26,7 @@
     "@types/jasmine-jquery": "1.5.28",
     "@types/lodash": "4.14.43",
     "@types/three": "0.0.19",
-    "bingmaps": "1.0.12",
+    "bingmaps": "^1.0.12",
     "d3": "3.5.5",
     "globalize": "0.1.0-a2",
     "jasmine": "2.5.2",

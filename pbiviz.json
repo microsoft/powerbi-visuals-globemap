@@ -21,6 +21,8 @@
     "node_modules/jquery/dist/jquery.min.js",
     "node_modules/lodash/lodash.min.js",
     "node_modules/d3/d3.js",
+    "node_modules/three/three.js",
+    "src/lib/OrbitControls.js",
     "node_modules/powerbi-visuals-utils-typeutils/lib/index.js",
     "node_modules/globalize/lib/globalize.js",
     "node_modules/globalize/lib/cultures/globalize.culture.en-US.js",
@@ -31,9 +33,7 @@
     "node_modules/powerbi-visuals-utils-chartutils/lib/index.js",
     "node_modules/powerbi-visuals-utils-dataviewutils/lib/index.js",
     "node_modules/powerbi-visuals-utils-colorutils/lib/index.js",
-    "bower_components/webgl-heatmap/webgl-heatmap.js",
-    "node_modules/three/three.js",
-    "node_modules/three/examples/js/controls/OrbitControls.js"    
+    "bower_components/webgl-heatmap/webgl-heatmap.js"        
   ],
   "style": "style/globemap.less",
   "capabilities": "capabilities.json"
