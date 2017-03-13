@@ -72,6 +72,7 @@ module powerbi.extensibility.geocoder {
                 return pair.coordinate;
             }
             // Check local storage cache
+                debugger;
                 pair = this.localStorageService.getData(key);
                 if (pair) {
                     this.registerInMemory(key, pair.coordinate);

@@ -325,6 +325,7 @@ module powerbi.extensibility.visual {
         }
 
         constructor(options: VisualConstructorOptions) {
+
             this.root = $("<div>").appendTo(options.element)
                 .attr('drag-resize-disabled', "true")
                 .css({
@@ -602,7 +603,6 @@ module powerbi.extensibility.visual {
             if (!this.data) {
                 return;
             }
-
             this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d));
             this.data.dataPoints.forEach(d => d.location = d.location || this.globeMapLocationCache[d.placeKey]);
 

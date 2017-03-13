@@ -171,8 +171,8 @@ module powerbi.extensibility.geocoder {
     }
     export const safeCharacters: string = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-";
 
- /** Note: Used for test mockup */
- // export let BingAjaxCall: BingAjaxService = $.ajax;
+    /** Note: Used for test mockup */
+    // export let BingAjaxCall: BingAjaxService = $.ajax;
     export const CategoryTypeArray = [
         "Address",
         "City",
@@ -677,18 +677,17 @@ module powerbi.extensibility.geocoder {
             }
 
             GeocodeCallback = (data) => {
-                debugger;
-            entry.request.always(() => {
-                _.pull(this.activeEntries, entry);
-                entry.request = null;
-            });
-                    try {
-                        this.complete(entry, entry.item.query.getResult(data));
-                    }
-                    catch (error) {
-                        this.complete(entry, { error: error });
-                    }
-                
+                entry.request.always(() => {
+                    _.pull(this.activeEntries, entry);
+                    entry.request = null;
+                });
+                try {
+                    this.complete(entry, entry.item.query.getResult(data));
+                }
+                catch (error) {
+                    this.complete(entry, { error: error });
+                }
+
 
             };
 
