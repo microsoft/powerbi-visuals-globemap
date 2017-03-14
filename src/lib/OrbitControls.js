@@ -282,7 +282,7 @@ if (!THREE.OrbitControl) {
 
         }
 
-        this.rotateUp = function(angle) {
+        this.rotateUp = function (angle) {
 
             sphericalDelta.phi -= angle;
 
@@ -359,7 +359,7 @@ if (!THREE.OrbitControl) {
 
         }();
 
-        this.dollyIn = function(dollyScale) {
+        this.dollyIn = function (dollyScale) {
 
             if (scope.object instanceof THREE.PerspectiveCamera) {
 
@@ -380,7 +380,7 @@ if (!THREE.OrbitControl) {
 
         }
 
-        this.dollyOut = function(dollyScale) {
+        this.dollyOut = function (dollyScale) {
 
             if (scope.object instanceof THREE.PerspectiveCamera) {
 
@@ -407,15 +407,11 @@ if (!THREE.OrbitControl) {
 
         function handleMouseDownRotate(event) {
 
-            //console.log( 'handleMouseDownRotate' );
-
             rotateStart.set(event.clientX, event.clientY);
 
         }
 
         function handleMouseDownDolly(event) {
-
-            //console.log( 'handleMouseDownDolly' );
 
             dollyStart.set(event.clientX, event.clientY);
 
@@ -423,15 +419,11 @@ if (!THREE.OrbitControl) {
 
         function handleMouseDownPan(event) {
 
-            //console.log( 'handleMouseDownPan' );
-
             panStart.set(event.clientX, event.clientY);
 
         }
 
         function handleMouseMoveRotate(event) {
-
-            //console.log( 'handleMouseMoveRotate' );
 
             rotateEnd.set(event.clientX, event.clientY);
             rotateDelta.subVectors(rotateEnd, rotateStart);
@@ -451,8 +443,6 @@ if (!THREE.OrbitControl) {
         }
 
         function handleMouseMoveDolly(event) {
-
-            //console.log( 'handleMouseMoveDolly' );
 
             dollyEnd.set(event.clientX, event.clientY);
 
@@ -476,8 +466,6 @@ if (!THREE.OrbitControl) {
 
         function handleMouseMovePan(event) {
 
-            //console.log( 'handleMouseMovePan' );
-
             panEnd.set(event.clientX, event.clientY);
 
             panDelta.subVectors(panEnd, panStart);
@@ -491,15 +479,9 @@ if (!THREE.OrbitControl) {
         }
 
         function handleMouseUp(event) {
-
-            //console.log( 'handleMouseUp' );
-
         }
 
         function handleMouseWheel(event) {
-
-            //console.log( 'handleMouseWheel' );
-
             var delta = 0;
 
             if (event.wheelDelta !== undefined) {
@@ -531,9 +513,6 @@ if (!THREE.OrbitControl) {
         }
 
         function handleKeyDown(event) {
-
-            //console.log( 'handleKeyDown' );
-
             switch (event.keyCode) {
 
                 case scope.keys.UP:
@@ -562,16 +541,11 @@ if (!THREE.OrbitControl) {
 
         function handleTouchStartRotate(event) {
 
-            //console.log( 'handleTouchStartRotate' );
-
             rotateStart.set(event.touches[0].pageX, event.touches[0].pageY);
 
         }
 
         function handleTouchStartDolly(event) {
-
-            //console.log( 'handleTouchStartDolly' );
-
             var dx = event.touches[0].pageX - event.touches[1].pageX;
             var dy = event.touches[0].pageY - event.touches[1].pageY;
 
@@ -583,15 +557,11 @@ if (!THREE.OrbitControl) {
 
         function handleTouchStartPan(event) {
 
-            //console.log( 'handleTouchStartPan' );
-
             panStart.set(event.touches[0].pageX, event.touches[0].pageY);
 
         }
 
         function handleTouchMoveRotate(event) {
-
-            //console.log( 'handleTouchMoveRotate' );
 
             rotateEnd.set(event.touches[0].pageX, event.touches[0].pageY);
             rotateDelta.subVectors(rotateEnd, rotateStart);
@@ -611,8 +581,6 @@ if (!THREE.OrbitControl) {
         }
 
         function handleTouchMoveDolly(event) {
-
-            //console.log( 'handleTouchMoveDolly' );
 
             var dx = event.touches[0].pageX - event.touches[1].pageX;
             var dy = event.touches[0].pageY - event.touches[1].pageY;
@@ -641,8 +609,6 @@ if (!THREE.OrbitControl) {
 
         function handleTouchMovePan(event) {
 
-            //console.log( 'handleTouchMovePan' );
-
             panEnd.set(event.touches[0].pageX, event.touches[0].pageY);
 
             panDelta.subVectors(panEnd, panStart);
@@ -656,9 +622,6 @@ if (!THREE.OrbitControl) {
         }
 
         function handleTouchEnd(event) {
-
-            //console.log( 'handleTouchEnd' );
-
         }
 
         //
