@@ -665,10 +665,6 @@ module powerbi.extensibility.geocoder {
             this.scheduleDequeue();
         }
 
-        private jsonCallback(json) {
-            console.log("jsonCallback result", json);
-        }
-
         private makeRequest(entry: GeocodeQueueEntry): void {
             let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(entry.item.query.getKey());
             if (result) {
