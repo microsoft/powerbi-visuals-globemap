@@ -39,7 +39,7 @@ module powerbi.extensibility.visual.test {
             super(width, height, VisualPlugin.name);
         }
 
-        protected build(options: VisualConstructorOptions) {
+        protected build(options: any) {
             return new VisualClass(options);
         }
 
@@ -48,27 +48,12 @@ module powerbi.extensibility.visual.test {
         }
 
         public get mainElement(): JQuery {
-            return this.element.children("svg.GlobeMap");
+            return this.element.children("div.globeMapView");
         }
 
-        public get nodesElement(): JQuery {
+        public get canvasElement(): JQuery {
             return this.mainElement
-                .children("g")
-                .children("g.nodes");
-        }
-
-        public get nodeElements(): JQuery {
-            return this.nodesElement.children("g.node");
-        }
-
-        public get linksElement(): JQuery {
-            return this.mainElement
-                .children("g")
-                .children("g.links");
-        }
-
-        public get linkElements(): JQuery {
-            return this.linksElement.children("path.link");
+                .children("canvas");
         }
     }
 }

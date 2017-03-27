@@ -29,6 +29,7 @@
 module powerbi.extensibility.visual.test {
     // powerbi.extensibility.utils.type
     import ValueType = powerbi.extensibility.utils.type.ValueType;
+    import typeUtils = powerbi.extensibility.utils.type;
 
     // powerbi.extensibility.utils.test
     import TestDataViewBuilder = powerbi.extensibility.utils.test.dataViewBuilder.TestDataViewBuilder;
@@ -64,6 +65,7 @@ module powerbi.extensibility.visual.test {
         public valuesValue: number[] = getRandomNumbers(this.valuesSourceDestination.length, 10, 500);
 
         public getDataView(columnNames?: string[]): DataView {
+
             return this.createCategoricalDataViewBuilder([
                 {
                     source: {
