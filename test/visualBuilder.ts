@@ -46,14 +46,5 @@ module powerbi.extensibility.visual.test {
         public get instance(): VisualClass {
             return this.visual;
         }
-
-        public get mainElement(): JQuery {
-            return this.element.children("div.globeMapView");
-        }
-
-        public get canvasElement(): JQuery {
-            return this.mainElement
-                .children("canvas");
-        }
     }
 }

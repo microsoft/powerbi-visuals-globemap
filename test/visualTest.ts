@@ -29,13 +29,16 @@
 module powerbi.extensibility.visual.test {
     // powerbi
     import DataView = powerbi.DataView;
+    import DataViewCategorical = powerbi.DataViewCategorical;
 
     // powerbi.extensibility.visual.test
-    import GlobeMapData = powerbi.extensibility.visual.test.GlobeMapData;
+    import GlobeMapDataViewBuilder = powerbi.extensibility.visual.test.GlobeMapData;
     import GlobeMapBuilder = powerbi.extensibility.visual.test.GlobeMapBuilder;
 
     // powerbi.extensibility.visual.GlobeMap1447669447624
     import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMap;
+    import GlobeMapData = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMapData;   
+    import GlobeMapColumns = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMapColumns;
 
     // powerbi.extensibility.utils.test
     import clickElement = powerbi.extensibility.utils.test.helpers.clickElement;
@@ -43,306 +46,74 @@ module powerbi.extensibility.visual.test {
     import getRandomNumbers = powerbi.extensibility.utils.test.helpers.getRandomNumbers;
     import assertColorsMatch = powerbi.extensibility.utils.test.helpers.color.assertColorsMatch;
 
-    interface GlobeMapTestsNode {
-        x: number;
-        inputWeight: number;
-        outputWeight: number;
-    }
-
     describe("GlobeMap", () => {
         let visualBuilder: GlobeMapBuilder,
             visualInstance: VisualClass,
-            defaultDataViewBuilder: GlobeMapData,
+            defaultDataViewBuilder: GlobeMapDataViewBuilder,
             dataView: DataView;
-
+        
         beforeEach(() => {
+            jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
             visualBuilder = new GlobeMapBuilder(1000, 500);
 
-            defaultDataViewBuilder = new GlobeMapData();
+            defaultDataViewBuilder = new GlobeMapDataViewBuilder();
             dataView = defaultDataViewBuilder.getDataView();
 
             visualInstance = visualBuilder.instance;
         });
 
-        describe("getPositiveNumber", () => {
-            // it("positive value should be positive value", () => {
-            //     let positiveValue: number = 42;
-
-            //     expect(VisualClass.(positiveValue)).toBe(positiveValue);
-            // });
-
-          
+        describe("DOM tests", () => {        
+            it("canvas element created", () => {
+                visualBuilder.updateRenderTimeout(dataView, () => { 
+                    expect(visualBuilder.element.find("canvas")).toBeInDOM();
+                });
+            });
         });
 
-       
+        describe("Converter tests", () => {        
+            it("should create same count of datapoints as dataView values", () => {
+                let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
-        // describe("getColumns", () => {
-        //     it("getColumns", () => {
-        //         let testNodes: GlobeMapTestsNode[];
+                expect(data.dataPoints.length).toBe(dataView.categorical.values[0].values.length);
+            });
 
-        //         testNodes = [
-        //             { x: 0, inputWeight: 15, outputWeight: 14 },
-        //             { x: 1, inputWeight: 10, outputWeight: 5 },
-        //             { x: 2, inputWeight: 15, outputWeight: 13 },
-        //             { x: 3, inputWeight: 42, outputWeight: 28 }
-        //         ];
+            it("should create same count of datapoints as dataView values with undefined values", () => {
+                dataView.categorical.values[0].values = [null, "0qqa123", undefined, "value", 1, 2, 3, 4, 5, 6];
+                let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
-        //         visualInstance.getColumns(createNodes(testNodes))
-        //             .forEach((column: GlobeMapColumn, index: number) => {
-        //                 expect(column.countOfNodes).toBe(1);
+                expect(data.dataPoints.length).toBe(dataView.categorical.values[0].values.length);
+            });
 
-        //                 expect(column.sumValueOfNodes).toBe(testNodes[index].inputWeight);
-        //             });
-        //     });
+            it("should create same count of datapoints as valid categories", () => {
+                let invalidDataSet = [null, "0qqa123", undefined, "value", 1, 2, 3, 4, 5, 6];
+                let validStringValueCount = 0;
 
-        //     function createNodes(testNodes: GlobeMapTestsNode[]): GlobeMapNode[] {
-        //         return testNodes.map((testNode: GlobeMapTestsNode) => {
-        //             return {
-        //                 label: {
-        //                     name: "",
-        //                     formattedName: "",
-        //                     width: 0,
-        //                     height: 0,
-        //                     color: ""
-        //                 },
-        //                 inputWeight: testNode.inputWeight,
-        //                 outputWeight: testNode.outputWeight,
-        //                 links: [],
-        //                 x: testNode.x,
-        //                 y: 0,
-        //                 width: 0,
-        //                 height: 0,
-        //                 colour: "",
-        //                 selectionIds: [],
-        //                 tooltipData: []
-        //             };
-        //         });
-        //     }
-        // });
+                invalidDataSet.forEach((item) =>{
+                    if(typeof item === "string") {
+                        ++validStringValueCount;
+                    }
+                });
 
-        // describe("getMaxColumn", () => {
-        //     it("getMaxColumn should return { sumValueOfNodes: 0, countOfNodes: 0 }", () => {
-        //         let maxColumn: GlobeMapColumn;
+                dataView.categorical.categories[0].values = invalidDataSet;
 
-        //         maxColumn = VisualClass.getMaxColumn([]);
+                let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
-        //         expect(maxColumn.countOfNodes).toBe(0);
-        //         expect(maxColumn.sumValueOfNodes).toBe(0);
-        //     });
+                expect(data.dataPoints.length).toBe(validStringValueCount);
+            });
+        });
 
-        //     it("getMaxColumn should return { sumValueOfNodes: 0, countOfNodes: 0 } when columns are null", () => {
-        //         let maxColumn: GlobeMapColumn;
+        describe("columns tests", function() {
+            it("getCategoricalColumns should return same count of category values as dataView contains", function()  {
+                let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
-        //         maxColumn = VisualClass.getMaxColumn([
-        //             undefined,
-        //             null
-        //         ]);
+                let categoryCount = categorical.Category && categorical.Category.values && categorical.Category.values.length;
+                expect(categoryCount).toBe(dataView.categorical.values[0].values.length);                
+            });
 
-        //         expect(maxColumn.countOfNodes).toBe(0);
-        //         expect(maxColumn.sumValueOfNodes).toBe(0);
-        //     });
-
-        //     it("getMaxColumn should return max column", () => {
-        //         let maxColumn: GlobeMapColumn,
-        //             columns: GlobeMapColumn[];
-
-        //         maxColumn = { countOfNodes: 35, sumValueOfNodes: 21321 };
-
-        //         columns = [
-        //             { countOfNodes: 15, sumValueOfNodes: 500 },
-        //             { countOfNodes: 25, sumValueOfNodes: 42 },
-        //             maxColumn
-        //         ];
-
-        //         expect(VisualClass.getMaxColumn(columns)).toBe(maxColumn);
-        //     });
-        // });
-
-        // describe("DOM tests", () => {
-        //     it("main element created", () => {
-        //         expect(visualBuilder.mainElement[0]).toBeInDOM();
-        //     });
-
-        //     it("update", (done) => {
-        //         visualBuilder.updateRenderTimeout(dataView, () => {
-        //             const sourceCategories: PrimitiveValue[] = dataView.categorical.categories[0].values,
-        //                 destinationCategories: PrimitiveValue[] = dataView.categorical.categories[1].values;
-
-        //             expect(visualBuilder.linksElement).toBeInDOM();
-        //             expect(visualBuilder.linkElements.length).toBe(sourceCategories.length);
-
-        //             let uniqueCountries: string[] = sourceCategories
-        //                 .concat(destinationCategories)
-        //                 .sort()
-        //                 .filter((value: PrimitiveValue, index: number, array: PrimitiveValue[]) => {
-        //                     return !index || value !== array[index - 1];
-        //                 }) as string[];
-
-        //             expect(visualBuilder.nodesElement).toBeInDOM();
-        //             expect(visualBuilder.nodeElements.length).toEqual(uniqueCountries.length);
-
-        //             done();
-        //         });
-        //     });
-
-        //     it("nodes labels on", (done) => {
-        //         dataView.metadata.objects = {
-        //             labels: {
-        //                 show: true
-        //             }
-        //         };
-
-        //         visualBuilder.updateRenderTimeout(dataView, () => {
-        //             const display: string = visualBuilder.nodesElement
-        //                 .find("text")
-        //                 .first()
-        //                 .css("display");
-
-        //             expect(display).toBe("block");
-
-        //             done();
-        //         });
-        //     });
-
-        //     it("nodes labels off", (done) => {
-        //         dataView.metadata.objects = {
-        //             labels: {
-        //                 show: false
-        //             }
-        //         };
-
-        //         visualBuilder.updateRenderTimeout(dataView, () => {
-        //             const display: string = visualBuilder.nodesElement
-        //                 .find("text")
-        //                 .first()
-        //                 .css("display");
-
-        //             expect(display).toBe("none");
-
-        //             done();
-        //         });
-        //     });
-
-        //     it("nodes labels change color", (done) => {
-        //         const color: string = "#123123";
-
-        //         dataView.metadata.objects = {
-        //             labels: {
-        //                 fill: { solid: { color } }
-        //             }
-        //         };
-
-        //         visualBuilder.updateRenderTimeout(dataView, () => {
-        //             const fill: string = visualBuilder.nodesElement
-        //                 .find("text")
-        //                 .first()
-        //                 .css("fill");
-
-        //             assertColorsMatch(fill, color);
-        //             done();
-        //         });
-        //     });
-
-        //     it("link change color", done => {
-        //         const color: string = "#E0F600";
-
-        //         dataView.categorical.categories[0].objects = [{
-        //             links: {
-        //                 fill: { solid: { color } }
-        //             }
-        //         }];
-
-        //         visualBuilder.updateRenderTimeout(dataView, () => {
-        //             const currentColor: string = visualBuilder.linksElement
-        //                 .find(".link")
-        //                 .first()
-        //                 .css("stroke");
-
-        //             assertColorsMatch(currentColor, color);
-
-        //             done();
-        //         });
-        //     });
-
-        //     it("nodes labels are not overlapping", done => {
-
-        //         visualBuilder.updateRenderTimeout(dataView, () => {
-        //             const textElement: JQuery = visualBuilder.nodesElement.find("text"),
-        //                 firstNode: string = textElement.first().text(),
-        //                 secondNode: string = textElement.last().text(),
-        //                 thirdNode: string = textElement.eq(4).text();
-
-        //             expect(firstNode).toBe("Brazil");
-        //             expect(secondNode).toBe("Morocco");
-        //             expect(thirdNode).toBe("Portugal");
-
-        //             done();
-        //         });
-        //     });
-
-        //     describe("selection and deselection", () => {
-        //         const selectionSelector: string = ".selected";
-
-        //         it("nodes", (done) => {
-        //             visualBuilder.updateRenderTimeout(dataView, () => {
-        //                 const node: JQuery = visualBuilder.nodeElements.first();
-
-        //                 expect(visualBuilder.nodeElements.filter(selectionSelector)).not.toBeInDOM();
-        //                 clickElement(node);
-
-        //                 renderTimeout(() => {
-        //                     expect(node.filter(selectionSelector)).not.toBeInDOM();
-        //                     expect(visualBuilder.nodeElements.filter(selectionSelector)).toBeInDOM();
-
-        //                     clickElement(node);
-        //                     renderTimeout(() => {
-        //                         expect(visualBuilder.nodeElements.filter(selectionSelector)).not.toBeInDOM();
-
-        //                         done();
-        //                     });
-        //                 });
-        //             });
-        //         });
-
-        //         it("links", (done) => {
-        //             visualBuilder.updateRenderTimeout(dataView, () => {
-        //                 const link: JQuery = visualBuilder.linkElements.first();
-
-        //                 expect(visualBuilder.linkElements.filter(selectionSelector)).not.toBeInDOM();
-        //                 clickElement(link);
-
-        //                 renderTimeout(() => {
-        //                     expect(link.filter(selectionSelector)).toBeInDOM();
-        //                     expect(visualBuilder.linkElements.not(link).filter(selectionSelector)).not.toBeInDOM();
-
-        //                     clickElement(link);
-        //                     renderTimeout(() => {
-        //                         expect(visualBuilder.linkElements.filter(selectionSelector)).not.toBeInDOM();
-        //                         done();
-        //                     });
-        //                 });
-        //             });
-        //         });
-        //     });
-
-            // describe("data rendering", () => {
-            //     it("negative and zero values", done => {
-            //         let dataLength: number = defaultDataViewBuilder.valuesSourceDestination.length,
-            //             groupLength = Math.floor(dataLength / 3) - 2,
-            //             negativeValues = getRandomNumbers(groupLength, -100, 0),
-            //             zeroValues = _.range(0, groupLength, 0),
-            //             positiveValues = getRandomNumbers(
-            //                 dataLength - negativeValues.length - zeroValues.length, 1, 100);
-
-            //         defaultDataViewBuilder.valuesValue = negativeValues.concat(zeroValues).concat(positiveValues);
-
-            //         visualBuilder.updateRenderTimeout([defaultDataViewBuilder.getDataView()], () => {
-            //             expect(visualBuilder.linkElements.length).toBe(positiveValues.length);
-
-            //             done();
-            //         });
-            //     });
-            // });
+            it("getGroupedValueColumns should group dataView columns", function()  {
+                let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] | any = GlobeMapColumns.getGroupedValueColumns(dataView);
+                expect(groupedColumns.length).toBe(1);         
+            });                
         });
     });
 }
