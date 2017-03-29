@@ -96,7 +96,7 @@ module powerbi.extensibility.visual {
         private heatmap: any;
         private heatTexture: THREE.Texture;
         private mapTextures: THREE.Texture[];
-        private barsGroup: THREE.Object3D;
+        public barsGroup: THREE.Object3D;
         private readyToRender: boolean;
         private deferredRenderTimerId: any;
         private globeMapLocationCache: { [i: string]: ILocation };
@@ -112,14 +112,15 @@ module powerbi.extensibility.visual {
         private averageBarVector: THREE.Vector3;
         private zoomContainer: d3.Selection<any>;
         private zoomControl: d3.Selection<any>;
-        private colors: IColorPalette;
+        public colors: IColorPalette;
         private animationFrameId: number;
         private cameraAnimationFrameId: number;
-        private visualHost: IVisualHost;
+        public visualHost: IVisualHost;
 
         private tooltipService: ITooltipService;
         private static datapointShiftPoint: number = 0.01;
-        private static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
+        public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
+            debugger;
             let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
             if (!categorical || !categorical.Category || _.isEmpty(categorical.Category.values)
                 || (_.isEmpty(categorical.Height) && _.isEmpty(categorical.Heat))) {
@@ -581,7 +582,7 @@ module powerbi.extensibility.visual {
                 }
             }
 
-            if (options.type === VisualUpdateType.Data || options.type === VisualUpdateType.All) {
+            if (options.type === 2 || options.type === 62) {
                 this.cleanHeatAndBar();
                 let data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
                 if (data) {
