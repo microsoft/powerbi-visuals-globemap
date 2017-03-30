@@ -673,10 +673,12 @@ module powerbi.extensibility.geocoder {
             }
 
             GeocodeCallback = (data) => {
+                if(entry.request){
                 entry.request.always(() => {
                     _.pull(this.activeEntries, entry);
                     entry.request = null;
                 });
+                }
                 try {
                     this.complete(entry, entry.item.query.getResult(data));
                 }
