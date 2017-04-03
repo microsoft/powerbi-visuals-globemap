@@ -27,6 +27,6 @@
     "src/geocoder/geocoderInterfaces.ts",
     "src/geocoder/geocodingCache.ts",
     "src/geocoder/geocoder.ts",
-    "src/visual.ts"
+    "src/globemap.ts"
   ]
 }

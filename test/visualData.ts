@@ -76,16 +76,16 @@ module powerbi.extensibility.visual.test {
                     values: this.valuesSourceDestination.map(x => x[0])
                 }
             ], [
-                {
-                    source: {
-                        displayName: GlobeMapData.ColumnValue,
-                        roles: { [GlobeMapData.ColumnValue]: true },
-                        isMeasure: true,
-                        type: ValueType.fromDescriptor({ numeric: true }),
-                    },
-                    values: this.valuesValue
-                }
-            ], columnNames).build();
+                    {
+                        source: {
+                            displayName: GlobeMapData.ColumnValue,
+                            roles: { [GlobeMapData.ColumnValue]: true },
+                            isMeasure: true,
+                            type: ValueType.fromDescriptor({ numeric: true }),
+                        },
+                        values: this.valuesValue
+                    }
+                ], columnNames).build();
         }
     }
 }

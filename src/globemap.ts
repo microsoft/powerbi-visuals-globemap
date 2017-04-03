@@ -31,14 +31,14 @@ module powerbi.extensibility.visual {
     import IGeocoder = powerbi.extensibility.geocoder.IGeocoder;
     import IGeocodeCoordinate = powerbi.extensibility.geocoder.IGeocodeCoordinate;
     import IPromise = powerbi.IPromise;
-    import TouchRect = powerbi.extensibility.utils.svg.touch.Rectangle;
+    import Rectangle = powerbi.extensibility.utils.svg.touch.Rectangle;
     import ILocation = powerbi.extensibility.geocoder.ILocation;
     import converterHelper = powerbi.extensibility.utils.dataview.converterHelper;
     import ColorHelper = powerbi.extensibility.utils.color.ColorHelper;
 
     import ClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.ClassAndSelector;
     import createClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.createClassAndSelector;
-    import DataViewObjectPropertyTypeDescriptor = powerbi.DataViewPropertyValue;
+    import DataViewPropertyValue = powerbi.DataViewPropertyValue;
     import SelectableDataPoint = powerbi.extensibility.utils.interactivity.SelectableDataPoint;
     import IValueFormatter = powerbi.extensibility.utils.formatting.IValueFormatter;
     import IInteractivityService = powerbi.extensibility.utils.interactivity.IInteractivityService;
@@ -50,10 +50,10 @@ module powerbi.extensibility.visual {
     import valueFormatter = powerbi.extensibility.utils.formatting.valueFormatter;
     import IAxisProperties = powerbi.extensibility.utils.chart.axis.IAxisProperties;
     import IVisualHost = powerbi.extensibility.visual.IVisualHost;
-    import SVGUtil = powerbi.extensibility.utils.svg;
-    import AxisHelper = powerbi.extensibility.utils.chart.axis;
-    import TextMeasurementService = powerbi.extensibility.utils.formatting.textMeasurementService;
-    import valueType = utils.type.ValueType;
+    import svg = powerbi.extensibility.utils.svg;
+    import axis = powerbi.extensibility.utils.chart.axis;
+    import textMeasurementService = powerbi.extensibility.utils.formatting.textMeasurementService;
+    import ValueType = utils.type.ValueType;
     import DataViewObjectsParser = utils.dataview.DataViewObjectsParser;
     import IColorPalette = powerbi.extensibility.IColorPalette;
 
@@ -120,44 +120,44 @@ module powerbi.extensibility.visual {
         private tooltipService: ITooltipService;
         private static datapointShiftPoint: number = 0.01;
         public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
-            debugger;
-            let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
+
+            const categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
             if (!categorical || !categorical.Category || _.isEmpty(categorical.Category.values)
                 || (_.isEmpty(categorical.Height) && _.isEmpty(categorical.Heat))) {
                 return null;
             }
 
-            let properties: GlobeMapSettings = GlobeMapSettings.getDefault() as GlobeMapSettings;
-            let settings: GlobeMapSettings = GlobeMap.parseSettings(dataView);
-            let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] | any = GlobeMapColumns.getGroupedValueColumns(dataView);
-            let dataPoints: any = [];
+            const properties: GlobeMapSettings = GlobeMapSettings.getDefault() as GlobeMapSettings;
+            const settings: GlobeMapSettings = GlobeMap.parseSettings(dataView);
+            const groupedColumns: GlobeMapColumns<DataViewValueColumn>[] | any = GlobeMapColumns.getGroupedValueColumns(dataView);
+            const dataPoints: any = [];
             let seriesDataPoints: any = [];
             let locations: any = [];
-            let colorHelper: ColorHelper = new ColorHelper(colors, null, properties.dataPoint.fill);
+            const colorHelper: ColorHelper = new ColorHelper(colors, null, properties.dataPoint.fill);
 
-            let locationType: any,
-                heights: any,
-                heightsBySeries: any,
-                toolTipDataBySeries: any,
-                heats: any;
+            let locationType: any;
+            let heights: any;
+            let heightsBySeries: any;
+            let toolTipDataBySeries: any;
+            let heats: any;
 
             if (categorical.Category && categorical.Category.values) {
                 locations = categorical.Category.values;
-                let type: any = <any>categorical.Category.source.type;
-                locationType = type.category ? (<string>type.category).toLowerCase() : "";
+                const type1: any = <any>categorical.Category.source.type;
+                locationType = type1.category ? (<string>type1.category).toLowerCase() : "";
             } else {
                 locations = [];
             }
 
             if (!_.isEmpty(categorical.Height)) {
                 if (groupedColumns.length > 1) {
-                    heights = new Array(locations.length);
-                    heightsBySeries = new Array(locations.length);
-                    toolTipDataBySeries = new Array(locations.length);
-                    seriesDataPoints = new Array(groupedColumns.length);
+                    heights = []; // new Array(locations.length);
+                    heightsBySeries = []; // new Array(locations.length);
+                    toolTipDataBySeries = []; // new Array(locations.length);
+                    seriesDataPoints = []; // new Array(groupedColumns.length);
                     // creating a matrix for drawing values by series later.
                     for (let i: number = 0; i < groupedColumns.length; i++) {
-                        let values: any = groupedColumns[i].Height.values;
+                        const values: any = groupedColumns[i].Height.values;
                         seriesDataPoints[i] = GlobeMap.createDataPointForEnumeration(
                             dataView, groupedColumns[i].Height.source, i, null, colorHelper, colors, visualHost);
                         seriesDataPoints[i].color = settings.dataPoint.fill;
@@ -181,7 +181,7 @@ module powerbi.extensibility.visual {
                         }
                     }
                     for (let i: number = 0; i < groupedColumns.length; i++) {
-                        let values: any = groupedColumns[i].Height.values;
+                        const values: any = groupedColumns[i].Height.values;
                         for (let j: number = 0; j < values.length; j++) {
                             // calculating relative size of series
                             heightsBySeries[j][i] = <number>values[j] / heights[j];
@@ -189,21 +189,21 @@ module powerbi.extensibility.visual {
                     }
                 } else {
                     heights = categorical.Height[0].values;
-                    heightsBySeries = new Array(groupedColumns.length);
+                    heightsBySeries = [];
                     seriesDataPoints[0] = GlobeMap.createDataPointForEnumeration(
                         dataView, groupedColumns[0].Height.source, 0, dataView.metadata, colorHelper, colors, visualHost);
                     seriesDataPoints[0].color = settings.dataPoint.fill;
                 }
             } else {
-                heightsBySeries = new Array(locations.length);
-                heights = new Array(locations.length);
+                heightsBySeries = [];
+                heights = [];
             }
 
             if (!_.isEmpty(categorical.Heat)) {
                 if (groupedColumns.length > 1) {
-                    heats = new Array(locations.length);
+                    heats = [];
                     for (let i: number = 0; i < groupedColumns.length; i++) {
-                        let values: any = groupedColumns[i].Heat.values;
+                        const values: any = groupedColumns[i].Heat.values;
                         for (let j = 0; j < values.length; j++) {
                             if (!heats[j]) {
                                 heats[j] = 0;
@@ -216,34 +216,34 @@ module powerbi.extensibility.visual {
                 }
 
             } else {
-                heats = new Array(locations.length);
+                heats = [];
             }
 
-            let maxHeight: any = Math.max.apply(null, heights) || 1;
-            let maxHeat: any = Math.max.apply(null, heats) || 1;
-            let heatFormatter: IValueFormatter = valueFormatter.create({
+            const maxHeight: any = Math.max.apply(null, heights) || 1;
+            const maxHeat: any = Math.max.apply(null, heats) || 1;
+            const heatFormatter: IValueFormatter = valueFormatter.create({
                 format: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.format,
                 value: heats[0],
                 value2: heats[1]
             });
-            let heightFormatter = valueFormatter.create({
+            const heightFormatter = valueFormatter.create({
                 format: !_.isEmpty(categorical.Height) && categorical.Height[0].source.format,
                 value: heights[0],
                 value2: heights[1]
             });
-
-            for (let i: number = 0, len = locations.length; i < len; ++i) {
+            const len: number = locations.length;
+            for (let i: number = 0; i < len; ++i) {
                 if (typeof (locations[i]) === "string") {
-                    let place: any = locations[i].toLowerCase();
-                    let placeKey: string = place + "/" + locationType;
-                    let location: ILocation = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
+                    const place: any = locations[i].toLowerCase();
+                    const placeKey: string = place + "/" + locationType;
+                    const location: ILocation = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
                         ? { longitude: <number>categorical.X[0].values[i] || 0, latitude: <number>categorical.Y[0].values[i] || 0 }
                         : undefined;
 
-                    let height: number = heights[i] / maxHeight;
-                    let heat: number = heats[i] / maxHeat;
+                    const height: number = heights[i] / maxHeight;
+                    const heat: number = heats[i] / maxHeat;
 
-                    let renderDatum: GlobeMapDataPoint = {
+                    const renderDatum: GlobeMapDataPoint = {
                         location: location,
                         placeKey: placeKey,
                         place: place,
@@ -285,8 +285,8 @@ module powerbi.extensibility.visual {
             visualHost: IVisualHost
         ): GlobeMapSeriesDataPoint {
 
-            let columns: DataViewValueColumnGroup = dataView.categorical.values.grouped()[seriesIndex];
-            let values: DataViewValueColumns = <DataViewValueColumns>columns.values;
+            const columns: DataViewValueColumnGroup = dataView.categorical.values.grouped()[seriesIndex];
+            const values: DataViewValueColumns = <DataViewValueColumns>columns.values;
             let sourceForFormat: DataViewMetadataColumn = source;
             let nameForFormat: PrimitiveValue = source.displayName;
             if (source.groupName !== undefined) {
@@ -294,7 +294,7 @@ module powerbi.extensibility.visual {
                 nameForFormat = source.groupName;
             }
 
-            let label: string = valueFormatter.format(nameForFormat, valueFormatter.getFormatString(sourceForFormat, null));
+            const label: string = valueFormatter.format(nameForFormat, valueFormatter.getFormatString(sourceForFormat, null));
 
             const categoryColumn: DataViewCategoryColumn = {
                 source: values[seriesIndex].source,
@@ -302,14 +302,14 @@ module powerbi.extensibility.visual {
                 identity: [values[seriesIndex].identity]
             };
 
-            let identity: ISelectionId = visualHost.createSelectionIdBuilder()
+            const identity: ISelectionId = visualHost.createSelectionIdBuilder()
                 .withCategory(categoryColumn, 0)
                 .withMeasure(values[seriesIndex].source.queryName)
                 .createSelectionId();
 
-            let category: any = <string>converterHelper.getSeriesName(source);
-            let objects: any = <any>columns.objects;
-            let color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
+            const category: any = <string>converterHelper.getSeriesName(source);
+            const objects: any = <any>columns.objects;
+            const color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
                 ? colorHelper.getColorForMeasure(metaData.objects, "")
                 : colors.getColor(seriesIndex).value;
             return {
@@ -387,10 +387,10 @@ module powerbi.extensibility.visual {
             this.orbitControls.zoomSpeed = GlobeMap.GlobeSettings.zoomSpeed;
             this.orbitControls.autoRotate = GlobeMap.GlobeSettings.autoRotate;
 
-            let ambientLight: THREE.AmbientLight = new THREE.AmbientLight(GlobeMap.ambientLight);
-            let light1: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
-            let light2: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
-            let earth: THREE.Mesh = this.earth = this.createEarth();
+            const ambientLight: THREE.AmbientLight = new THREE.AmbientLight(GlobeMap.ambientLight);
+            const light1: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
+            const light2: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
+            const earth: THREE.Mesh = this.earth = this.createEarth();
 
             this.scene.add(ambientLight);
             this.scene.add(light1);
@@ -400,7 +400,7 @@ module powerbi.extensibility.visual {
             light1.position.set(20, 20, 20);
             light2.position.set(0, 0, -20);
 
-            let render: any = () => {
+            const render: any = () => {
                 try {
                     if (this.renderLoopEnabled) {
                         this.animationFrameId = requestAnimationFrame(render);
@@ -429,18 +429,18 @@ module powerbi.extensibility.visual {
         }
 
         private createEarth(): THREE.Mesh {
-            let geometry: any = new GlobeMap.MercartorSphere(
+            const geometry: any = new GlobeMap.MercartorSphere(
                 GlobeMap.GlobeSettings.earthRadius,
                 GlobeMap.GlobeSettings.earthSegments,
                 GlobeMap.GlobeSettings.earthSegments);
-            let material: THREE.MeshPhongMaterial = new THREE.MeshPhongMaterial({
+            const material: THREE.MeshPhongMaterial = new THREE.MeshPhongMaterial({
                 map: this.mapTextures[0],
                 side: THREE.DoubleSide,
                 shading: THREE.SmoothShading,
                 shininess: 1
             });
 
-            let mesh: THREE.Mesh = new THREE.Mesh(geometry, material);
+            const mesh: THREE.Mesh = new THREE.Mesh(geometry, material);
             mesh.add(new THREE.AmbientLight(0xaaaaaa, 1));
 
             return mesh;
@@ -478,14 +478,14 @@ module powerbi.extensibility.visual {
                 GlobeMapCanvasLayers = [];
 
                 for (let level: number = 2; level <= 5; ++level) {
-                    let canvas: JQuery = this.getBingMapCanvas(level);
+                    const canvas: JQuery = this.getBingMapCanvas(level);
                     GlobeMapCanvasLayers.push(canvas);
                 }
             }
 
             // Can't execute in for loop because variable assignement gets overwritten
-            let createTexture: (canvas: JQuery) => THREE.Texture = (canvas: JQuery) => {
-                let texture: THREE.Texture = new THREE.Texture(<HTMLCanvasElement>canvas.get(0));
+            const createTexture: (canvas: JQuery) => THREE.Texture = (canvas: JQuery) => {
+                const texture: THREE.Texture = new THREE.Texture(<HTMLCanvasElement>canvas.get(0));
                 texture.needsUpdate = true;
                 canvas.on("ready", () => {
                     texture.needsUpdate = true;
@@ -511,12 +511,12 @@ module powerbi.extensibility.visual {
             }
 
             // canvas contents will be used for a texture
-            let texture: THREE.Texture = this.heatTexture = new THREE.Texture(heatmap.canvas);
+            const texture: THREE.Texture = this.heatTexture = new THREE.Texture(heatmap.canvas);
             texture.needsUpdate = true;
 
-            let material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-            let geometry: THREE.SphereGeometry = new THREE.SphereGeometry(GlobeMap.GlobeSettings.earthRadius + 0.01, GlobeMap.GlobeSettings.earthSegments, GlobeMap.GlobeSettings.earthSegments);
-            let mesh: THREE.Mesh = new THREE.Mesh(geometry, material);
+            const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+            const geometry: THREE.SphereGeometry = new THREE.SphereGeometry(GlobeMap.GlobeSettings.earthRadius + 0.01, GlobeMap.GlobeSettings.earthSegments, GlobeMap.GlobeSettings.earthSegments);
+            const mesh: THREE.Mesh = new THREE.Mesh(geometry, material);
 
             window["heatmap"] = heatmap;
             window["heatmapTexture"] = texture;
@@ -529,12 +529,12 @@ module powerbi.extensibility.visual {
             if (!this.camera) {
                 return;
             }
-            let maxDistance: number = GlobeMap.GlobeSettings.cameraRadius - GlobeMap.GlobeSettings.earthRadius;
-            let distance: number = (this.camera.position.length() - GlobeMap.GlobeSettings.earthRadius) / maxDistance;
+            const maxDistance: number = GlobeMap.GlobeSettings.cameraRadius - GlobeMap.GlobeSettings.earthRadius;
+            const distance: number = (this.camera.position.length() - GlobeMap.GlobeSettings.earthRadius) / maxDistance;
             let texture: THREE.Texture;
-            let oneOfFive: number = 1 / 5;
-            let twoOfFive: number = 2 / 5;
-            let threeOfFive: number = 3 / 5;
+            const oneOfFive: number = 1 / 5;
+            const twoOfFive: number = 2 / 5;
+            const threeOfFive: number = 3 / 5;
 
             if (distance <= oneOfFive) {
                 texture = this.mapTextures[3];
@@ -565,7 +565,7 @@ module powerbi.extensibility.visual {
 
             this.layout.viewport = options.viewport;
             this.root.css(this.layout.viewportIn);
-            let sixPointsToAdd: number = 6;
+            const sixPointsToAdd: number = 6;
             this.zoomContainer.style({
                 'padding-left': (this.layout.viewportIn.width - parseFloat(this.zoomControl.attr("width")) + sixPointsToAdd) + "px", // Fix for chrome
                 'display': this.layout.viewportIn.height > $(this.zoomContainer.node()).height()
@@ -582,9 +582,9 @@ module powerbi.extensibility.visual {
                 }
             }
 
-            if (options.type === 2 || options.type === 62) {
+            if (options.type === VisualUpdateType.Data || options.type === VisualUpdateType.All) {
                 this.cleanHeatAndBar();
-                let data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
+                const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
                 if (data) {
                     this.data = data;
                     this.renderMagic();
@@ -622,9 +622,9 @@ module powerbi.extensibility.visual {
             this.scene.add(this.barsGroup);
 
             this.averageBarVector = new THREE.Vector3();
-
-            for (let i: number = 0, len = this.data.dataPoints.length; i < len; ++i) {
-                let renderDatum: GlobeMapDataPoint = this.data.dataPoints[i];
+            const len: number = this.data.dataPoints.length;
+            for (let i: number = 0; i < len; ++i) {
+                const renderDatum: GlobeMapDataPoint = this.data.dataPoints[i];
 
                 if (!renderDatum.location || renderDatum.location.longitude === undefined || renderDatum.location.latitude === undefined) {
                     continue;
@@ -632,29 +632,29 @@ module powerbi.extensibility.visual {
 
                 if (renderDatum.heat > 0.001) {
                     if (renderDatum.heat < 0.1) renderDatum.heat = 0.1;
-                    let x: number = (180 + renderDatum.location.longitude) / 360 * GlobeMap.GlobeSettings.heatmapSize;
-                    let y: number = (1 - ((90 + renderDatum.location.latitude) / 180)) * GlobeMap.GlobeSettings.heatmapSize;
+                    const x: number = (180 + renderDatum.location.longitude) / 360 * GlobeMap.GlobeSettings.heatmapSize;
+                    const y: number = (1 - ((90 + renderDatum.location.latitude) / 180)) * GlobeMap.GlobeSettings.heatmapSize;
                     this.heatmap.addPoint(x, y, GlobeMap.GlobeSettings.heatPointSize, renderDatum.heat * GlobeMap.GlobeSettings.heatIntensity);
                 }
 
                 if (renderDatum.height >= 0) {
                     if (renderDatum.height < 0.01) renderDatum.height = 0.01;
-                    let latRadians: number = renderDatum.location.latitude / 180 * Math.PI; // radians
-                    let lngRadians: number = renderDatum.location.longitude / 180 * Math.PI;
+                    const latRadians: number = renderDatum.location.latitude / 180 * Math.PI; // radians
+                    const lngRadians: number = renderDatum.location.longitude / 180 * Math.PI;
 
-                    let x: number = Math.cos(lngRadians) * Math.cos(latRadians);
-                    let z: number = -Math.sin(lngRadians) * Math.cos(latRadians);
-                    let y: number = Math.sin(latRadians);
-                    let vector: THREE.Vector3 = new THREE.Vector3(x, y, z);
+                    const x: number = Math.cos(lngRadians) * Math.cos(latRadians);
+                    const z: number = -Math.sin(lngRadians) * Math.cos(latRadians);
+                    const y: number = Math.sin(latRadians);
+                    const vector: THREE.Vector3 = new THREE.Vector3(x, y, z);
 
                     this.averageBarVector.add(vector);
 
-                    let barHeight: number = GlobeMap.GlobeSettings.barHeight * renderDatum.height;
+                    const barHeight: number = GlobeMap.GlobeSettings.barHeight * renderDatum.height;
                     // this array holds the relative series values to the actual measure for example [0.2,0.3,0.5]
-                    // this is how we draw the vectors relativly to the complete value one on top of another. 
-                    let measuresBySeries: any = [];
+                    // this is how we draw the vectors relativly to the complete value one on top of another.
+                    const measuresBySeries: any = [];
                     // this array holds the original values of the series for the tool tips
-                    let dataPointToolTip: any = [];
+                    const dataPointToolTip: any = [];
                     if (renderDatum.heightBySeries) {
                         for (let c: number = 0; c < renderDatum.heightBySeries.length; c++) {
                             if (renderDatum.heightBySeries[c]) {
@@ -670,9 +670,9 @@ module powerbi.extensibility.visual {
                     let previousMeasureValue = 0;
                     for (let j: number = 0; j < measuresBySeries.length; j++) {
                         previousMeasureValue += measuresBySeries[j];
-                        let geometry: THREE.BoxGeometry = new THREE.BoxGeometry(GlobeMap.GlobeSettings.barWidth, GlobeMap.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
-                        let bar: THREE.Mesh = new THREE.Mesh(geometry, this.getBarMaterialByIndex(j));
-                        let position: THREE.Vector3 = vector.clone().multiplyScalar(GlobeMap.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
+                        const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(GlobeMap.GlobeSettings.barWidth, GlobeMap.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
+                        const bar: THREE.Mesh = new THREE.Mesh(geometry, this.getBarMaterialByIndex(j));
+                        const position: THREE.Vector3 = vector.clone().multiplyScalar(GlobeMap.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
                         bar.position.set(position.x, position.y, position.z);
                         bar.lookAt(vector);
                         (<any>bar).toolTipData = dataPointToolTip.length === 0
@@ -704,7 +704,7 @@ module powerbi.extensibility.visual {
         }
 
         private getToolTipDataForSeries(toolTipData, dataPointToolTip): any {
-            let result: any = jQuery.extend(true, {
+            const result: any = jQuery.extend(true, {
                 series: { displayName: dataPointToolTip.displayName, value: dataPointToolTip.value }
             }, toolTipData);
             result.height.value = dataPointToolTip.dataPointValue;
@@ -716,8 +716,8 @@ module powerbi.extensibility.visual {
                 return;
             }
 
-            let location: ILocation = <any>{},
-                geocoder: IGeocoder;
+            const location: ILocation = <any>{};
+            let geocoder: IGeocoder;
 
             this.globeMapLocationCache[renderDatum.placeKey] = location; // store empty object so we don't send AJAX request again
             this.locationsToLoad++;
@@ -728,7 +728,7 @@ module powerbi.extensibility.visual {
                 (geocoder.geocode(
                     renderDatum.place,
                     renderDatum.locationType) as ExtendedPromise<IGeocodeCoordinate>).always((l: ILocation) => {
-                        // we use always because we want to cache unknown values. 
+                        // we use always because we want to cache unknown values.
                         // No point asking bing again and again when it tells us it doesn't know about a location
                         if (l) {
                             location.latitude = l.latitude;
@@ -754,21 +754,21 @@ module powerbi.extensibility.visual {
         private initRayCaster() {
             this.rayCaster = new THREE.Raycaster();
 
-            let element: HTMLElement = this.root.get(0);
+            const element: HTMLElement = this.root.get(0);
             let mouseDownTime: number;
-            let elementStyle: CSSStyleDeclaration = window.getComputedStyle(element);
+            const elementStyle: CSSStyleDeclaration = window.getComputedStyle(element);
 
             $(this.rendererCanvas).on("mousemove", (event: JQueryEventObject) => {
-                let elementViewHeight: number = element.offsetHeight - element.offsetTop
+                const elementViewHeight: number = element.offsetHeight - element.offsetTop
                     - parseFloat(elementStyle.paddingTop)
                     - parseFloat(elementStyle.paddingBottom);
 
-                let elementViewWidth: number = element.offsetWidth - element.offsetLeft
+                const elementViewWidth: number = element.offsetWidth - element.offsetLeft
                     - parseFloat(elementStyle.paddingLeft)
                     - parseFloat(elementStyle.paddingRight);
 
-                let fractionalPositionX: number = event.offsetX / elementViewWidth;
-                let fractionalPositionY: number = event.offsetY / elementViewHeight;
+                const fractionalPositionX: number = event.offsetX / elementViewWidth;
+                const fractionalPositionY: number = event.offsetY / elementViewHeight;
 
                 this.mousePos = new THREE.Vector2(event.clientX, event.clientY);
 
@@ -808,8 +808,8 @@ module powerbi.extensibility.visual {
                     cancelAnimationFrame(this.cameraAnimationFrameId);
                     this.heatTexture.needsUpdate = true;
                     e = e.originalEvent;
-                    let delta: number = e.wheelDelta > 0 || e.detail < 0 ? 1 : -1;
-                    let scale: number = delta > 0 ? GlobeMap.GlobeSettings.heatmapScaleOnZoom : (1 / GlobeMap.GlobeSettings.heatmapScaleOnZoom);
+                    const delta: number = e.wheelDelta > 0 || e.detail < 0 ? 1 : -1;
+                    const scale: number = delta > 0 ? GlobeMap.GlobeSettings.heatmapScaleOnZoom : (1 / GlobeMap.GlobeSettings.heatmapScaleOnZoom);
                     this.heatmap.multiply(scale);
                     this.heatmap.update();
                 }
@@ -825,20 +825,20 @@ module powerbi.extensibility.visual {
                 return;
             }
 
-            let rayCaster: THREE.Raycaster = this.rayCaster;
+            const rayCaster: THREE.Raycaster = this.rayCaster;
 
             rayCaster.setFromCamera(this.mousePosNormalized, this.camera);
-            let intersects: THREE.Intersection[] = rayCaster.intersectObjects(this.barsGroup.children);
+            const intersects: THREE.Intersection[] = rayCaster.intersectObjects(this.barsGroup.children);
 
             if (intersects && intersects.length > 0) {
-                let object: THREE.Object3D = intersects[0].object;
+                const object: THREE.Object3D = intersects[0].object;
 
                 if (!object || !(<any>object).toolTipData) {
                     return;
                 }
 
-                let toolTipData: any = (<any>object).toolTipData;
-                let toolTipItems: VisualTooltipDataItem[] = [];
+                const toolTipData: any = (<any>object).toolTipData;
+                const toolTipItems: VisualTooltipDataItem[] = [];
 
                 if (toolTipData.location.displayName) {
                     toolTipItems.push(toolTipData.location);
@@ -891,15 +891,15 @@ module powerbi.extensibility.visual {
                 return;
             }
             cancelAnimationFrame(this.cameraAnimationFrameId);
-            let startTime: number = Date.now();
-            let duration: number = GlobeMap.GlobeSettings.cameraAnimDuration;
-            let endTime: number = startTime + duration;
-            let startPos: THREE.Vector3 = this.camera.position.clone().normalize();
-            let endPos: THREE.Vector3 = to.clone().normalize();
-            let length: number = this.camera.position.length();
-            let two: number = 2;
-            let one: number = 2;
-            let easeInOut = (t) => {
+            const startTime: number = Date.now();
+            const duration: number = GlobeMap.GlobeSettings.cameraAnimDuration;
+            const endTime: number = startTime + duration;
+            const startPos: THREE.Vector3 = this.camera.position.clone().normalize();
+            const endPos: THREE.Vector3 = to.clone().normalize();
+            const length: number = this.camera.position.length();
+            const two: number = 2;
+            const one: number = 2;
+            const easeInOut = (t) => {
                 t *= two;
                 if (t < one) {
                     return (t * t * t) / two;
@@ -908,15 +908,15 @@ module powerbi.extensibility.visual {
                 return (t * t * t + two) / two;
             };
 
-            let onUpdate: any = () => {
-                let now: number = Date.now();
+            const onUpdate: any = () => {
+                const now: number = Date.now();
                 let t: number = (now - startTime) / duration;
                 if (t > one) {
                     t = one;
                 }
                 t = easeInOut(t);
 
-                let pos: THREE.Vector3 = new THREE.Vector3()
+                const pos: THREE.Vector3 = new THREE.Vector3()
                     .add(startPos.clone().multiplyScalar(one - t))
                     .add(endPos.clone().multiplyScalar(t))
                     .normalize()
@@ -947,7 +947,7 @@ module powerbi.extensibility.visual {
             this.camera = null;
             if (this.renderer) {
                 if (this.renderer.context) {
-                    let extension: any = this.renderer.context.getExtension('WEBGL_lose_context');
+                    const extension: any = this.renderer.context.getExtension('WEBGL_lose_context');
                     if (extension) {
                         extension.loseContext();
                     }
@@ -981,12 +981,12 @@ module powerbi.extensibility.visual {
         private static radiusRatio: number = 3;
         private static gapRadiusRatio: number = 2;
         private initZoomControl() {
-            let radius: number = 17;
-            let zoomControlWidth: number = radius * GlobeMap.zoomControlRatio;
-            let zoomControlHeight: number = radius * GlobeMap.zoomControlRatio;
-            let startX: number = radius * GlobeMap.radiusRatio;
-            let startY: number = radius + GlobeMap.radiusRatio;
-            let gap: number = radius * GlobeMap.gapRadiusRatio;
+            const radius: number = 17;
+            const zoomControlWidth: number = radius * GlobeMap.zoomControlRatio;
+            const zoomControlHeight: number = radius * GlobeMap.zoomControlRatio;
+            const startX: number = radius * GlobeMap.radiusRatio;
+            const startY: number = radius + GlobeMap.radiusRatio;
+            const gap: number = radius * GlobeMap.gapRadiusRatio;
 
             this.zoomContainer = d3.select(this.root[0])
                 .append('div')
@@ -997,7 +997,7 @@ module powerbi.extensibility.visual {
                 'height': zoomControlHeight
             }).classed('zoomContainerSvg', true);
 
-            let bottom: d3.Selection<any> = this.zoomControl.append("g")
+            const bottom: d3.Selection<any> = this.zoomControl.append("g")
                 .on("mousedown", () => onMouseDown(() => this.rotateCam(0, -5)));
 
             bottom.append("circle")
@@ -1013,7 +1013,7 @@ module powerbi.extensibility.visual {
                     fill: "gray"
                 });
 
-            let left: d3.Selection<any> = this.zoomControl
+            const left: d3.Selection<any> = this.zoomControl
                 .append("g")
                 .on("mousedown", () => onMouseDown(() => this.rotateCam(5, 0)));
             left.append("circle")
@@ -1029,7 +1029,7 @@ module powerbi.extensibility.visual {
                 })
                 .classed('zoomControlPath', true);
 
-            let top: d3.Selection<any> = this.zoomControl
+            const top: d3.Selection<any> = this.zoomControl
                 .append("g")
                 .on("mousedown", () => onMouseDown(() => this.rotateCam(0, 5)));
             top
@@ -1044,7 +1044,7 @@ module powerbi.extensibility.visual {
                     d: "M" + (startX + (2 * radius)) + " " + (startY - (radius / 1.5)) + " l12 20 a40,70 0 0,0 -24,0z"
                 }).classed('zoomControlPath', true);
 
-            let right: d3.Selection<any> = this.zoomControl
+            const right: d3.Selection<any> = this.zoomControl
                 .append("g")
                 .on("mousedown", () => onMouseDown(() => this.rotateCam(-5, 0)));
             right
@@ -1059,7 +1059,7 @@ module powerbi.extensibility.visual {
                     d: "M" + (startX + (4.7 * radius)) + " " + (startY + (radius * 2)) + " l-20 -12 a70,40 0 0,1 0,24z"
                 }).classed('zoomControlPath', true);
 
-            let zoomIn: d3.Selection<any> = this.zoomControl
+            const zoomIn: d3.Selection<any> = this.zoomControl
                 .append("g")
                 .on("mousedown", () => onMouseDown(() => this.zoomClicked(-1)));
             zoomIn.append("circle")
@@ -1086,7 +1086,7 @@ module powerbi.extensibility.visual {
                 })
                 .classed('zoomControlPath', true);
 
-            let zoomOut: d3.Selection<any> = this.zoomControl
+            const zoomOut: d3.Selection<any> = this.zoomControl
                 .append("g")
                 .on("mousedown", () => onMouseDown(() => this.zoomClicked(1)));
             zoomOut
@@ -1116,7 +1116,7 @@ module powerbi.extensibility.visual {
         private initMercartorSphere() {
             if (GlobeMap.MercartorSphere) return;
 
-            let MercartorSphere: any = function (radius: number, widthSegments: number, heightSegments: number): void {
+            const MercartorSphere: any = function (radius: number, widthSegments: number, heightSegments: number): void {
                 THREE.Geometry.call(this);
 
                 this.radius = radius;
@@ -1125,10 +1125,10 @@ module powerbi.extensibility.visual {
 
                 this.t = 0;
 
-                let x: number,
-                    y: number,
-                    vertices = [],
-                    uvs = [];
+                let x: number;
+                let y: number;
+                const vertices = [];
+                const uvs = [];
 
                 function interplolate(a, b, t) {
                     return (1 - t) * a + t * b;
@@ -1136,43 +1136,42 @@ module powerbi.extensibility.visual {
 
                 // interpolates between sphere and plane
                 function interpolateVertex(u: number, v: number, t: number) {
-                    let maxLng: number = Math.PI * 2;
-                    let maxLat: number = Math.PI;
-                    let radius: number = this.radius;
+                    const maxLng: number = Math.PI * 2;
+                    const maxLat: number = Math.PI;
 
-                    let sphereX: number = - radius * Math.cos(u * maxLng) * Math.sin(v * maxLat);
-                    let sphereY: number = - radius * Math.cos(v * maxLat);
-                    let sphereZ: number = radius * Math.sin(u * maxLng) * Math.sin(v * maxLat);
+                    const sphereX: number = - this.radius * Math.cos(u * maxLng) * Math.sin(v * maxLat);
+                    const sphereY: number = - this.radius * Math.cos(v * maxLat);
+                    const sphereZ: number = this.radius * Math.sin(u * maxLng) * Math.sin(v * maxLat);
 
-                    let planeX: number = u * radius * 2 - radius;
-                    let planeY: number = v * radius * 2 - radius;
-                    let planeZ: number = 0;
+                    const planeX: number = u * this.radius * 2 - this.radius;
+                    const planeY: number = v * this.radius * 2 - this.radius;
+                    const planeZ: number = 0;
 
-                    let x: number = interplolate(sphereX, planeX, t);
-                    let y: number = interplolate(sphereY, planeY, t);
-                    let z: number = interplolate(sphereZ, planeZ, t);
+                    const x1: number = interplolate(sphereX, planeX, t);
+                    const y1: number = interplolate(sphereY, planeY, t);
+                    const z: number = interplolate(sphereZ, planeZ, t);
 
-                    return new THREE.Vector3(x, y, z);
+                    return new THREE.Vector3(x1, y1, z);
                 }
 
                 // http://mathworld.wolfram.com/MercatorProjection.html
                 // Mercator projection goes form +85.05 to -85.05 degrees
                 function interpolateUV(u, v, t) {
-                    let lat: number = (v - 0.5) * 89.99 * 2 / 180 * Math.PI; // turn from 0-1 into lat in radians
-                    let sin: number = Math.sin(lat);
-                    let normalizedV: number = 0.5 + 0.25 * Math.log((1 + sin) / (1 - sin)) / Math.PI;
+                    const lat: number = (v - 0.5) * 89.99 * 2 / 180 * Math.PI; // turn from 0-1 into lat in radians
+                    const sin: number = Math.sin(lat);
+                    const normalizedV: number = 0.5 + 0.25 * Math.log((1 + sin) / (1 - sin)) / Math.PI;
                     return new THREE.Vector2(u, normalizedV); // interplolate(normalizedV1, v, t))
                 }
 
                 for (y = 0; y <= heightSegments; y++) {
 
-                    let verticesRow: any = [];
-                    let uvsRow: any = [];
+                    const verticesRow: any = [];
+                    const uvsRow: any = [];
 
                     for (x = 0; x <= widthSegments; x++) {
 
-                        let u: number = x / widthSegments;
-                        let v: number = y / heightSegments;
+                        const u: number = x / widthSegments;
+                        const v: number = y / heightSegments;
 
                         this.vertices.push(interpolateVertex.call(this, u, v, this.t));
                         uvsRow.push(interpolateUV.call(this, u, v, this.t));
@@ -1188,20 +1187,20 @@ module powerbi.extensibility.visual {
 
                     for (x = 0; x < this.widthSegments; x++) {
 
-                        let v1: any = vertices[y][x + 1];
-                        let v2: any = vertices[y][x];
-                        let v3: any = vertices[y + 1][x];
-                        let v4: any = vertices[y + 1][x + 1];
+                        const v1: any = vertices[y][x + 1];
+                        const v2: any = vertices[y][x];
+                        const v3: any = vertices[y + 1][x];
+                        const v4: any = vertices[y + 1][x + 1];
 
-                        let n1: any = this.vertices[v1].clone().normalize();
-                        let n2: any = this.vertices[v2].clone().normalize();
-                        let n3: any = this.vertices[v3].clone().normalize();
-                        let n4: any = this.vertices[v4].clone().normalize();
+                        const n1: any = this.vertices[v1].clone().normalize();
+                        const n2: any = this.vertices[v2].clone().normalize();
+                        const n3: any = this.vertices[v3].clone().normalize();
+                        const n4: any = this.vertices[v4].clone().normalize();
 
-                        let uv1: any = uvs[y][x + 1];
-                        let uv2: any = uvs[y][x];
-                        let uv3: any = uvs[y + 1][x];
-                        let uv4: any = uvs[y + 1][x + 1];
+                        const uv1: any = uvs[y][x + 1];
+                        const uv2: any = uvs[y][x];
+                        const uv3: any = uvs[y + 1][x];
+                        const uv4: any = uvs[y + 1][x + 1];
 
                         this.faces.push(new THREE.Face3(v1, v2, v3, [n1, n2, n3]));
                         this.faces.push(new THREE.Face3(v1, v3, v4, [n1, n3, n4]));
@@ -1221,15 +1220,15 @@ module powerbi.extensibility.visual {
         }
 
         private getBingMapCanvas(resolution): JQuery {
-            let tileSize: number = 256;
+            const tileSize: number = 256;
             let numSegments: number = Math.pow(2, resolution);
             let numTiles: number = numSegments * numSegments;
             let tilesLoaded: number = 0;
-            let canvasSize: number = tileSize * numSegments;
-            let canvas: JQuery = $('<canvas/>').attr({ width: canvasSize, height: canvasSize });
+            const canvasSize: number = tileSize * numSegments;
+            const canvas: JQuery = $('<canvas/>').attr({ width: canvasSize, height: canvasSize });
 
-            let canvasElem: HTMLCanvasElement = <any>canvas.get(0);
-            let canvasContext: CanvasRenderingContext2D = canvasElem.getContext("2d");
+            const canvasElem: HTMLCanvasElement = <any>canvas.get(0);
+            const canvasContext: CanvasRenderingContext2D = canvasElem.getContext("2d");
 
             function generateQuads(res, quad) {
                 if (res <= resolution) {
@@ -1245,16 +1244,17 @@ module powerbi.extensibility.visual {
             }
 
             function loadTile(quad) {
-                let template: any = "https://t{server}.tiles.virtualearth.net/tiles/r{quad}.jpeg?g=0&mkt={language}";
-                let numServers: number = 7;
-                let server: number = Math.round(Math.random() * numServers);
-                let language: string = (navigator["languages"] && navigator["languages"].length) ? navigator["languages"][0] : navigator.language;
-                let url: any = template.replace("{server}", server)
+                const template: any = "https://t{server}.tiles.virtualearth.net/tiles/r{quad}.jpeg?g=0&mkt={language}";
+                const numServers: number = 7;
+                const server: number = Math.round(Math.random() * numServers);
+                const languages: string = "languages";
+                const language: string = (navigator[languages] && navigator[languages].length) ? navigator[languages][0] : navigator.language;
+                const url: any = template.replace("{server}", server)
                     .replace("{quad}", quad)
                     .replace("{language}", language);
-                let coords: any = getCoords(quad);
-                let tile: HTMLImageElement = new Image();
-                tile.onload = function () {
+                const coords: any = getCoords(quad);
+                const tile: HTMLImageElement = new Image();
+                tile.onload = () => {
                     tilesLoaded++;
                     canvasContext.drawImage(tile, coords.x * tileSize, coords.y * tileSize, tileSize, tileSize);
                     if (tilesLoaded === numTiles) {
@@ -1270,11 +1270,11 @@ module powerbi.extensibility.visual {
             function getCoords(quad) {
                 let x: number = 0;
                 let y: number = 0;
-                let last: number = quad.length - 1;
+                const last: number = quad.length - 1;
 
                 for (let i: number = last; i >= 0; i--) {
-                    let chr: any = quad.charAt(i);
-                    let pow: number = Math.pow(2, last - i);
+                    const chr: any = quad.charAt(i);
+                    const pow: number = Math.pow(2, last - i);
 
                     if (chr === "1") {
                         x += pow;

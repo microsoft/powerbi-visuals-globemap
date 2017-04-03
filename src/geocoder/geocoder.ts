@@ -673,7 +673,7 @@ module powerbi.extensibility.geocoder {
             }
 
             GeocodeCallback = (data) => {
-                if(entry.request){
+                if (entry.request) {
                 entry.request.always(() => {
                     _.pull(this.activeEntries, entry);
                     entry.request = null;
@@ -685,8 +685,6 @@ module powerbi.extensibility.geocoder {
                 catch (error) {
                     this.complete(entry, { error: error });
                 }
-
-
             };
 
             entry.jsonp = true;

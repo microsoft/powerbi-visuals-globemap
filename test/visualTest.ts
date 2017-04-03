@@ -37,7 +37,7 @@ module powerbi.extensibility.visual.test {
 
     // powerbi.extensibility.visual.GlobeMap1447669447624
     import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMap;
-    import GlobeMapData = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMapData;   
+    import GlobeMapData = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMapData;
     import GlobeMapColumns = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMapColumns;
 
     // powerbi.extensibility.utils.test
@@ -51,7 +51,7 @@ module powerbi.extensibility.visual.test {
             visualInstance: VisualClass,
             defaultDataViewBuilder: GlobeMapDataViewBuilder,
             dataView: DataView;
-        
+
         beforeEach(() => {
             jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
             visualBuilder = new GlobeMapBuilder(1000, 500);
@@ -62,15 +62,15 @@ module powerbi.extensibility.visual.test {
             visualInstance = visualBuilder.instance;
         });
 
-        describe("DOM tests", () => {        
+        describe("DOM tests", () => {
             it("canvas element created", () => {
-                visualBuilder.updateRenderTimeout(dataView, () => { 
+                visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(visualBuilder.element.find("canvas")).toBeInDOM();
                 });
             });
         });
 
-        describe("Converter tests", () => {        
+        describe("Converter tests", () => {
             it("should create same count of datapoints as dataView values", () => {
                 let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
@@ -88,8 +88,8 @@ module powerbi.extensibility.visual.test {
                 let invalidDataSet = [null, "0qqa123", undefined, "value", 1, 2, 3, 4, 5, 6];
                 let validStringValueCount = 0;
 
-                invalidDataSet.forEach((item) =>{
-                    if(typeof item === "string") {
+                invalidDataSet.forEach((item) => {
+                    if (typeof item === "string") {
                         ++validStringValueCount;
                     }
                 });
@@ -102,18 +102,18 @@ module powerbi.extensibility.visual.test {
             });
         });
 
-        describe("columns tests", function() {
-            it("getCategoricalColumns should return same count of category values as dataView contains", function()  {
+        describe("columns tests", function () {
+            it("getCategoricalColumns should return same count of category values as dataView contains", function () {
                 let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
                 let categoryCount = categorical.Category && categorical.Category.values && categorical.Category.values.length;
-                expect(categoryCount).toBe(dataView.categorical.values[0].values.length);                
+                expect(categoryCount).toBe(dataView.categorical.values[0].values.length);
             });
 
-            it("getGroupedValueColumns should group dataView columns", function()  {
+            it("getGroupedValueColumns should group dataView columns", function () {
                 let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] | any = GlobeMapColumns.getGroupedValueColumns(dataView);
-                expect(groupedColumns.length).toBe(1);         
-            });                
+                expect(groupedColumns.length).toBe(1);
+            });
         });
     });
 }
