@@ -4,12 +4,12 @@
     "displayName": "GlobeMap",
     "guid": "GlobeMap1447669447624",
     "visualClassName": "GlobeMap",
-    "version": "1.4.3",
+    "version": "1.4.4",
     "description": "A 3D visual using WebGL for plotting locations, with category values displayed as bar heights and heat maps.\n\nShift+Click on bar to change center point. \nSlicing data points will animate to average location.\n\nAttributions:\nthree.js - https://github.com/mrdoob/three.js/\nwebgl-heatmap - https://github.com/pyalot/webgl-heatmap",
     "supportUrl": "http://community.powerbi.com",
     "gitHubUrl": "https://github.com/Microsoft/powerbi-visuals-globemap"
   },
-  "apiVersion": "1.4.0",
+  "apiVersion": "1.5.0",
   "author": {
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
@@ -21,6 +21,8 @@
     "node_modules/jquery/dist/jquery.min.js",
     "node_modules/lodash/lodash.min.js",
     "node_modules/d3/d3.js",
+    "node_modules/three/three.js",
+    "src/lib/OrbitControls.js",
     "node_modules/powerbi-visuals-utils-typeutils/lib/index.js",
     "node_modules/globalize/lib/globalize.js",
     "node_modules/globalize/lib/cultures/globalize.culture.en-US.js",
@@ -31,9 +33,7 @@
     "node_modules/powerbi-visuals-utils-chartutils/lib/index.js",
     "node_modules/powerbi-visuals-utils-dataviewutils/lib/index.js",
     "node_modules/powerbi-visuals-utils-colorutils/lib/index.js",
-    "bower_components/webgl-heatmap/webgl-heatmap.js",
-    "node_modules/three/three.js",
-    "node_modules/three/examples/js/controls/OrbitControls.js"    
+    "bower_components/webgl-heatmap/webgl-heatmap.js"
   ],
   "style": "style/globemap.less",
   "capabilities": "capabilities.json"

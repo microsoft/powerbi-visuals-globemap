@@ -24,34 +24,27 @@
  *  THE SOFTWARE.
  */
 
-module powerbi.extensibility.visual {
-    import SelectableDataPoint = powerbi.extensibility.utils.interactivity.SelectableDataPoint;
-    import ILocation = powerbi.extensibility.geocoder.ILocation;
+/// <reference path="_references.ts"/>
 
-    export interface GlobeMapData {
-        dataView: DataView;
-        settings: GlobeMapSettings;
-        dataPoints: GlobeMapDataPoint[];
-        seriesDataPoints: GlobeMapSeriesDataPoint[];
-    }
+module powerbi.extensibility.visual.test {
+    // powerbi.extensibility.utils.test
+    import VisualBuilderBase = powerbi.extensibility.utils.test.VisualBuilderBase;
 
-    export interface GlobeMapDataPoint {
-        location: ILocation;
-        place: string;
-        locationType: string;
-        placeKey: string;
-        height: number;
-        heightBySeries: number[];
-        seriesToolTipData: any[];
-        heat: number;
-        toolTipData: any;
-    }
+    // GlobeMap1447669447624
+    import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMap;
+    import VisualPlugin = powerbi.visuals.plugins.GlobeMap1447669447624;
 
-    export interface GlobeMapSeriesDataPoint extends SelectableDataPoint {
-        label: string;
-        color: string;
-        category?: string;
+    export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
+        constructor(width: number, height: number) {
+            super(width, height, VisualPlugin.name);
+        }
+
+        protected build(options: any) {
+            return new VisualClass(options);
+        }
+
+        public get instance(): VisualClass {
+            return this.visual;
+        }
     }
 }
-
-
