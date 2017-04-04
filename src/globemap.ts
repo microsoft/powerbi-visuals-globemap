@@ -143,18 +143,18 @@ module powerbi.extensibility.visual {
 
             if (categorical.Category && categorical.Category.values) {
                 locations = categorical.Category.values;
-                const type1: any = <any>categorical.Category.source.type;
-                locationType = type1.category ? (<string>type1.category).toLowerCase() : "";
+                const sourceType: any = <any>categorical.Category.source.type;
+                locationType = sourceType.category ? (<string>sourceType.category).toLowerCase() : "";
             } else {
                 locations = [];
             }
 
             if (!_.isEmpty(categorical.Height)) {
                 if (groupedColumns.length > 1) {
-                    heights = []; // new Array(locations.length);
-                    heightsBySeries = []; // new Array(locations.length);
-                    toolTipDataBySeries = []; // new Array(locations.length);
-                    seriesDataPoints = []; // new Array(groupedColumns.length);
+                    heights = [];
+                    heightsBySeries = [];
+                    toolTipDataBySeries = [];
+                    seriesDataPoints = [];
                     // creating a matrix for drawing values by series later.
                     for (let i: number = 0; i < groupedColumns.length; i++) {
                         const values: any = groupedColumns[i].Height.values;
