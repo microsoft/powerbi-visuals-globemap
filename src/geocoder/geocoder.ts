@@ -24,8 +24,6 @@
  *  THE SOFTWARE.
  */
 
-declare var GeocodeCallback;
-
 module powerbi.extensibility.geocoder {
     import UrlUtils = powerbi.extensibility.utils.UrlUtils;
 
@@ -613,7 +611,6 @@ module powerbi.extensibility.geocoder {
 
             try {
                 this.inDequeue = true;
-
                 while (this.entries.length !== 0 && this.activeEntries.length < Settings.MaxBingRequest) {
                     let entry = this.entries.shift();
                     if (!entry.isCompleted) {
@@ -672,7 +669,9 @@ module powerbi.extensibility.geocoder {
                 return;
             }
 
-            GeocodeCallback = (data) => {
+            let guid =  "GeocodeCallback" + new Date().getTime();
+
+            window.window[guid] = (data) => {
                 if (entry.request) {
                 entry.request.always(() => {
                     _.pull(this.activeEntries, entry);
@@ -685,6 +684,7 @@ module powerbi.extensibility.geocoder {
                 catch (error) {
                     this.complete(entry, { error: error });
                 }
+                delete window.window[guid];
             };
 
             entry.jsonp = true;
@@ -702,9 +702,9 @@ module powerbi.extensibility.geocoder {
                 dataType: 'jsonp',
                 crossDomain: true,
                 jsonp: "jsonp",
-                jsonpCallback: "GeocodeCallback",
+                context: entry,
+                jsonpCallback: guid
             });
-
         }
     }
 

@@ -562,7 +562,6 @@ module powerbi.extensibility.visual {
             if (options.dataViews === undefined || options.dataViews === null) {
                 return;
             }
-
             this.layout.viewport = options.viewport;
             this.root.css(this.layout.viewportIn);
             const sixPointsToAdd: number = 6;
@@ -605,7 +604,9 @@ module powerbi.extensibility.visual {
                 return;
             }
             this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d));
-            this.data.dataPoints.forEach(d => d.location = d.location || this.globeMapLocationCache[d.placeKey]);
+            this.data.dataPoints.forEach((d) => {
+                return d.location = d.location || this.globeMapLocationCache[d.placeKey];
+            });
 
             if (!this.readyToRender) {
                 this.defferedRender();
@@ -718,7 +719,6 @@ module powerbi.extensibility.visual {
 
             const location: ILocation = <any>{};
             let geocoder: IGeocoder;
-
             this.globeMapLocationCache[renderDatum.placeKey] = location; // store empty object so we don't send AJAX request again
             this.locationsToLoad++;
 
