@@ -4,7 +4,7 @@
     "displayName": "GlobeMap",
     "guid": "GlobeMap1447669447624",
     "visualClassName": "GlobeMap",
-    "version": "1.4.4",
+    "version": "1.4.5",
     "description": "A 3D visual using WebGL for plotting locations, with category values displayed as bar heights and heat maps.\n\nShift+Click on bar to change center point. \nSlicing data points will animate to average location.\n\nAttributions:\nthree.js - https://github.com/mrdoob/three.js/\nwebgl-heatmap - https://github.com/pyalot/webgl-heatmap",
     "supportUrl": "http://community.powerbi.com",
     "gitHubUrl": "https://github.com/Microsoft/powerbi-visuals-globemap"
