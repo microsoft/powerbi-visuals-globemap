@@ -669,14 +669,18 @@ module powerbi.extensibility.geocoder {
                 return;
             }
 
-            let guid =  "GeocodeCallback" + new Date().getTime();
+            let guidSequence = () => {
+                return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+            };
+
+            let guid = "GeocodeCallback" + guidSequence() + guidSequence() + guidSequence();
 
             window.window[guid] = (data) => {
                 if (entry.request) {
-                entry.request.always(() => {
-                    _.pull(this.activeEntries, entry);
-                    entry.request = null;
-                });
+                    entry.request.always(() => {
+                        _.pull(this.activeEntries, entry);
+                        entry.request = null;
+                    });
                 }
                 try {
                     this.complete(entry, entry.item.query.getResult(data));
