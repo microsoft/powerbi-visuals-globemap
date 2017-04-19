@@ -700,7 +700,6 @@ module powerbi.extensibility.geocoder {
             }
 
             this.activeEntries.push(entry);
-
             entry.request = $.ajax({
                 url: url,
                 dataType: 'jsonp',

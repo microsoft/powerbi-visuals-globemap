@@ -35,7 +35,7 @@ module powerbi.extensibility.visual {
     import ILocation = powerbi.extensibility.geocoder.ILocation;
     import converterHelper = powerbi.extensibility.utils.dataview.converterHelper;
     import ColorHelper = powerbi.extensibility.utils.color.ColorHelper;
-
+    import ISelectionId = powerbi.visuals.ISelectionId;
     import ClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.ClassAndSelector;
     import createClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.createClassAndSelector;
     import DataViewPropertyValue = powerbi.DataViewPropertyValue;
@@ -60,7 +60,6 @@ module powerbi.extensibility.visual {
     interface ExtendedPromise<T> extends IPromise<T> {
         always(value: any): void;
     }
-
     export class GlobeMap implements IVisual {
         public static MercartorSphere: any;
         private static GlobeSettings = {
@@ -79,7 +78,10 @@ module powerbi.extensibility.visual {
             cameraAnimDuration: 1000, // ms
             clickInterval: 200 // ms
         };
-
+        private static DataPointFillProperty: DataViewObjectPropertyIdentifier = {
+            objectName: "dataPoint",
+            propertyName: "fill"
+        };
         private layout: VisualLayout;
         private root: JQuery;
         private rendererContainer: JQuery;
@@ -126,15 +128,13 @@ module powerbi.extensibility.visual {
                 || (_.isEmpty(categorical.Height) && _.isEmpty(categorical.Heat))) {
                 return null;
             }
-
             const properties: GlobeMapSettings = GlobeMapSettings.getDefault() as GlobeMapSettings;
             const settings: GlobeMapSettings = GlobeMap.parseSettings(dataView);
             const groupedColumns: GlobeMapColumns<DataViewValueColumn>[] | any = GlobeMapColumns.getGroupedValueColumns(dataView);
             const dataPoints: any = [];
             let seriesDataPoints: any = [];
             let locations: any = [];
-            const colorHelper: ColorHelper = new ColorHelper(colors, null, properties.dataPoint.fill);
-
+            const colorHelper: ColorHelper = new ColorHelper(colors, GlobeMap.DataPointFillProperty, properties.dataPoint.fill);
             let locationType: any;
             let heights: any;
             let heightsBySeries: any;
@@ -158,9 +158,9 @@ module powerbi.extensibility.visual {
                     // creating a matrix for drawing values by series later.
                     for (let i: number = 0; i < groupedColumns.length; i++) {
                         const values: any = groupedColumns[i].Height.values;
+
                         seriesDataPoints[i] = GlobeMap.createDataPointForEnumeration(
                             dataView, groupedColumns[i].Height.source, i, null, colorHelper, colors, visualHost);
-                        seriesDataPoints[i].color = settings.dataPoint.fill;
                         for (let j: number = 0; j < values.length; j++) {
                             if (!heights[j]) {
                                 heights[j] = 0;
@@ -198,7 +198,6 @@ module powerbi.extensibility.visual {
                 heightsBySeries = [];
                 heights = [];
             }
-
             if (!_.isEmpty(categorical.Heat)) {
                 if (groupedColumns.length > 1) {
                     heats = [];
@@ -262,7 +261,6 @@ module powerbi.extensibility.visual {
                     dataPoints.push(renderDatum);
                 }
             }
-
             return {
                 dataView: dataView,
                 dataPoints: dataPoints,
@@ -321,8 +319,38 @@ module powerbi.extensibility.visual {
             };
         }
 
+        private addAnInstanceToEnumeration(
+            instanceEnumeration: VisualObjectInstanceEnumeration,
+            instance: VisualObjectInstance): void {
+
+            if ((instanceEnumeration as VisualObjectInstanceEnumerationObject).instances) {
+                (instanceEnumeration as VisualObjectInstanceEnumerationObject)
+                    .instances
+                    .push(instance);
+            } else {
+                (instanceEnumeration as VisualObjectInstance[]).push(instance);
+            }
+        }
+
         public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-            return GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
+            let instances: VisualObjectInstanceEnumeration = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
+            switch (options.objectName) {
+                case 'dataPoint': if (this.data && this.data.seriesDataPoints) {
+                    for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
+                        let dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
+                        this.addAnInstanceToEnumeration(instances, {
+                            objectName: 'dataPoint',
+                            displayName: dataPoint.label,
+                            selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()),
+                            properties: {
+                                fill: { solid: { color: dataPoint.color } }
+                            }
+                        });
+                    }
+                }
+                break;
+            }
+            return instances;
         }
 
         constructor(options: VisualConstructorOptions) {
@@ -558,7 +586,6 @@ module powerbi.extensibility.visual {
         }
 
         public update(options: VisualUpdateOptions): void {
-
             if (options.dataViews === undefined || options.dataViews === null) {
                 return;
             }
@@ -603,9 +630,9 @@ module powerbi.extensibility.visual {
             if (!this.data) {
                 return;
             }
-            this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d));
+            this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d)); // all coordinates (latitude/longitude) will be gained here
             this.data.dataPoints.forEach((d) => {
-                return d.location = d.location || this.globeMapLocationCache[d.placeKey];
+                return d.location = this.globeMapLocationCache[d.placeKey] || d.location;
             });
 
             if (!this.readyToRender) {
@@ -627,7 +654,9 @@ module powerbi.extensibility.visual {
             for (let i: number = 0; i < len; ++i) {
                 const renderDatum: GlobeMapDataPoint = this.data.dataPoints[i];
 
-                if (!renderDatum.location || renderDatum.location.longitude === undefined || renderDatum.location.latitude === undefined) {
+                if (!renderDatum.location || renderDatum.location.longitude === undefined || renderDatum.location.latitude === undefined
+                    || (renderDatum.location.longitude === 0 && renderDatum.location.latitude === 0)
+                ) {
                     continue;
                 }
 
@@ -658,7 +687,7 @@ module powerbi.extensibility.visual {
                     const dataPointToolTip: any = [];
                     if (renderDatum.heightBySeries) {
                         for (let c: number = 0; c < renderDatum.heightBySeries.length; c++) {
-                            if (renderDatum.heightBySeries[c]) {
+                            if (renderDatum.heightBySeries[c] || renderDatum.heightBySeries[c] === 0) {
                                 measuresBySeries.push(renderDatum.heightBySeries[c]);
                             }
                             dataPointToolTip.push(renderDatum.seriesToolTipData[c]);
@@ -713,7 +742,8 @@ module powerbi.extensibility.visual {
         }
 
         private geocodeRenderDatum(renderDatum: GlobeMapDataPoint) {
-            if (renderDatum.location || this.globeMapLocationCache[renderDatum.placeKey]) {
+            // zero valued locations should be updated
+            if ((renderDatum.location && renderDatum.location.longitude !== 0 && renderDatum.location.latitude !== 0) || this.globeMapLocationCache[renderDatum.placeKey]) {
                 return;
             }
 

@@ -1,7 +1,7 @@
 {
   "name": "powerbi-visuals-globemap",
   "description": "GlobeMap",
-  "version": "1.4.3",
+  "version": "1.4.6",
   "author": {
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
