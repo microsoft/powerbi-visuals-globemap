@@ -29,14 +29,33 @@
 module powerbi.extensibility.visual.test {
     // powerbi.extensibility.utils.test
     import VisualBuilderBase = powerbi.extensibility.utils.test.VisualBuilderBase;
+    import renderTimeout = powerbi.extensibility.utils.test.helpers.renderTimeout;
 
     // GlobeMap1447669447624
     import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMap;
     import VisualPlugin = powerbi.visuals.plugins.GlobeMap1447669447624;
 
     export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
+        private static ChangeAllType: number = 62;
         constructor(width: number, height: number) {
             super(width, height, VisualPlugin.name);
+        }
+
+        public update(dataView: DataView[] | DataView, updateType?: VisualUpdateType): void {
+            this.visual.update(<VisualUpdateOptions>{
+                dataViews: _.isArray(dataView) ? dataView : [dataView],
+                viewport: this.viewport,
+                type: updateType
+            });
+        }
+
+        public updateRenderTimeout(
+            dataViews: DataView[] | DataView,
+            fn: Function,
+            updateType: VisualUpdateType = GlobeMapBuilder.ChangeAllType,
+            timeout?: number): number {
+            this.update(dataViews, updateType);
+            return renderTimeout(fn, timeout);
         }
 
         protected build(options: any) {

@@ -67,7 +67,7 @@ module powerbi.extensibility.visual {
             earthRadius: 30,
             cameraRadius: 100,
             earthSegments: 100,
-            heatmapSize: 1000,
+            heatmapSize: 1024,
             heatPointSize: 7,
             heatIntensity: 10,
             heatmapScaleOnZoom: 0.95,
@@ -78,6 +78,8 @@ module powerbi.extensibility.visual {
             cameraAnimDuration: 1000, // ms
             clickInterval: 200 // ms
         };
+        private static ChangeDataType: number = 2;
+        private static ChangeAllType: number = 62;
         private static DataPointFillProperty: DataViewObjectPropertyIdentifier = {
             objectName: "dataPoint",
             propertyName: "fill"
@@ -218,7 +220,6 @@ module powerbi.extensibility.visual {
                 heats = [];
             }
 
-            debugger;
             const maxHeight: any = Math.max.apply(null, heights) || 1;
             const maxHeat: any = Math.max.apply(null, heats) || 1;
             const heatFormatter: IValueFormatter = valueFormatter.create({
@@ -350,7 +351,7 @@ module powerbi.extensibility.visual {
                         });
                     }
                 }
-                break;
+                    break;
             }
             return instances;
         }
@@ -610,7 +611,7 @@ module powerbi.extensibility.visual {
                 }
             }
 
-            if (options.type === VisualUpdateType.Data || options.type === VisualUpdateType.All) {
+            if (options.type === GlobeMap.ChangeDataType || options.type === GlobeMap.ChangeAllType) {
                 this.cleanHeatAndBar();
                 const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
                 if (data) {
@@ -1258,7 +1259,6 @@ module powerbi.extensibility.visual {
             let tilesLoaded: number = 0;
             const canvasSize: number = tileSize * numSegments;
             const canvas: JQuery = $('<canvas/>').attr({ width: canvasSize, height: canvasSize });
-
             const canvasElem: HTMLCanvasElement = <any>canvas.get(0);
             const canvasContext: CanvasRenderingContext2D = canvasElem.getContext("2d");
 
