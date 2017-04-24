@@ -1,11 +1,16 @@
 ﻿module powerbi.extensibility.geocoder {
     import IPromise = powerbi.IPromise;
-    import IRect = powerbi.extensibility.utils.svg.IRect;
-
     /** Defines geocoding services. */
     export interface GeocodeOptions {
         /** promise that should abort the request when resolved */
         timeout?: IPromise<any>;
+    }
+
+    export interface IRect {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
     }
 
     export interface IGeocoder {

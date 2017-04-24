@@ -25,6 +25,7 @@
  */
 
 module powerbi.extensibility.visual {
+    // powerbi.extensibility.utils.dataview
     import DataViewObjectsParser = powerbi.extensibility.utils.dataview.DataViewObjectsParser;
 
     export class GlobeMapSettings extends DataViewObjectsParser {
@@ -32,6 +33,5 @@ module powerbi.extensibility.visual {
     }
 
     export class DataPointSettings {
-        public fill: string = "#005c55";
     }
 }

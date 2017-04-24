@@ -29,6 +29,8 @@ module powerbi.extensibility.visual {
     import DataViewValueColumns = powerbi.DataViewValueColumns;
     import DataViewCategoricalColumn = powerbi.DataViewCategoricalColumn;
     import DataViewValueColumn = powerbi.DataViewValueColumn;
+
+    // powerbi.extensibility.utils.dataview
     import converterHelper = powerbi.extensibility.utils.dataview.converterHelper;
 
     export class GlobeMapColumns<T> {

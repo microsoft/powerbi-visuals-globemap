@@ -24,43 +24,37 @@
  *  THE SOFTWARE.
  */
 
-let WebGLHeatmap: any = window['createWebGLHeatmap'];
-let GlobeMapCanvasLayers: JQuery[];
+let WebGLHeatmap: any = window["createWebGLHeatmap"];
 
 module powerbi.extensibility.visual {
+    // powerbi.extensibility.geocoder
     import IGeocoder = powerbi.extensibility.geocoder.IGeocoder;
     import IGeocodeCoordinate = powerbi.extensibility.geocoder.IGeocodeCoordinate;
-    import IPromise = powerbi.IPromise;
-    import Rectangle = powerbi.extensibility.utils.svg.touch.Rectangle;
     import ILocation = powerbi.extensibility.geocoder.ILocation;
+
+    // powerbi.extensibility.utils.dataview
     import converterHelper = powerbi.extensibility.utils.dataview.converterHelper;
+
+    // powerbi.extensibility.utils.color
     import ColorHelper = powerbi.extensibility.utils.color.ColorHelper;
+
+    // powerbi.visuals
     import ISelectionId = powerbi.visuals.ISelectionId;
-    import ClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.ClassAndSelector;
-    import createClassAndSelector = powerbi.extensibility.utils.svg.CssConstants.createClassAndSelector;
-    import DataViewPropertyValue = powerbi.DataViewPropertyValue;
-    import SelectableDataPoint = powerbi.extensibility.utils.interactivity.SelectableDataPoint;
+
+    // powerbi.extensibility.utils.formatting
     import IValueFormatter = powerbi.extensibility.utils.formatting.IValueFormatter;
-    import IInteractivityService = powerbi.extensibility.utils.interactivity.IInteractivityService;
-    import IMargin = powerbi.extensibility.utils.chart.axis.IMargin;
-    import IInteractiveBehavior = powerbi.extensibility.utils.interactivity.IInteractiveBehavior;
-    import ISelectionHandler = powerbi.extensibility.utils.interactivity.ISelectionHandler;
-    import appendClearCatcher = powerbi.extensibility.utils.interactivity.appendClearCatcher;
-    import createInteractivityService = powerbi.extensibility.utils.interactivity.createInteractivityService;
     import valueFormatter = powerbi.extensibility.utils.formatting.valueFormatter;
-    import IAxisProperties = powerbi.extensibility.utils.chart.axis.IAxisProperties;
-    import IVisualHost = powerbi.extensibility.visual.IVisualHost;
-    import svg = powerbi.extensibility.utils.svg;
-    import axis = powerbi.extensibility.utils.chart.axis;
-    import textMeasurementService = powerbi.extensibility.utils.formatting.textMeasurementService;
-    import ValueType = utils.type.ValueType;
-    import DataViewObjectsParser = utils.dataview.DataViewObjectsParser;
-    import IColorPalette = powerbi.extensibility.IColorPalette;
+    import LocalStorageService = powerbi.extensibility.utils.formatting.LocalStorageService;
+    import IStorageService = powerbi.extensibility.utils.formatting.IStorageService;
+
+    // powerbi.extensibility.utils.type
+    import ValueType = powerbi.extensibility.utils.type.ValueType;
 
     interface ExtendedPromise<T> extends IPromise<T> {
         always(value: any): void;
     }
     export class GlobeMap implements IVisual {
+        LocalStorageService: IStorageService;
         public static MercartorSphere: any;
         private static GlobeSettings = {
             autoRotate: false,
@@ -115,7 +109,6 @@ module powerbi.extensibility.visual {
         private hoveredBar: any;
         private averageBarVector: THREE.Vector3;
         private zoomContainer: d3.Selection<any>;
-        private zoomControl: d3.Selection<any>;
         public colors: IColorPalette;
         private animationFrameId: number;
         private cameraAnimationFrameId: number;
@@ -136,7 +129,7 @@ module powerbi.extensibility.visual {
             const dataPoints: any = [];
             let seriesDataPoints: any = [];
             let locations: any = [];
-            const colorHelper: ColorHelper = new ColorHelper(colors, GlobeMap.DataPointFillProperty, properties.dataPoint.fill);
+            const colorHelper: ColorHelper = new ColorHelper(colors, GlobeMap.DataPointFillProperty);
             let locationType: any;
             let heights: any;
             let heightsBySeries: any;
@@ -194,7 +187,6 @@ module powerbi.extensibility.visual {
                     heightsBySeries = [];
                     seriesDataPoints[0] = GlobeMap.createDataPointForEnumeration(
                         dataView, groupedColumns[0].Height.source, 0, dataView.metadata, colorHelper, colors, visualHost);
-                    seriesDataPoints[0].color = settings.dataPoint.fill;
                 }
             } else {
                 heightsBySeries = [];
@@ -309,7 +301,7 @@ module powerbi.extensibility.visual {
                 .createSelectionId();
 
             const category: any = <string>converterHelper.getSeriesName(source);
-            const objects: any = <any>columns.objects;
+            const objects: any = <any>columns.objects || <any>source.objects;
             const color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
                 ? colorHelper.getColorForMeasure(metaData.objects, "")
                 : colors.getColor(seriesIndex).value;
@@ -338,11 +330,11 @@ module powerbi.extensibility.visual {
         public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
             let instances: VisualObjectInstanceEnumeration = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
             switch (options.objectName) {
-                case 'dataPoint': if (this.data && this.data.seriesDataPoints) {
+                case "dataPoint": if (this.data && this.data.seriesDataPoints) {
                     for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
                         let dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
                         this.addAnInstanceToEnumeration(instances, {
-                            objectName: 'dataPoint',
+                            objectName: "dataPoint",
                             displayName: dataPoint.label,
                             selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()),
                             properties: {
@@ -357,11 +349,12 @@ module powerbi.extensibility.visual {
         }
 
         constructor(options: VisualConstructorOptions) {
-
+            this.currentLanguage = options.host.locale;
+            this.LocalStorageService = new LocalStorageService();
             this.root = $("<div>").appendTo(options.element)
-                .attr('drag-resize-disabled', "true")
+                .attr("drag-resize-disabled", "true")
                 .css({
-                    'position': "absolute"
+                    "position": "absolute"
                 });
 
             this.visualHost = options.host;
@@ -382,12 +375,16 @@ module powerbi.extensibility.visual {
         }
 
         private setup(): void {
-            this.initTextures();
-            this.initMercartorSphere();
-            this.initZoomControl();
             this.initScene();
+            this.initMercartorSphere();
+            this.initTextures().then(
+                () => {
+                    this.earth = this.createEarth();
+                    this.scene.add(this.earth);
+                    this.readyToRender = true;
+                });
+            this.initZoomControl();
             this.initHeatmap();
-            this.readyToRender = true;
             this.initRayCaster();
         }
         private static cameraFov: number = 35;
@@ -397,6 +394,26 @@ module powerbi.extensibility.visual {
         private static ambientLight: number = 0x000000;
         private static directionalLight: number = 0xffffff;
         private static directionalLightIntensity: number = 0.4;
+        private static tileSize: number = 256;
+        private static maxResolutionLevel: number = 4;
+        private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&uriScheme=https&key=${powerbi.extensibility.geocoder.Settings.BingKey}`;
+        private static reserveBindMapsMetadata: BingResourceMetadata = {
+            imageUrl: "https://{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=0&mkt={culture}",
+            imageUrlSubdomains: [
+                "t1",
+                "t2",
+                "t3",
+                "t4",
+                "t5",
+                "t6",
+                "t7"
+            ],
+            imageHeight: 256,
+            imageWidth: 256
+        };
+        private currentLanguage: string = "en-GB";
+        private static TILE_STORAGE_KEY = "GLOBEMAP_TILES_STORAGE";
+        private static TILE_LANGUAGE_CULTURE = "GLOBEMAP_TILE_LANGUAGE_CULTURE";
         private initScene(): void {
             this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             this.rendererContainer = $("<div>").appendTo(this.root).addClass("globeMapView");
@@ -421,12 +438,10 @@ module powerbi.extensibility.visual {
             const ambientLight: THREE.AmbientLight = new THREE.AmbientLight(GlobeMap.ambientLight);
             const light1: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
             const light2: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
-            const earth: THREE.Mesh = this.earth = this.createEarth();
 
             this.scene.add(ambientLight);
             this.scene.add(light1);
             this.scene.add(light2);
-            this.scene.add(earth);
 
             light1.position.set(20, 20, 20);
             light2.position.set(0, 0, -20);
@@ -478,7 +493,7 @@ module powerbi.extensibility.visual {
         }
 
         private static dollyX: number = 0.95;
-        public zoomClicked(zoomDirection: any): void {
+        public zoomClicked(zoomDirection: number): void {
             if (this.orbitControls.enabled === false) {
                 return;
             }
@@ -493,7 +508,7 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
-        public rotateCam(deltaX: number, deltaY: number) {
+        public rotateCam(deltaX: number, deltaY: number): void {
             if (!this.orbitControls.enabled) {
                 return;
             }
@@ -503,33 +518,147 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
-        private initTextures() {
-            if (!GlobeMapCanvasLayers) {
+        private initTextures(): JQueryPromise<{}> {
+            this.mapTextures = [];
+            const tileCulture: string = this.LocalStorageService.getData(GlobeMap.TILE_LANGUAGE_CULTURE);
+            let tileCache: TileMap[] = this.LocalStorageService.getData(GlobeMap.TILE_STORAGE_KEY);
+            if (!tileCache || tileCulture !== this.currentLanguage) {
                 // Initialize once, since this is a CPU + Network heavy operation.
-                GlobeMapCanvasLayers = [];
+                return this.getBingMapsServerMetadata()
+                    .then((metadata: BingResourceMetadata) => {
+                        tileCache = [];
+                        for (let level: number = 1; level <= GlobeMap.maxResolutionLevel; ++level) {
+                            let levelTiles = this.generateQuadsByLevel(level, metadata.imageUrl, metadata.imageUrlSubdomains);
+                            this.mapTextures.push(this.createTexture(level, levelTiles));
+                            tileCache.push(levelTiles);
+                        }
+                        this.LocalStorageService.setData(GlobeMap.TILE_STORAGE_KEY, tileCache);
+                        this.LocalStorageService.setData(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
+                        return tileCache;
+                    });
+            } else {
+                for (let level: number = 1; level <= GlobeMap.maxResolutionLevel; ++level) {
+                    this.mapTextures.push(this.createTexture(level, tileCache[level - 1]));
+                }
+                return jQuery.when(tileCache);
+            }
+        }
 
-                for (let level: number = 2; level <= 5; ++level) {
-                    const canvas: JQuery = this.getBingMapCanvas(level);
-                    GlobeMapCanvasLayers.push(canvas);
+        private getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> {
+            return $.ajax(GlobeMap.metadataUrl)
+                .then((data: BingMetadata) => {
+                    if (data.resourceSets.length) {
+                        let resourceSet = data.resourceSets[0];
+                        if (resourceSet && resourceSet.resources.length) {
+                            return resourceSet.resources[0];
+                        }
+                    }
+                    throw "Bing Maps API response was changed. Please update code for new version";
+                })
+                .fail((error: any) => {
+                    console.error(JSON.stringify(error));
+                    return GlobeMap.reserveBindMapsMetadata;
+                });
+        }
+
+        /**
+         * Generate Bing tile object by map level
+         * @see https://msdn.microsoft.com/en-us/library/bb259689.aspx
+         * @private
+         * @param {number} level map lavel
+         * @param {string} urlTemplate url template
+         * @example https://ecn.{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=5691&mkt={culture}&shading=hill
+         * @param {string[]} subdomains list of subdomauns
+         * @returns {{ [quadKey: string]: string }} Object <quadKey> : <image url>
+         * @memberOf GlobeMap
+         */
+        private generateQuadsByLevel(level: number, urlTemplate: string, subdomains: string[]): TileMap {
+            const COUNT_SERVERS = subdomains.length;
+            urlTemplate = urlTemplate.replace("{culture}", this.currentLanguage);
+            const result: { [quadKey: string]: string } = {};
+            const COUNT_TILES: number = 4;
+            let currentSubDomainNumber: number = 0;
+            const generateQuard = (currentLevel: number = 0, quadKey: string = ""): void => {
+                if (currentLevel < level) {
+                    for (let i = 0; i < COUNT_TILES; i++) {
+                        generateQuard(currentLevel + 1, `${quadKey}${i}`);
+                    }
+                } else if (currentLevel === level) {
+                    result[quadKey] = urlTemplate.replace("{subdomain}", subdomains[currentSubDomainNumber]).replace("{quadkey}", quadKey);
+                    currentSubDomainNumber++;
+                    currentSubDomainNumber = currentSubDomainNumber < subdomains.length ? currentSubDomainNumber : 0;
+                }
+            };
+            generateQuard();
+            return result;
+        }
+
+        private createTexture(level: number, tiles: TileMap): THREE.Texture {
+            const numSegments: number = Math.pow(2, level);
+            const canvasSize: number = GlobeMap.tileSize * numSegments;
+            const canvas: HTMLCanvasElement = document.createElement("canvas");
+            canvas.width = canvasSize;
+            canvas.height = canvasSize;
+            const texture: THREE.Texture = new THREE.Texture(canvas);
+            texture.needsUpdate = true;
+            this.loadTiles(canvas, tiles, () => {
+                texture.needsUpdate = true;
+                this.needsRender = true;
+            });
+            return texture;
+        }
+
+        /**
+         * Load tiles of Bing Maps
+         * @param jCanvas jQuery convas object
+         * @param tiles map of tiles
+         * @param successCallback call this function when all tiles of the map are successfully loaded
+         */
+        private loadTiles(canvasEl: HTMLCanvasElement, tiles: TileMap, successCallback: Function) {
+            let tilesLoaded: number = 0;
+            const countTiles: number = Object.keys(tiles).length;
+            const canvasContext: CanvasRenderingContext2D = canvasEl.getContext("2d");
+            for (let quadKey in tiles) {
+                if (tiles.hasOwnProperty(quadKey)) {
+                    const coords: any = this.getCoordByQuadKey(quadKey);
+                    const tile: HTMLImageElement = new Image();
+                    tile.onload = (event: Event) => {
+                        tilesLoaded++;
+                        canvasContext.drawImage(tile, coords.x * GlobeMap.tileSize, coords.y * GlobeMap.tileSize, GlobeMap.tileSize, GlobeMap.tileSize);
+                        if (tilesLoaded === countTiles) {
+                            successCallback();
+                        }
+                    };
+                    // So the canvas doesn't get tainted
+                    tile.crossOrigin = "";
+                    tile.src = tiles[quadKey];
+                }
+            }
+        }
+
+        /**
+         * Get coordinates by Bing Maps quard name
+         * @private
+         * @param {string} quard Bing Maps quard name
+         * @returns {CanvasCoordinate} image coordinate
+         * @memberOf GlobeMap
+         */
+        private getCoordByQuadKey(quard: string): CanvasCoordinate {
+            const last: number = quard.length - 1;
+            let x: number = 0;
+            let y: number = 0;
+
+            for (let i: number = last; i >= 0; i--) {
+                const chr: string = quard.charAt(i);
+                const pow: number = Math.pow(2, last - i);
+                switch (chr) {
+                    case "1": x += pow; break;
+                    case "2": y += pow; break;
+                    case "3": x += pow; y += pow; break;
                 }
             }
 
-            // Can't execute in for loop because variable assignement gets overwritten
-            const createTexture: (canvas: JQuery) => THREE.Texture = (canvas: JQuery) => {
-                const texture: THREE.Texture = new THREE.Texture(<HTMLCanvasElement>canvas.get(0));
-                texture.needsUpdate = true;
-                canvas.on("ready", () => {
-                    texture.needsUpdate = true;
-                    this.needsRender = true;
-                });
-                return texture;
-
-            };
-
-            this.mapTextures = [];
-            for (let i: number = 0; i < GlobeMapCanvasLayers.length; ++i) {
-                this.mapTextures.push(createTexture(GlobeMapCanvasLayers[i]));
-            }
+            return { x: x, y: y };
         }
 
         private initHeatmap() {
@@ -562,19 +691,12 @@ module powerbi.extensibility.visual {
             }
             const maxDistance: number = GlobeMap.GlobeSettings.cameraRadius - GlobeMap.GlobeSettings.earthRadius;
             const distance: number = (this.camera.position.length() - GlobeMap.GlobeSettings.earthRadius) / maxDistance;
-            let texture: THREE.Texture;
-            const oneOfFive: number = 1 / 5;
-            const twoOfFive: number = 2 / 5;
-            const threeOfFive: number = 3 / 5;
-
-            if (distance <= oneOfFive) {
-                texture = this.mapTextures[3];
-            } else if (distance <= twoOfFive) {
-                texture = this.mapTextures[2];
-            } else if (distance <= threeOfFive) {
-                texture = this.mapTextures[1];
-            } else {
-                texture = this.mapTextures[0];
+            let texture: THREE.Texture = this.mapTextures[0];
+            for (let divider = 1; divider <= GlobeMap.maxResolutionLevel; divider++) {
+                if (distance <= divider / GlobeMap.maxResolutionLevel) {
+                    texture = this.mapTextures[GlobeMap.maxResolutionLevel - divider];
+                    break;
+                }
             }
 
             if ((<any>this.earth.material).map !== texture) {
@@ -594,12 +716,10 @@ module powerbi.extensibility.visual {
             }
             this.layout.viewport = options.viewport;
             this.root.css(this.layout.viewportIn);
-            const sixPointsToAdd: number = 6;
             this.zoomContainer.style({
-                'padding-left': (this.layout.viewportIn.width - parseFloat(this.zoomControl.attr("width")) + sixPointsToAdd) + "px", // Fix for chrome
-                'display': this.layout.viewportIn.height > $(this.zoomContainer.node()).height()
-                    && this.layout.viewportIn.width > $(this.zoomContainer.node()).width()
-                    ? null : 'none'
+                "display": this.layout.viewportIn.height > GlobeMap.ZoomControlSettings.height
+                    && this.layout.viewportIn.width > GlobeMap.ZoomControlSettings.width
+                    ? null : "none"
             });
 
             if (this.layout.viewportChanged) {
@@ -980,7 +1100,7 @@ module powerbi.extensibility.visual {
             this.camera = null;
             if (this.renderer) {
                 if (this.renderer.context) {
-                    const extension: any = this.renderer.context.getExtension('WEBGL_lose_context');
+                    const extension: any = this.renderer.context.getExtension("WEBGL_lose_context");
                     if (extension) {
                         extension.loseContext();
                     }
@@ -1009,143 +1129,69 @@ module powerbi.extensibility.visual {
 
             this.hideTooltip();
         }
+        private static ZoomControlSettings = {
+            height: 145,
+            width: 145,
+            markup: `
+            <svg width="145" height="145" class="controls">
+                <g class="control js-control--move-up">
+                    <circle cx="85" cy="20" r="17" />
+                    <path d="M85 8 l12 20 a40,70 0 0,0 -24,0z" />
+                </g>
+                <g class="control js-control--move-right">
+                    <circle cx="119" cy="54" r="17" class="zoomControlCircle" />
+                    <path d="M130.9 54 l-20 -12 a70,40 0 0,1 0,24z" class="zoomControlPath" />
+                </g>
+                <g class="control js-control--move-down">
+                    <circle cx="85" cy="88" r="17" />
+                    <path d="M 85 100 l12 -20 a40,70 0 0,1 -24,0z" />
+                </g>
+                <g class="control js-control--move-left">
+                    <circle cx="51" cy="54" r="17" />
+                    <path d="M39 54 l20 -12 a70,40 0 0,0 0,24z" />
+                </g>
+                <g class="control js-control--zoom-down">
+                    <circle cx="51" cy="122" r="17" />
+                    <rect x="42" y="120" width="17" height="6" class="zoomControlPath" />
+                </g>
+                <g class="control js-control--zoom-up">
+                    <circle cx="119" cy="122" r="17" />
+                    <rect x="110.5" y="120" width="17" height="6" />
+                    <rect x="116" y="114" width="6" height="17" />
+                </g>
+            </svg>
+            `,
+            zoomStep: 1,
+            angleOfRotation: 5
 
-        private static zoomControlRatio: number = 8.5;
-        private static radiusRatio: number = 3;
-        private static gapRadiusRatio: number = 2;
+        };
         private initZoomControl() {
-            const radius: number = 17;
-            const zoomControlWidth: number = radius * GlobeMap.zoomControlRatio;
-            const zoomControlHeight: number = radius * GlobeMap.zoomControlRatio;
-            const startX: number = radius * GlobeMap.radiusRatio;
-            const startY: number = radius + GlobeMap.radiusRatio;
-            const gap: number = radius * GlobeMap.gapRadiusRatio;
-
-            this.zoomContainer = d3.select(this.root[0])
-                .append('div')
-                .classed('zoomContainer', true);
-
-            this.zoomControl = this.zoomContainer.append("svg").attr({
-                'width': zoomControlWidth,
-                'height': zoomControlHeight
-            }).classed('zoomContainerSvg', true);
-
-            const bottom: d3.Selection<any> = this.zoomControl.append("g")
-                .on("mousedown", () => onMouseDown(() => this.rotateCam(0, -5)));
-
-            bottom.append("circle")
-                .attr({
-                    cx: startX + gap,
-                    cy: startY + (2 * gap),
-                    r: radius
-                })
-                .classed('zoomControlCircle', true);
-            bottom.append("path")
-                .attr({
-                    d: "M" + (startX + (2 * radius)) + " " + (startY + (radius * 4.7)) + " l12 -20 a40,70 0 0,1 -24,0z",
-                    fill: "gray"
-                });
-
-            const left: d3.Selection<any> = this.zoomControl
-                .append("g")
-                .on("mousedown", () => onMouseDown(() => this.rotateCam(5, 0)));
-            left.append("circle")
-                .attr({
-                    cx: startX,
-                    cy: startY + gap,
-                    r: radius
-                })
-                .classed('zoomControlCircle', true);
-            left.append("path")
-                .attr({
-                    d: "M" + (startX - radius / 1.5) + " " + (startY + (radius * 2)) + " l20 -12 a70,40 0 0,0 0,24z"
-                })
-                .classed('zoomControlPath', true);
-
-            const top: d3.Selection<any> = this.zoomControl
-                .append("g")
-                .on("mousedown", () => onMouseDown(() => this.rotateCam(0, 5)));
-            top
-                .append("circle").attr({
-                    cx: startX + gap,
-                    cy: startY,
-                    r: radius
-                })
-                .classed('zoomControlCircle', true);
-            top
-                .append("path").attr({
-                    d: "M" + (startX + (2 * radius)) + " " + (startY - (radius / 1.5)) + " l12 20 a40,70 0 0,0 -24,0z"
-                }).classed('zoomControlPath', true);
-
-            const right: d3.Selection<any> = this.zoomControl
-                .append("g")
-                .on("mousedown", () => onMouseDown(() => this.rotateCam(-5, 0)));
-            right
-                .append("circle").attr({
-                    cx: startX + (2 * gap),
-                    cy: startY + gap,
-                    r: radius
-                })
-                .classed('zoomControlCircle', true);
-            right
-                .append("path").attr({
-                    d: "M" + (startX + (4.7 * radius)) + " " + (startY + (radius * 2)) + " l-20 -12 a70,40 0 0,1 0,24z"
-                }).classed('zoomControlPath', true);
-
-            const zoomIn: d3.Selection<any> = this.zoomControl
-                .append("g")
-                .on("mousedown", () => onMouseDown(() => this.zoomClicked(-1)));
-            zoomIn.append("circle")
-                .attr({
-                    cx: startX + 4 * radius,
-                    cy: startY + 6 * radius,
-                    r: radius
-                })
-                .classed('zoomControlCircle', true);
-            zoomIn.append("rect")
-                .attr({
-                    x: startX + 3.5 * radius,
-                    y: startY + 5.9 * radius,
-                    width: radius,
-                    height: radius / 3,
-                    fill: "gray"
-                });
-            zoomIn.append("rect")
-                .attr({
-                    x: startX + (4 * radius) - radius / 6,
-                    y: startY + 5.55 * radius,
-                    width: radius / 3,
-                    height: radius
-                })
-                .classed('zoomControlPath', true);
-
-            const zoomOut: d3.Selection<any> = this.zoomControl
-                .append("g")
-                .on("mousedown", () => onMouseDown(() => this.zoomClicked(1)));
-            zoomOut
-                .append("circle").attr({
-                    cx: startX,
-                    cy: startY + 6 * radius,
-                    r: radius
-                })
-                .classed('zoomControlCircle', true);
-            zoomOut.append("rect")
-                .attr({
-                    x: startX - (radius / 2),
-                    y: startY + 5.9 * radius,
-                    width: radius,
-                    height: radius / 3
-                })
-                .classed('zoomControlPath', true);
-
-            function onMouseDown(callback: () => void) {
+            const controlContainer: HTMLElement = document.createElement("div");
+            controlContainer.classList.add("controls-container");
+            controlContainer.innerHTML = GlobeMap.ZoomControlSettings.markup;
+            this.root.append(controlContainer);
+            function onMouseDown(callback: (element: SVGElement) => void) {
                 (d3.event as MouseEvent).stopPropagation();
                 if ((<any>d3.event).button === 0) {
-                    callback();
+                    callback((<any>d3.event).currentTarget);
                 }
             }
+            this.zoomContainer = d3.select(controlContainer);
+            this.zoomContainer
+                .selectAll("g")
+                .on("mousedown", () => onMouseDown(
+                    (element: SVGElement) => {
+                        const controlType = element.classList.toString().split(" ").filter(className => className.search("js-") !== -1)[0];
+                        switch (controlType) {
+                            case "js-control--move-up": this.rotateCam(0, GlobeMap.ZoomControlSettings.angleOfRotation); break;
+                            case "js-control--move-down": this.rotateCam(0, -GlobeMap.ZoomControlSettings.angleOfRotation); break;
+                            case "js-control--move-left": this.rotateCam(GlobeMap.ZoomControlSettings.angleOfRotation, 0); break;
+                            case "js-control--move-right": this.rotateCam(-GlobeMap.ZoomControlSettings.angleOfRotation, 0); break;
+                            case "js-control--zoom-up": this.zoomClicked(-GlobeMap.ZoomControlSettings.zoomStep); break;
+                            case "js-control--zoom-down": this.zoomClicked(GlobeMap.ZoomControlSettings.zoomStep); break;
+                        }
+                    }));
         }
-
         private initMercartorSphere() {
             if (GlobeMap.MercartorSphere) return;
 
@@ -1250,79 +1296,6 @@ module powerbi.extensibility.visual {
 
             MercartorSphere.prototype = Object.create(THREE.Geometry.prototype);
             GlobeMap.MercartorSphere = MercartorSphere;
-        }
-
-        private getBingMapCanvas(resolution): JQuery {
-            const tileSize: number = 256;
-            let numSegments: number = Math.pow(2, resolution);
-            let numTiles: number = numSegments * numSegments;
-            let tilesLoaded: number = 0;
-            const canvasSize: number = tileSize * numSegments;
-            const canvas: JQuery = $('<canvas/>').attr({ width: canvasSize, height: canvasSize });
-            const canvasElem: HTMLCanvasElement = <any>canvas.get(0);
-            const canvasContext: CanvasRenderingContext2D = canvasElem.getContext("2d");
-
-            function generateQuads(res, quad) {
-                if (res <= resolution) {
-                    if (res === resolution) {
-                        loadTile(quad);
-                    }
-
-                    generateQuads(res + 1, quad + "0");
-                    generateQuads(res + 1, quad + "1");
-                    generateQuads(res + 1, quad + "2");
-                    generateQuads(res + 1, quad + "3");
-                }
-            }
-
-            function loadTile(quad) {
-                const template: any = "https://t{server}.tiles.virtualearth.net/tiles/r{quad}.jpeg?g=0&mkt={language}";
-                const numServers: number = 7;
-                const server: number = Math.round(Math.random() * numServers);
-                const languages: string = "languages";
-                const language: string = (navigator[languages] && navigator[languages].length) ? navigator[languages][0] : navigator.language;
-                const url: any = template.replace("{server}", server)
-                    .replace("{quad}", quad)
-                    .replace("{language}", language);
-                const coords: any = getCoords(quad);
-                const tile: HTMLImageElement = new Image();
-                tile.onload = () => {
-                    tilesLoaded++;
-                    canvasContext.drawImage(tile, coords.x * tileSize, coords.y * tileSize, tileSize, tileSize);
-                    if (tilesLoaded === numTiles) {
-                        canvas.trigger("ready", resolution);
-                    }
-                };
-
-                // So the canvas doesn't get tainted
-                tile.crossOrigin = '';
-                tile.src = url;
-            }
-
-            function getCoords(quad) {
-                let x: number = 0;
-                let y: number = 0;
-                const last: number = quad.length - 1;
-
-                for (let i: number = last; i >= 0; i--) {
-                    const chr: any = quad.charAt(i);
-                    const pow: number = Math.pow(2, last - i);
-
-                    if (chr === "1") {
-                        x += pow;
-                    } else if (chr === "2") {
-                        y += pow;
-                    } else if (chr === "3") {
-                        x += pow;
-                        y += pow;
-                    }
-                }
-
-                return { x: x, y: y };
-            }
-
-            generateQuads(0, "");
-            return canvas;
         }
     }
 }
