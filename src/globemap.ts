@@ -1,4 +1,4 @@
-﻿/*
+/*
  *  Power BI Visualizations
  *
  *  Copyright (c) Microsoft Corporation
@@ -218,6 +218,7 @@ module powerbi.extensibility.visual {
                 heats = [];
             }
 
+            debugger;
             const maxHeight: any = Math.max.apply(null, heights) || 1;
             const maxHeat: any = Math.max.apply(null, heats) || 1;
             const heatFormatter: IValueFormatter = valueFormatter.create({
@@ -294,15 +295,16 @@ module powerbi.extensibility.visual {
 
             const label: string = valueFormatter.format(nameForFormat, valueFormatter.getFormatString(sourceForFormat, null));
 
+            let measureValues = values[0];
             const categoryColumn: DataViewCategoryColumn = {
-                source: values[seriesIndex].source,
+                source: measureValues.source,
                 values: null,
-                identity: [values[seriesIndex].identity]
+                identity: [measureValues.identity]
             };
 
             const identity: ISelectionId = visualHost.createSelectionIdBuilder()
                 .withCategory(categoryColumn, 0)
-                .withMeasure(values[seriesIndex].source.queryName)
+                .withMeasure(measureValues.source.queryName)
                 .createSelectionId();
 
             const category: any = <string>converterHelper.getSeriesName(source);
