@@ -54,7 +54,7 @@ module powerbi.extensibility.visual {
         always(value: any): void;
     }
     export class GlobeMap implements IVisual {
-        LocalStorageService: IStorageService;
+        private localStorageService: IStorageService;
         public static MercartorSphere: any;
         private static GlobeSettings = {
             autoRotate: false,
@@ -78,6 +78,7 @@ module powerbi.extensibility.visual {
             objectName: "dataPoint",
             propertyName: "fill"
         };
+        private static CountTilesPerSegment: number = 4;
         private layout: VisualLayout;
         private root: JQuery;
         private rendererContainer: JQuery;
@@ -350,7 +351,7 @@ module powerbi.extensibility.visual {
 
         constructor(options: VisualConstructorOptions) {
             this.currentLanguage = options.host.locale;
-            this.LocalStorageService = new LocalStorageService();
+            this.localStorageService = new LocalStorageService();
             this.root = $("<div>").appendTo(options.element)
                 .attr("drag-resize-disabled", "true")
                 .css({
@@ -520,20 +521,21 @@ module powerbi.extensibility.visual {
 
         private initTextures(): JQueryPromise<{}> {
             this.mapTextures = [];
-            const tileCulture: string = this.LocalStorageService.getData(GlobeMap.TILE_LANGUAGE_CULTURE);
-            let tileCache: TileMap[] = this.LocalStorageService.getData(GlobeMap.TILE_STORAGE_KEY);
+            const tileCulture: string = this.localStorageService.getData(GlobeMap.TILE_LANGUAGE_CULTURE);
+            let tileCache: TileMap[] = this.localStorageService.getData(GlobeMap.TILE_STORAGE_KEY);
             if (!tileCache || tileCulture !== this.currentLanguage) {
                 // Initialize once, since this is a CPU + Network heavy operation.
                 return this.getBingMapsServerMetadata()
                     .then((metadata: BingResourceMetadata) => {
                         tileCache = [];
+                        let urlTemplate = metadata.imageUrl.replace("{culture}", this.currentLanguage);
                         for (let level: number = 1; level <= GlobeMap.maxResolutionLevel; ++level) {
-                            let levelTiles = this.generateQuadsByLevel(level, metadata.imageUrl, metadata.imageUrlSubdomains);
+                            let levelTiles = this.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
                             this.mapTextures.push(this.createTexture(level, levelTiles));
                             tileCache.push(levelTiles);
                         }
-                        this.LocalStorageService.setData(GlobeMap.TILE_STORAGE_KEY, tileCache);
-                        this.LocalStorageService.setData(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
+                        this.localStorageService.setData(GlobeMap.TILE_STORAGE_KEY, tileCache);
+                        this.localStorageService.setData(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
                         return tileCache;
                     });
             } else {
@@ -573,14 +575,11 @@ module powerbi.extensibility.visual {
          * @memberOf GlobeMap
          */
         private generateQuadsByLevel(level: number, urlTemplate: string, subdomains: string[]): TileMap {
-            const COUNT_SERVERS = subdomains.length;
-            urlTemplate = urlTemplate.replace("{culture}", this.currentLanguage);
-            const result: { [quadKey: string]: string } = {};
-            const COUNT_TILES: number = 4;
+            const result: TileMap = {};
             let currentSubDomainNumber: number = 0;
             const generateQuard = (currentLevel: number = 0, quadKey: string = ""): void => {
                 if (currentLevel < level) {
-                    for (let i = 0; i < COUNT_TILES; i++) {
+                    for (let i = 0; i < GlobeMap.CountTilesPerSegment; i++) {
                         generateQuard(currentLevel + 1, `${quadKey}${i}`);
                     }
                 } else if (currentLevel === level) {
@@ -614,7 +613,7 @@ module powerbi.extensibility.visual {
          * @param tiles map of tiles
          * @param successCallback call this function when all tiles of the map are successfully loaded
          */
-        private loadTiles(canvasEl: HTMLCanvasElement, tiles: TileMap, successCallback: Function) {
+        private loadTiles(canvasEl: HTMLCanvasElement, tiles: TileMap, successCallback: Function): void {
             let tilesLoaded: number = 0;
             const countTiles: number = Object.keys(tiles).length;
             const canvasContext: CanvasRenderingContext2D = canvasEl.getContext("2d");
