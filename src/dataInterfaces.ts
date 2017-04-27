@@ -74,14 +74,12 @@ module powerbi.extensibility.visual {
     }
 
     export interface TileMap {
-        [quadKey: string]: string ;
+        [quadKey: string]: string;
     }
 
     export interface CanvasCoordinate {
         x: number;
         y: number;
-
-
     }
 }
 
