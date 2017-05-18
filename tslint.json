@@ -23,7 +23,6 @@
             "spaces"
         ],
         "no-duplicate-variable": true,
-        "no-eval": true,
         "no-internal-module": false,
         "no-trailing-whitespace": true,
         "no-unsafe-finally": true,

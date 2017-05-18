@@ -25,11 +25,12 @@
  */
 
 module powerbi.extensibility.visual {
-    // powerbi
-    import IViewport = powerbi.IViewport;
-
-    // powerbi.visuals
-    import IMargin = powerbi.extensibility.utils.chart.axis.IMargin;
+    export interface IMargin {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    }
 
     export class VisualLayout {
         private marginValue: IMargin;

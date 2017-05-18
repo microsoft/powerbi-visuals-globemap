@@ -25,8 +25,9 @@
  */
 
 module powerbi.extensibility.geocoder {
-
+    // powerbi.extensibility.utils.formatting
     import IStorageService = powerbi.extensibility.utils.formatting.IStorageService;
+    import LocalStorageService = powerbi.extensibility.utils.formatting.LocalStorageService;
 
     interface GeocodeCacheEntry {
         coordinate: IGeocodeCoordinate;
@@ -41,7 +42,7 @@ module powerbi.extensibility.geocoder {
 
     export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService?: IStorageService): IGeocodingCache {
         if (!localStorageService) {
-            localStorageService =   new powerbi.extensibility.utils.formatting.LocalStorageService();
+            localStorageService = new LocalStorageService();
         }
         return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, localStorageService);
     }

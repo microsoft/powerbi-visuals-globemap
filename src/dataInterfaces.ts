@@ -25,7 +25,10 @@
  */
 
 module powerbi.extensibility.visual {
+    // powerbi.extensibility.utils.interactivity
     import SelectableDataPoint = powerbi.extensibility.utils.interactivity.SelectableDataPoint;
+
+    // powerbi.extensibility.geocoder
     import ILocation = powerbi.extensibility.geocoder.ILocation;
 
     export interface GlobeMapData {
@@ -51,6 +54,32 @@ module powerbi.extensibility.visual {
         label: string;
         color: string;
         category?: string;
+    }
+
+    export interface BingMetadata {
+        resourceSets: ResourceSet[];
+        statusCode: string;
+        statusDescription: string;
+    }
+
+    export interface ResourceSet {
+        resources: BingResourceMetadata[];
+    }
+
+    export interface BingResourceMetadata {
+        imageHeight: number;
+        imageWidth: number;
+        imageUrl: string;
+        imageUrlSubdomains: string[];
+    }
+
+    export interface TileMap {
+        [quadKey: string]: string;
+    }
+
+    export interface CanvasCoordinate {
+        x: number;
+        y: number;
     }
 }
 
