@@ -569,7 +569,7 @@ module powerbi.extensibility.geocoder {
         request?: BingAjaxRequest;
         jsonp?: boolean;            // remember because JSONP requests can't be aborted
         isCompleted?: boolean;
-    };
+    }
 
     export class GeocodeQueue {
         private entries: GeocodeQueueEntry[] = [];

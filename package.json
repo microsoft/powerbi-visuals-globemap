@@ -1,18 +1,18 @@
 {
   "name": "powerbi-visuals-globemap",
   "description": "GlobeMap",
-  "version": "1.4.7",
+  "version": "1.5.0",
   "author": {
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
   },
   "scripts": {
-    "postinstall": "bower install && pbiviz update 1.6.0",
+    "postinstall": "bower install && pbiviz update 1.7.0",
     "pbiviz": "pbiviz",
     "start": "pbiviz start",
     "package": "pbiviz package",
     "lint": "tslint -r \"node_modules/tslint-microsoft-contrib\" \"+(src|test)/**/*.ts\"",
-    "pretest": "pbiviz package --resources --no-minify --no-pbiviz",
+    "pretest": "pbiviz package --resources --no-minify --no-pbiviz --no-plugin",
     "test": "karma start"
   },
   "license": "MIT",
@@ -40,16 +40,20 @@
     "@types/lodash": "4.14.55",
     "@types/three": "0.0.19",
     "bower": "1.8.0",
+    "coveralls": "2.13.1",
     "jasmine": "2.6.0",
     "jasmine-jquery": "2.1.1",
     "karma": "1.6.0",
     "karma-chrome-launcher": "2.0.0",
-    "karma-jasmine": "1.1.0",
-    "karma-typescript-preprocessor": "0.3.1",
-    "powerbi-visuals-tools": "1.6.3",
+    "karma-coverage": "1.1.1",
+    "karma-jasmine": "1.0.2",
+    "karma-remap-istanbul": "0.4.0",
+    "karma-sourcemap-loader": "0.3.7",
+    "karma-typescript-preprocessor": "0.3.0",
+    "powerbi-visuals-tools": "1.7.1",
     "powerbi-visuals-utils-testutils": "1.0.0",
-    "tslint": "4.5.1",
-    "tslint-microsoft-contrib": "^4.0.1",
+    "tslint": "5.4.3",
+    "tslint-microsoft-contrib": "5.0.1",
     "typescript": "2.1.4"
   }
 }

@@ -4,102 +4,207 @@
       "name": "Category",
       "kind": "Grouping",
       "displayName": "Location",
+      "displayNameKey": "Role_DisplayName_Location",
       "preferredTypes": [
-        { "geography": { "address": true } },
-        { "geography": { "city": true } },
-        { "geography": { "continent": true } },
-        { "geography": { "country": true } },
-        { "geography": { "county": true } },
-        { "geography": { "place": true } },
-        { "geography": { "postalCode": true } },
-        { "geography": { "region": true } },
-        { "geography": { "stateOrProvince": true } }
+        {
+          "geography": {
+            "address": true
+          }
+        },
+        {
+          "geography": {
+            "city": true
+          }
+        },
+        {
+          "geography": {
+            "continent": true
+          }
+        },
+        {
+          "geography": {
+            "country": true
+          }
+        },
+        {
+          "geography": {
+            "county": true
+          }
+        },
+        {
+          "geography": {
+            "place": true
+          }
+        },
+        {
+          "geography": {
+            "postalCode": true
+          }
+        },
+        {
+          "geography": {
+            "region": true
+          }
+        },
+        {
+          "geography": {
+            "stateOrProvince": true
+          }
+        }
       ]
     },
     {
       "name": "Series",
       "kind": "Grouping",
-      "displayName": "Legend"
+      "displayName": "Group",
+      "displayNameKey": "Role_DisplayName_Group"
     },
     {
       "name": "X",
       "kind": "Measure",
       "displayName": "Longitude",
       "description": "Used to override the longitude of locations",
-      "preferredTypes": [ { "geography": { "longitude": true } } ]
+      "displayNameKey": "Role_DisplayName_Longitude",
+      "preferredTypes": [
+        {
+          "geography": {
+            "longitude": true
+          }
+        }
+      ]
     },
     {
       "name": "Y",
       "kind": "Measure",
       "displayName": "Latitude",
       "description": "Used to override the latitude of locations",
-      "preferredTypes": [ { "geography": { "latitude": true } } ]
+      "displayNameKey": "Role_DisplayName_Latitude",
+      "preferredTypes": [
+        {
+          "geography": {
+            "latitude": true
+          }
+        }
+      ]
     },
     {
       "name": "Height",
       "kind": "Measure",
-      "displayName": "Bar Height"
+      "displayName": "Bar Height",
+      "displayNameKey": "Role_DisplayName_BarHeight"
     },
     {
       "name": "Heat",
       "kind": "Measure",
-      "displayName": "Heat Intensity"
+      "displayName": "Heat Intensity",
+      "displayNameKey": "Role_DisplayName_HeatIntensity"
     }
   ],
-  "objects": {
-    "dataPoint": {
-      "displayName": "Data colors",
-      "properties": {
-        "defaultColor": {
-          "displayName": "Default color",
-          "type": { "fill": { "solid": { "color": true } } }
-        },
-        "showAllDataPoints": {
-          "displayName": "Show all",
-          "type": { "bool": true }
-        },
-        "fill": {
-          "displayName": "Fill",
-          "type": { "fill": { "solid": { "color": true } } }
-        },
-        "fillRule": {
-          "displayName": "Color saturation",
-          "type": { "fill": { } }
-        }
-      }
-    }
-  },
   "dataViewMappings": [
     {
       "conditions": [
         {
-          "Category": { "max": 1 },
-          "Series": { "max": 1 },
-          "Height": { "max": 1 },
-          "Heat": { "max": 1 }
+          "Category": {
+            "max": 1
+          },
+          "Series": {
+            "max": 1
+          },
+          "Height": {
+            "max": 1
+          },
+          "Heat": {
+            "max": 1
+          }
         }
       ],
       "categorical": {
         "categories": {
-          "for": { "in": "Category" },
-          "dataReductionAlgorithm": { "top": { } }
+          "for": {
+            "in": "Category"
+          },
+          "dataReductionAlgorithm": {
+            "top": {}
+          }
         },
         "values": {
           "group": {
             "by": "Series",
             "select": [
-              { "bind": { "to": "Height" } },
-              { "bind": { "to": "Heat" } },
-              { "bind": { "to": "X" } },
-              { "bind": { "to": "Y" } }
+              {
+                "bind": {
+                  "to": "Height"
+                }
+              },
+              {
+                "bind": {
+                  "to": "Heat"
+                }
+              },
+              {
+                "bind": {
+                  "to": "X"
+                }
+              },
+              {
+                "bind": {
+                  "to": "Y"
+                }
+              }
             ],
-            "dataReductionAlgorithm": { "top": { } }
+            "dataReductionAlgorithm": {
+              "top": {}
+            }
           }
         }
       }
     }
   ],
+  "objects": {
+    "dataPoint": {
+      "displayName": "Data colors",
+      "displayNameKey": "Visual_DataPoint",
+      "properties": {
+        "defaultColor": {
+          "displayName": "Default color",
+          "displayNameKey": "Visual_DefaultColor",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "showAllDataPoints": {
+          "displayName": "Show all",
+          "displayNameKey": "Visual_DataPoint_Show_All",
+          "type": {
+            "bool": true
+          }
+        },
+        "fill": {
+          "displayName": "Fill",
+          "displayNameKey": "Visual_Fill",
+          "type": {
+            "fill": {
+              "solid": {
+                "color": true
+              }
+            }
+          }
+        },
+        "fillRule": {
+          "displayName": "Color saturation",
+          "displayNameKey": "Visual_Gradient",
+          "type": {
+            "fill": {}
+          }
+        }
+      }
+    }
+  },
   "sorting": {
-    "custom": { }
+    "custom": {}
   }
 }
