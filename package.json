@@ -1,13 +1,13 @@
 {
   "name": "powerbi-visuals-globemap",
   "description": "GlobeMap",
-  "version": "1.4.7",
+  "version": "1.5.0",
   "author": {
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
   },
   "scripts": {
-    "postinstall": "bower install && pbiviz update 1.6.0",
+    "postinstall": "bower install && pbiviz update 1.7.0",
     "pbiviz": "pbiviz",
     "start": "pbiviz start",
     "package": "pbiviz package",
@@ -39,17 +39,18 @@
     "@types/jquery": "2.0.41",
     "@types/lodash": "4.14.55",
     "@types/three": "0.0.19",
+    "coveralls": "2.13.1",
     "bower": "1.8.0",
     "jasmine": "2.6.0",
     "jasmine-jquery": "2.1.1",
-    "karma": "1.6.0",
+    "karma": "1.7.0",
     "karma-chrome-launcher": "2.0.0",
     "karma-jasmine": "1.1.0",
     "karma-typescript-preprocessor": "0.3.1",
-    "powerbi-visuals-tools": "1.6.3",
+    "powerbi-visuals-tools": "1.7.1",
     "powerbi-visuals-utils-testutils": "1.0.0",
     "tslint": "4.5.1",
-    "tslint-microsoft-contrib": "^4.0.1",
+    "tslint-microsoft-contrib": "5.0.1",
     "typescript": "2.1.4"
   }
 }
