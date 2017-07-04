@@ -33,12 +33,11 @@ module powerbi.extensibility.visual.test {
 
     // GlobeMap1447669447624
     import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMap;
-    import VisualPlugin = powerbi.visuals.plugins.GlobeMap1447669447624;
 
     export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
         private static ChangeAllType: number = 62;
         constructor(width: number, height: number) {
-            super(width, height, VisualPlugin.name);
+            super(width, height, "GlobeMap1447669447624");
         }
 
         public update(dataView: DataView[] | DataView, updateType?: VisualUpdateType): void {
