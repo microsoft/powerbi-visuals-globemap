@@ -35,10 +35,10 @@ module powerbi.extensibility.visual.test {
     import GlobeMapDataViewBuilder = powerbi.extensibility.visual.test.GlobeMapData;
     import GlobeMapBuilder = powerbi.extensibility.visual.test.GlobeMapBuilder;
 
-    // powerbi.extensibility.visual.GlobeMap1447669447624
-    import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMap;
-    import GlobeMapData = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMapData;
-    import GlobeMapColumns = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMapColumns;
+    // powerbi.extensibility.visual.GlobeMap1447669447625
+    import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMap;
+    import GlobeMapData = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMapData;
+    import GlobeMapColumns = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMapColumns;
 
     // powerbi.extensibility.utils.test
     import clickElement = powerbi.extensibility.utils.test.helpers.clickElement;
