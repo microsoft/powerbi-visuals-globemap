@@ -1,4 +1,4 @@
-## 2.5.0
+## 2.0.0
 * Performance improvement
 * Update GUID of visual 
 
