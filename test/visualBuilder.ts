@@ -31,13 +31,13 @@ module powerbi.extensibility.visual.test {
     import VisualBuilderBase = powerbi.extensibility.utils.test.VisualBuilderBase;
     import renderTimeout = powerbi.extensibility.utils.test.helpers.renderTimeout;
 
-    // GlobeMap1447669447624
-    import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447624.GlobeMap;
+    // GlobeMap1447669447625
+    import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMap;
 
     export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
         private static ChangeAllType: number = 62;
         constructor(width: number, height: number) {
-            super(width, height, "GlobeMap1447669447624");
+            super(width, height, "GlobeMap1447669447625");
         }
 
         public update(dataView: DataView[] | DataView, updateType?: VisualUpdateType): void {
