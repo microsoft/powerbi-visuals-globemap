@@ -1,3 +1,6 @@
+## 2.0.1
+* Increase the resolution level of map
+
 ## 2.0.0
 * Performance improvement
 * Update GUID of visual 

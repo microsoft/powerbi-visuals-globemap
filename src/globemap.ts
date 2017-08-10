@@ -396,7 +396,8 @@ module powerbi.extensibility.visual {
         private static directionalLight: number = 0xffffff;
         private static directionalLightIntensity: number = 0.4;
         private static tileSize: number = 256;
-        private static maxResolutionLevel: number = 4;
+        private static initialResolutionLevel: number = 2;
+        private static maxResolutionLevel: number = 5;
         private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&uriScheme=https&key=${powerbi.extensibility.geocoder.Settings.BingKey}`;
         private static reserveBindMapsMetadata: BingResourceMetadata = {
             imageUrl: "https://{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=0&mkt={culture}",
@@ -529,7 +530,7 @@ module powerbi.extensibility.visual {
                     .then((metadata: BingResourceMetadata) => {
                         tileCache = [];
                         let urlTemplate = metadata.imageUrl.replace("{culture}", this.currentLanguage);
-                        for (let level: number = 1; level <= GlobeMap.maxResolutionLevel; ++level) {
+                        for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
                             let levelTiles = this.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
                             this.mapTextures.push(this.createTexture(level, levelTiles));
                             tileCache.push(levelTiles);
@@ -539,8 +540,8 @@ module powerbi.extensibility.visual {
                         return tileCache;
                     });
             } else {
-                for (let level: number = 1; level <= GlobeMap.maxResolutionLevel; ++level) {
-                    this.mapTextures.push(this.createTexture(level, tileCache[level - 1]));
+                for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
+                    this.mapTextures.push(this.createTexture(level, tileCache[level - GlobeMap.initialResolutionLevel]));
                 }
                 return jQuery.when(tileCache);
             }
@@ -691,7 +692,7 @@ module powerbi.extensibility.visual {
             const maxDistance: number = GlobeMap.GlobeSettings.cameraRadius - GlobeMap.GlobeSettings.earthRadius;
             const distance: number = (this.camera.position.length() - GlobeMap.GlobeSettings.earthRadius) / maxDistance;
             let texture: THREE.Texture = this.mapTextures[0];
-            for (let divider = 1; divider <= GlobeMap.maxResolutionLevel; divider++) {
+            for (let divider: number = GlobeMap.initialResolutionLevel; divider <= GlobeMap.maxResolutionLevel; divider++) {
                 if (distance <= divider / GlobeMap.maxResolutionLevel) {
                     texture = this.mapTextures[GlobeMap.maxResolutionLevel - divider];
                     break;
