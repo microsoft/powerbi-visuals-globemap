@@ -529,7 +529,7 @@ module powerbi.extensibility.visual {
                     .then((metadata: BingResourceMetadata) => {
                         tileCache = [];
                         let urlTemplate = metadata.imageUrl.replace("{culture}", this.currentLanguage);
-                        for (let level: number = 1; level <= GlobeMap.maxResolutionLevel; ++level) {
+                        for (let level: number = 2; level <= GlobeMap.maxResolutionLevel + 1; ++level) {
                             let levelTiles = this.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
                             this.mapTextures.push(this.createTexture(level, levelTiles));
                             tileCache.push(levelTiles);
@@ -539,8 +539,8 @@ module powerbi.extensibility.visual {
                         return tileCache;
                     });
             } else {
-                for (let level: number = 1; level <= GlobeMap.maxResolutionLevel; ++level) {
-                    this.mapTextures.push(this.createTexture(level, tileCache[level - 1]));
+                for (let level: number = 2; level <= GlobeMap.maxResolutionLevel + 1; ++level) {
+                    this.mapTextures.push(this.createTexture(level, tileCache[level - 2]));
                 }
                 return jQuery.when(tileCache);
             }
@@ -691,7 +691,7 @@ module powerbi.extensibility.visual {
             const maxDistance: number = GlobeMap.GlobeSettings.cameraRadius - GlobeMap.GlobeSettings.earthRadius;
             const distance: number = (this.camera.position.length() - GlobeMap.GlobeSettings.earthRadius) / maxDistance;
             let texture: THREE.Texture = this.mapTextures[0];
-            for (let divider = 1; divider <= GlobeMap.maxResolutionLevel; divider++) {
+            for (let divider = 2; divider <= GlobeMap.maxResolutionLevel + 1; divider++) {
                 if (distance <= divider / GlobeMap.maxResolutionLevel) {
                     texture = this.mapTextures[GlobeMap.maxResolutionLevel - divider];
                     break;
