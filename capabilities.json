@@ -61,7 +61,7 @@
     },
     {
       "name": "X",
-      "kind": "Measure",
+      "kind": "GroupingOrMeasure",
       "displayName": "Longitude",
       "description": "Used to override the longitude of locations",
       "displayNameKey": "Role_DisplayName_Longitude",
@@ -75,7 +75,7 @@
     },
     {
       "name": "Y",
-      "kind": "Measure",
+      "kind": "GroupingOrMeasure",
       "displayName": "Latitude",
       "description": "Used to override the latitude of locations",
       "displayNameKey": "Role_DisplayName_Latitude",

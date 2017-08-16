@@ -62,11 +62,21 @@ module powerbi.extensibility.visual {
             cameraRadius: 100,
             earthSegments: 100,
             heatmapSize: 1024,
-            heatPointSize: 7,
             heatIntensity: 10,
+            minHeatIntensity: 2,
+            maxHeatIntensity: 10,
+            heatPointSize: 7,
+            minHeatPointSize: 2,
+            maxHeatPointSize: 7,
             heatmapScaleOnZoom: 0.95,
             barWidth: 0.3,
+            minBarWidth: 0.01,
+            maxBarWidth: 0.3,
+            barWidthScaleOnZoom: 0.9,
             barHeight: 5,
+            minBarHeight: 0.9,
+            maxBarHeight: 5,
+            barHeightScaleOnZoom: 0.95,
             rotateSpeed: 0.5,
             zoomSpeed: 0.8,
             cameraAnimDuration: 1000, // ms
@@ -506,6 +516,7 @@ module powerbi.extensibility.visual {
                 this.orbitControls.dollyIn(Math.pow(GlobeMap.dollyX, GlobeMap.GlobeSettings.zoomSpeed));
             }
 
+            this.updateBarsAndHeatMapByZoom(-zoomDirection);
             this.orbitControls.update();
             this.animateCamera(this.camera.position);
         }
@@ -763,81 +774,7 @@ module powerbi.extensibility.visual {
                 return;
             }
 
-            this.heatmap.clear();
-
-            if (this.barsGroup) {
-                this.scene.remove(this.barsGroup);
-            }
-
-            this.barsGroup = new THREE.Object3D();
-            this.scene.add(this.barsGroup);
-
-            this.averageBarVector = new THREE.Vector3();
-            const len: number = this.data.dataPoints.length;
-            for (let i: number = 0; i < len; ++i) {
-                const renderDatum: GlobeMapDataPoint = this.data.dataPoints[i];
-
-                if (!renderDatum.location || renderDatum.location.longitude === undefined || renderDatum.location.latitude === undefined
-                    || (renderDatum.location.longitude === 0 && renderDatum.location.latitude === 0)
-                ) {
-                    continue;
-                }
-
-                if (renderDatum.heat > 0.001) {
-                    if (renderDatum.heat < 0.1) renderDatum.heat = 0.1;
-                    const x: number = (180 + renderDatum.location.longitude) / 360 * GlobeMap.GlobeSettings.heatmapSize;
-                    const y: number = (1 - ((90 + renderDatum.location.latitude) / 180)) * GlobeMap.GlobeSettings.heatmapSize;
-                    this.heatmap.addPoint(x, y, GlobeMap.GlobeSettings.heatPointSize, renderDatum.heat * GlobeMap.GlobeSettings.heatIntensity);
-                }
-
-                if (renderDatum.height >= 0) {
-                    if (renderDatum.height < 0.01) renderDatum.height = 0.01;
-                    const latRadians: number = renderDatum.location.latitude / 180 * Math.PI; // radians
-                    const lngRadians: number = renderDatum.location.longitude / 180 * Math.PI;
-
-                    const x: number = Math.cos(lngRadians) * Math.cos(latRadians);
-                    const z: number = -Math.sin(lngRadians) * Math.cos(latRadians);
-                    const y: number = Math.sin(latRadians);
-                    const vector: THREE.Vector3 = new THREE.Vector3(x, y, z);
-
-                    this.averageBarVector.add(vector);
-
-                    const barHeight: number = GlobeMap.GlobeSettings.barHeight * renderDatum.height;
-                    // this array holds the relative series values to the actual measure for example [0.2,0.3,0.5]
-                    // this is how we draw the vectors relativly to the complete value one on top of another.
-                    const measuresBySeries: any = [];
-                    // this array holds the original values of the series for the tool tips
-                    const dataPointToolTip: any = [];
-                    if (renderDatum.heightBySeries) {
-                        for (let c: number = 0; c < renderDatum.heightBySeries.length; c++) {
-                            if (renderDatum.heightBySeries[c] || renderDatum.heightBySeries[c] === 0) {
-                                measuresBySeries.push(renderDatum.heightBySeries[c]);
-                            }
-                            dataPointToolTip.push(renderDatum.seriesToolTipData[c]);
-                        }
-                    } else {
-                        // no category series so we'll just draw one value
-                        measuresBySeries.push(1);
-                    }
-
-                    let previousMeasureValue = 0;
-                    for (let j: number = 0; j < measuresBySeries.length; j++) {
-                        previousMeasureValue += measuresBySeries[j];
-                        const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(GlobeMap.GlobeSettings.barWidth, GlobeMap.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
-                        const bar: THREE.Mesh = new THREE.Mesh(geometry, this.getBarMaterialByIndex(j));
-                        const position: THREE.Vector3 = vector.clone().multiplyScalar(GlobeMap.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
-                        bar.position.set(position.x, position.y, position.z);
-                        bar.lookAt(vector);
-                        (<any>bar).toolTipData = dataPointToolTip.length === 0
-                            ? renderDatum.toolTipData
-                            : this.getToolTipDataForSeries(renderDatum.toolTipData, dataPointToolTip[j]);
-
-                        this.barsGroup.add(bar);
-
-                        previousMeasureValue += measuresBySeries[j];
-                    }
-                }
-            }
+            this.updateBarsAndHeatMapByZoom();
 
             if (this.barsGroup.children.length > 0 && this.camera) {
                 this.averageBarVector.multiplyScalar(1 / this.barsGroup.children.length);
@@ -846,7 +783,6 @@ module powerbi.extensibility.visual {
                 }
             }
 
-            this.heatmap.update();
             this.heatmap.blur();
             this.heatTexture.needsUpdate = true;
             this.needsRender = true;
@@ -962,9 +898,9 @@ module powerbi.extensibility.visual {
                     this.heatTexture.needsUpdate = true;
                     e = e.originalEvent;
                     const delta: number = e.wheelDelta > 0 || e.detail < 0 ? 1 : -1;
-                    const scale: number = delta > 0 ? GlobeMap.GlobeSettings.heatmapScaleOnZoom : (1 / GlobeMap.GlobeSettings.heatmapScaleOnZoom);
-                    this.heatmap.multiply(scale);
-                    this.heatmap.update();
+                    this.updateBarsAndHeatMapByZoom(delta);
+
+                    
                 }
             });
         }
@@ -1296,6 +1232,111 @@ module powerbi.extensibility.visual {
 
             MercartorSphere.prototype = Object.create(THREE.Geometry.prototype);
             GlobeMap.MercartorSphere = MercartorSphere;
+        }
+
+        private updateBarsAndHeatMapByZoom(delta: number = 0): void {
+            // delta > 0 ? Zoom increased
+            // delta < 0 ? Zoom decreased
+            let heatSizeScale: number = delta > 0 ? GlobeMap.GlobeSettings.heatmapScaleOnZoom : (1 / GlobeMap.GlobeSettings.heatmapScaleOnZoom);
+            let barHeightScale: number = delta > 0 ? GlobeMap.GlobeSettings.barHeightScaleOnZoom : (1 / GlobeMap.GlobeSettings.barHeightScaleOnZoom);
+            let barWidthtScale: number = delta > 0 ? GlobeMap.GlobeSettings.barWidthScaleOnZoom : (1 / GlobeMap.GlobeSettings.barWidthScaleOnZoom);
+            
+            if (delta === 0) {
+                heatSizeScale = 1;
+                barHeightScale = 1;
+                barWidthtScale = 1;
+            }
+
+            // Calculate new bar and heat sizes by zool level
+            GlobeMap.GlobeSettings.heatPointSize = this.calculateNewSizeOfShape(GlobeMap.GlobeSettings.heatPointSize, heatSizeScale, GlobeMap.GlobeSettings.minHeatPointSize, GlobeMap.GlobeSettings.maxHeatPointSize);
+            GlobeMap.GlobeSettings.heatIntensity = this.calculateNewSizeOfShape(GlobeMap.GlobeSettings.heatIntensity, heatSizeScale, GlobeMap.GlobeSettings.minHeatIntensity, GlobeMap.GlobeSettings.maxHeatIntensity);
+            GlobeMap.GlobeSettings.barHeight = this.calculateNewSizeOfShape(GlobeMap.GlobeSettings.barHeight, barHeightScale, GlobeMap.GlobeSettings.minBarHeight, GlobeMap.GlobeSettings.maxBarHeight);
+            GlobeMap.GlobeSettings.barWidth = this.calculateNewSizeOfShape(GlobeMap.GlobeSettings.barWidth, barWidthtScale, GlobeMap.GlobeSettings.minBarWidth, GlobeMap.GlobeSettings.maxBarWidth);
+
+            this.cleanHeatAndBar();
+            this.barsGroup = new THREE.Object3D();
+            this.scene.add(this.barsGroup);
+            this.averageBarVector = new THREE.Vector3();
+            const len: number = this.data.dataPoints.length;
+            for (let i: number = 0; i < len; ++i) {
+                const renderDatum: GlobeMapDataPoint = this.data.dataPoints[i];
+
+                if (!renderDatum.location || renderDatum.location.longitude === undefined || renderDatum.location.latitude === undefined
+                    || (renderDatum.location.longitude === 0 && renderDatum.location.latitude === 0)
+                ) {
+                    continue;
+                }
+
+                if (renderDatum.heat > 0.001) {
+                    if (renderDatum.heat < 0.1) renderDatum.heat = 0.1;
+                    const x: number = (180 + renderDatum.location.longitude) / 360 * GlobeMap.GlobeSettings.heatmapSize;
+                    const y: number = (1 - ((90 + renderDatum.location.latitude) / 180)) * GlobeMap.GlobeSettings.heatmapSize;
+                    
+                    this.heatmap.addPoint(x, y, GlobeMap.GlobeSettings.heatPointSize, renderDatum.heat * GlobeMap.GlobeSettings.heatIntensity);
+                }
+
+                if (renderDatum.height >= 0) {
+                    if (renderDatum.height < 0.01) renderDatum.height = 0.01;
+                    const latRadians: number = renderDatum.location.latitude / 180 * Math.PI; // radians
+                    const lngRadians: number = renderDatum.location.longitude / 180 * Math.PI;
+
+                    const x: number = Math.cos(lngRadians) * Math.cos(latRadians);
+                    const z: number = -Math.sin(lngRadians) * Math.cos(latRadians);
+                    const y: number = Math.sin(latRadians);
+                    const vector: THREE.Vector3 = new THREE.Vector3(x, y, z);
+
+                    this.averageBarVector.add(vector);
+                    
+                    const barHeight: number =  GlobeMap.GlobeSettings.barHeight * renderDatum.height;
+                    // this array holds the relative series values to the actual measure for example [0.2,0.3,0.5]
+                    // this is how we draw the vectors relativly to the complete value one on top of another.
+                    const measuresBySeries: any = [];
+                    // this array holds the original values of the series for the tool tips
+                    const dataPointToolTip: any = [];
+                    if (renderDatum.heightBySeries) {
+                        for (let c: number = 0; c < renderDatum.heightBySeries.length; c++) {
+                            if (renderDatum.heightBySeries[c] || renderDatum.heightBySeries[c] === 0) {
+                                measuresBySeries.push(renderDatum.heightBySeries[c]);
+                            }
+                            dataPointToolTip.push(renderDatum.seriesToolTipData[c]);
+                        }
+                    } else {
+                        // no category series so we'll just draw one value
+                        measuresBySeries.push(1);
+                    }
+
+                    let previousMeasureValue = 0;
+                    for (let j: number = 0; j < measuresBySeries.length; j++) {
+                        previousMeasureValue += measuresBySeries[j];
+                        const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(GlobeMap.GlobeSettings.barWidth, GlobeMap.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
+                        const bar: THREE.Mesh = new THREE.Mesh(geometry, this.getBarMaterialByIndex(j));
+                        const position: THREE.Vector3 = vector.clone().multiplyScalar(GlobeMap.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
+                        bar.position.set(position.x, position.y, position.z);
+                        bar.lookAt(vector);
+                        //bar.
+                        (<any>bar).toolTipData = dataPointToolTip.length === 0
+                            ? renderDatum.toolTipData
+                            : this.getToolTipDataForSeries(renderDatum.toolTipData, dataPointToolTip[j]);
+
+                        this.barsGroup.add(bar);
+
+                        previousMeasureValue += measuresBySeries[j];
+                    }
+                }
+            }
+
+            this.heatmap.update();
+        }
+
+        private calculateNewSizeOfShape(size: number, scale: number, minSize: number, maxSize: number): number {
+            size *= scale;
+            if (size > maxSize){
+                size = maxSize;
+            } else if (size < minSize) {
+                size = minSize;
+            }
+
+            return size;
         }
     }
 }
