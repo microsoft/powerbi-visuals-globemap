@@ -56,7 +56,7 @@ module powerbi.extensibility.visual {
     export class GlobeMap implements IVisual {
         private localStorageService: IStorageService;
         public static MercartorSphere: any;
-        private static GlobeSettings = {
+        private GlobeSettings = {
             autoRotate: false,
             earthRadius: 30,
             cameraRadius: 100,
@@ -124,6 +124,7 @@ module powerbi.extensibility.visual {
         private animationFrameId: number;
         private cameraAnimationFrameId: number;
         public visualHost: IVisualHost;
+        private static Unknown: string = "unknown";
 
         private tooltipService: ITooltipService;
         private static datapointShiftPoint: number = 0.01;
@@ -257,8 +258,8 @@ module powerbi.extensibility.visual {
                             : undefined;
                         toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
                     } else  {
-                        place = "Unknown";
-                        placeKey = "Unknown";
+                        place = this.Unknown;
+                        placeKey = this.Unknown;
                         location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
                             ? { longitude: <number>categorical.X.values[i] || 0, latitude: <number>categorical.Y.values[i] || 0 }
                             : undefined;
