@@ -457,13 +457,12 @@ module powerbi.extensibility.visual {
 
             this.renderer.setSize(this.layout.viewportIn.width, this.layout.viewportIn.height);
             this.renderer.setClearColor(GlobeMap.clearColor, 1);
-            this.camera.position.z = GlobeMap.GlobeSettings.cameraRadius;
-
-            this.orbitControls.maxDistance = GlobeMap.GlobeSettings.cameraRadius;
-            this.orbitControls.minDistance = GlobeMap.GlobeSettings.earthRadius + 1;
-            this.orbitControls.rotateSpeed = GlobeMap.GlobeSettings.rotateSpeed;
-            this.orbitControls.zoomSpeed = GlobeMap.GlobeSettings.zoomSpeed;
-            this.orbitControls.autoRotate = GlobeMap.GlobeSettings.autoRotate;
+            this.camera.position.z = this.GlobeSettings.cameraRadius;
+            this.orbitControls.maxDistance = this.GlobeSettings.cameraRadius;
+            this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
+            this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed;
+            this.orbitControls.zoomSpeed = this.GlobeSettings.zoomSpeed;
+            this.orbitControls.autoRotate = this.GlobeSettings.autoRotate;
 
             const ambientLight: THREE.AmbientLight = new THREE.AmbientLight(GlobeMap.ambientLight);
             const light1: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
@@ -506,9 +505,9 @@ module powerbi.extensibility.visual {
 
         private createEarth(): THREE.Mesh {
             const geometry: any = new GlobeMap.MercartorSphere(
-                GlobeMap.GlobeSettings.earthRadius,
-                GlobeMap.GlobeSettings.earthSegments,
-                GlobeMap.GlobeSettings.earthSegments);
+                this.GlobeSettings.earthRadius,
+                this.GlobeSettings.earthSegments,
+                this.GlobeSettings.earthSegments);
             const material: THREE.MeshPhongMaterial = new THREE.MeshPhongMaterial({
                 map: this.mapTextures[0],
                 side: THREE.DoubleSide,
@@ -529,9 +528,9 @@ module powerbi.extensibility.visual {
             }
 
             if (zoomDirection === -1) {
-                this.orbitControls.dollyOut(Math.pow(GlobeMap.dollyX, GlobeMap.GlobeSettings.zoomSpeed));
+                this.orbitControls.dollyOut(Math.pow(GlobeMap.dollyX, this.GlobeSettings.zoomSpeed));
             } else if (zoomDirection === 1) {
-                this.orbitControls.dollyIn(Math.pow(GlobeMap.dollyX, GlobeMap.GlobeSettings.zoomSpeed));
+                this.orbitControls.dollyIn(Math.pow(GlobeMap.dollyX, this.GlobeSettings.zoomSpeed));
             }
 
             this.updateBarsAndHeatMapByZoom(-zoomDirection);
@@ -543,8 +542,8 @@ module powerbi.extensibility.visual {
             if (!this.orbitControls.enabled) {
                 return;
             }
-            this.orbitControls.rotateLeft(2 * Math.PI * deltaX / this.rendererCanvas.offsetHeight * GlobeMap.GlobeSettings.rotateSpeed);
-            this.orbitControls.rotateUp(2 * Math.PI * deltaY / this.rendererCanvas.offsetHeight * GlobeMap.GlobeSettings.rotateSpeed);
+            this.orbitControls.rotateLeft(2 * Math.PI * deltaX / this.rendererCanvas.offsetHeight * this.GlobeSettings.rotateSpeed);
+            this.orbitControls.rotateUp(2 * Math.PI * deltaY / this.rendererCanvas.offsetHeight * this.GlobeSettings.rotateSpeed);
             this.orbitControls.update();
             this.animateCamera(this.camera.position);
         }
@@ -693,7 +692,7 @@ module powerbi.extensibility.visual {
         private initHeatmap() {
             let heatmap: any;
             try {
-                heatmap = this.heatmap = new WebGLHeatmap({ width: GlobeMap.GlobeSettings.heatmapSize, height: GlobeMap.GlobeSettings.heatmapSize, intensityToAlpha: true });
+                heatmap = this.heatmap = new WebGLHeatmap({ width: this.GlobeSettings.heatmapSize, height: this.GlobeSettings.heatmapSize, intensityToAlpha: true });
             } catch (e) {
                 // IE & Edge will throw an error about texImage2D, we need to ignore it
                 console.error(e);
@@ -704,7 +703,7 @@ module powerbi.extensibility.visual {
             texture.needsUpdate = true;
 
             const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-            const geometry: THREE.SphereGeometry = new THREE.SphereGeometry(GlobeMap.GlobeSettings.earthRadius + 0.01, GlobeMap.GlobeSettings.earthSegments, GlobeMap.GlobeSettings.earthSegments);
+            const geometry: THREE.SphereGeometry = new THREE.SphereGeometry(this.GlobeSettings.earthRadius + 0.01, this.GlobeSettings.earthSegments, this.GlobeSettings.earthSegments);
             const mesh: THREE.Mesh = new THREE.Mesh(geometry, material);
 
             window["heatmap"] = heatmap;
@@ -718,8 +717,8 @@ module powerbi.extensibility.visual {
             if (!this.camera) {
                 return;
             }
-            const maxDistance: number = GlobeMap.GlobeSettings.cameraRadius - GlobeMap.GlobeSettings.earthRadius;
-            const distance: number = (this.camera.position.length() - GlobeMap.GlobeSettings.earthRadius) / maxDistance;
+            const maxDistance: number = this.GlobeSettings.cameraRadius - this.GlobeSettings.earthRadius;
+            const distance: number = (this.camera.position.length() - this.GlobeSettings.earthRadius) / maxDistance;
             let texture: THREE.Texture = this.mapTextures[0];
             for (let divider: number = GlobeMap.initialResolutionLevel; divider <= GlobeMap.maxResolutionLevel; divider++) {
                 if (distance <= divider / GlobeMap.maxResolutionLevel) {
@@ -733,9 +732,9 @@ module powerbi.extensibility.visual {
             }
 
             if (this.selectedBar) {
-                this.orbitControls.rotateSpeed = GlobeMap.GlobeSettings.rotateSpeed;
+                this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed;
             } else {
-                this.orbitControls.rotateSpeed = GlobeMap.GlobeSettings.rotateSpeed * distance;
+                this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed * distance;
             }
         }
 
@@ -888,7 +887,7 @@ module powerbi.extensibility.visual {
             }).on("mouseup", (event: JQueryEventObject) => {
 
                 // Debounce slow clicks
-                if ((Date.now() - mouseDownTime) > GlobeMap.GlobeSettings.clickInterval) {
+                if ((Date.now() - mouseDownTime) > this.GlobeSettings.clickInterval) {
                     return;
                 }
 
@@ -896,14 +895,14 @@ module powerbi.extensibility.visual {
                     this.selectedBar = this.hoveredBar;
                     this.animateCamera(this.selectedBar.position, () => {
                         if (!this.selectedBar) return;
-                        this.orbitControls.target.copy(this.selectedBar.position.clone().normalize().multiplyScalar(GlobeMap.GlobeSettings.earthRadius));
+                        this.orbitControls.target.copy(this.selectedBar.position.clone().normalize().multiplyScalar(this.GlobeSettings.earthRadius));
                         this.orbitControls.minDistance = 1;
                     });
                 } else {
                     if (this.selectedBar) {
                         this.animateCamera(this.selectedBar.position, () => {
                             this.orbitControls.target.set(0, 0, 0);
-                            this.orbitControls.minDistance = GlobeMap.GlobeSettings.earthRadius + 1;
+                            this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
                         });
                         this.selectedBar = null;
                     }
@@ -996,7 +995,7 @@ module powerbi.extensibility.visual {
             }
             cancelAnimationFrame(this.cameraAnimationFrameId);
             const startTime: number = Date.now();
-            const duration: number = GlobeMap.GlobeSettings.cameraAnimDuration;
+            const duration: number = this.GlobeSettings.cameraAnimDuration;
             const endTime: number = startTime + duration;
             const startPos: THREE.Vector3 = this.camera.position.clone().normalize();
             const endPos: THREE.Vector3 = to.clone().normalize();
@@ -1255,9 +1254,9 @@ module powerbi.extensibility.visual {
             }
             // delta > 0 ? Zoom increased
             // delta < 0 ? Zoom decreased
-            let heatSizeScale: number = delta > 0 ? GlobeMap.GlobeSettings.heatmapScaleOnZoom : (1 / GlobeMap.GlobeSettings.heatmapScaleOnZoom);
-            let barHeightScale: number = delta > 0 ? GlobeMap.GlobeSettings.barHeightScaleOnZoom : (1 / GlobeMap.GlobeSettings.barHeightScaleOnZoom);
-            let barWidthtScale: number = delta > 0 ? GlobeMap.GlobeSettings.barWidthScaleOnZoom : (1 / GlobeMap.GlobeSettings.barWidthScaleOnZoom);
+            let heatSizeScale: number = delta > 0 ? this.GlobeSettings.heatmapScaleOnZoom : (1 / this.GlobeSettings.heatmapScaleOnZoom);
+            let barHeightScale: number = delta > 0 ? this.GlobeSettings.barHeightScaleOnZoom : (1 / this.GlobeSettings.barHeightScaleOnZoom);
+            let barWidthtScale: number = delta > 0 ? this.GlobeSettings.barWidthScaleOnZoom : (1 / this.GlobeSettings.barWidthScaleOnZoom);
 
             if (delta === 0) {
                 heatSizeScale = 1;
@@ -1266,10 +1265,10 @@ module powerbi.extensibility.visual {
             }
 
             // Calculate new bar and heat sizes by zool level
-            GlobeMap.GlobeSettings.heatPointSize = this.calculateNewSizeOfShape(GlobeMap.GlobeSettings.heatPointSize, heatSizeScale, GlobeMap.GlobeSettings.minHeatPointSize, GlobeMap.GlobeSettings.maxHeatPointSize);
-            GlobeMap.GlobeSettings.heatIntensity = this.calculateNewSizeOfShape(GlobeMap.GlobeSettings.heatIntensity, heatSizeScale, GlobeMap.GlobeSettings.minHeatIntensity, GlobeMap.GlobeSettings.maxHeatIntensity);
-            GlobeMap.GlobeSettings.barHeight = this.calculateNewSizeOfShape(GlobeMap.GlobeSettings.barHeight, barHeightScale, GlobeMap.GlobeSettings.minBarHeight, GlobeMap.GlobeSettings.maxBarHeight);
-            GlobeMap.GlobeSettings.barWidth = this.calculateNewSizeOfShape(GlobeMap.GlobeSettings.barWidth, barWidthtScale, GlobeMap.GlobeSettings.minBarWidth, GlobeMap.GlobeSettings.maxBarWidth);
+            this.GlobeSettings.heatPointSize = this.calculateNewSizeOfShape(this.GlobeSettings.heatPointSize, heatSizeScale, this.GlobeSettings.minHeatPointSize, this.GlobeSettings.maxHeatPointSize);
+            this.GlobeSettings.heatIntensity = this.calculateNewSizeOfShape(this.GlobeSettings.heatIntensity, heatSizeScale, this.GlobeSettings.minHeatIntensity, this.GlobeSettings.maxHeatIntensity);
+            this.GlobeSettings.barHeight = this.calculateNewSizeOfShape(this.GlobeSettings.barHeight, barHeightScale, this.GlobeSettings.minBarHeight, this.GlobeSettings.maxBarHeight);
+            this.GlobeSettings.barWidth = this.calculateNewSizeOfShape(this.GlobeSettings.barWidth, barWidthtScale, this.GlobeSettings.minBarWidth, this.GlobeSettings.maxBarWidth);
 
             this.cleanHeatAndBar();
             this.barsGroup = new THREE.Object3D();
@@ -1287,10 +1286,10 @@ module powerbi.extensibility.visual {
 
                 if (renderDatum.heat > 0.001) {
                     if (renderDatum.heat < 0.1) renderDatum.heat = 0.1;
-                    const x: number = (180 + renderDatum.location.longitude) / 360 * GlobeMap.GlobeSettings.heatmapSize;
-                    const y: number = (1 - ((90 + renderDatum.location.latitude) / 180)) * GlobeMap.GlobeSettings.heatmapSize;
+                    const x: number = (180 + renderDatum.location.longitude) / 360 * this.GlobeSettings.heatmapSize;
+                    const y: number = (1 - ((90 + renderDatum.location.latitude) / 180)) * this.GlobeSettings.heatmapSize;
 
-                    this.heatmap.addPoint(x, y, GlobeMap.GlobeSettings.heatPointSize, renderDatum.heat * GlobeMap.GlobeSettings.heatIntensity);
+                    this.heatmap.addPoint(x, y, this.GlobeSettings.heatPointSize, renderDatum.heat * this.GlobeSettings.heatIntensity);
                 }
 
                 if (renderDatum.height >= 0) {
@@ -1305,7 +1304,7 @@ module powerbi.extensibility.visual {
 
                     this.averageBarVector.add(vector);
 
-                    const barHeight: number =  GlobeMap.GlobeSettings.barHeight * renderDatum.height;
+                    const barHeight: number =  this.GlobeSettings.barHeight * renderDatum.height;
                     // this array holds the relative series values to the actual measure for example [0.2,0.3,0.5]
                     // this is how we draw the vectors relativly to the complete value one on top of another.
                     const measuresBySeries: any = [];
@@ -1326,9 +1325,9 @@ module powerbi.extensibility.visual {
                     let previousMeasureValue = 0;
                     for (let j: number = 0; j < measuresBySeries.length; j++) {
                         previousMeasureValue += measuresBySeries[j];
-                        const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(GlobeMap.GlobeSettings.barWidth, GlobeMap.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
+                        const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(this.GlobeSettings.barWidth, this.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
                         const bar: THREE.Mesh = new THREE.Mesh(geometry, this.getBarMaterialByIndex(j));
-                        const position: THREE.Vector3 = vector.clone().multiplyScalar(GlobeMap.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
+                        const position: THREE.Vector3 = vector.clone().multiplyScalar(this.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
                         bar.position.set(position.x, position.y, position.z);
                         bar.lookAt(vector);
                         (<any>bar).toolTipData = dataPointToolTip.length === 0
