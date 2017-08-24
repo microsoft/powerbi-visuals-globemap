@@ -106,7 +106,7 @@ module powerbi.extensibility.visual.test {
             it("getCategoricalColumns should return same count of category values as dataView contains", function () {
                 let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
-                let categoryCount = categorical.Category && categorical.Category.values && categorical.Category.values.length;
+                let categoryCount = categorical.Location && categorical.Location.values && categorical.Location.values.length;
                 expect(categoryCount).toBe(dataView.categorical.values[0].values.length);
             });
 
