@@ -55,7 +55,7 @@ module powerbi.extensibility.visual {
                 (n, i) => g.values.filter(v => v.source.roles[i])[0]));
         }
 
-        public Category: T = null;
+        public Location: T = null;
         public Series: T = null;
         public X: T = null;
         public Y: T = null;

@@ -128,9 +128,10 @@ module powerbi.extensibility.visual {
         private tooltipService: ITooltipService;
         private static datapointShiftPoint: number = 0.01;
         public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
-
             const categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
-            if (!categorical || !categorical.Category || _.isEmpty(categorical.Category.values)
+            if (!categorical
+                || !categorical.Location
+                || _.isEmpty(categorical.Location.values) && !(categorical.X && categorical.Y)
                 || (_.isEmpty(categorical.Height) && _.isEmpty(categorical.Heat))) {
                 return null;
             }
@@ -147,12 +148,15 @@ module powerbi.extensibility.visual {
             let toolTipDataBySeries: any;
             let heats: any;
 
-            if (categorical.Category && categorical.Category.values) {
-                locations = categorical.Category.values;
-                const sourceType: any = <any>categorical.Category.source.type;
+            if (categorical.Location && categorical.Location.values) {
+                locations = categorical.Location.values;
+                const sourceType: any = <any>categorical.Location.source.type;
                 locationType = sourceType.category ? (<string>sourceType.category).toLowerCase() : "";
             } else {
                 locations = [];
+                if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
+                    locations = new Array(categorical.X.values.length);
+                }
             }
 
             if (!_.isEmpty(categorical.Height)) {
@@ -237,32 +241,45 @@ module powerbi.extensibility.visual {
             });
             const len: number = locations.length;
             for (let i: number = 0; i < len; ++i) {
-                if (typeof (locations[i]) === "string") {
-                    const place: any = locations[i].toLowerCase();
-                    const placeKey: string = place + "/" + locationType;
-                    const location: ILocation = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
-                        ? { longitude: <number>categorical.X[0].values[i] || 0, latitude: <number>categorical.Y[0].values[i] || 0 }
-                        : undefined;
-
+                if (typeof (locations[i]) === "string" || (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values)) {
                     const height: number = heights[i] / maxHeight;
                     const heat: number = heats[i] / maxHeat;
+                    let place: any;
+                    let placeKey: string;
+                    let toolTipDataLocationName: string;
+                    let location: ILocation;
 
-                    const renderDatum: GlobeMapDataPoint = {
-                        location: location,
-                        placeKey: placeKey,
-                        place: place,
-                        locationType: locationType,
-                        height: height ? height || GlobeMap.datapointShiftPoint : undefined,
-                        heightBySeries: heightsBySeries[i],
-                        seriesToolTipData: toolTipDataBySeries ? toolTipDataBySeries[i] : undefined,
-                        heat: heat || 0,
-                        toolTipData: {
-                            location: { displayName: categorical.Category && categorical.Category.source.displayName, value: locations[i] },
-                            height: { displayName: !_.isEmpty(categorical.Height) && categorical.Height[0].source.displayName, value: heightFormatter.format(heights[i]) },
-                            heat: { displayName: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.displayName, value: heatFormatter.format(heats[i]) }
-                        }
-                    };
+                    if (typeof (locations[i]) === "string") {
+                        place = locations[i].toLowerCase();
+                        placeKey = place + "/" + locationType;
+                        location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
+                            ? { longitude: <number>categorical.X[0].values[i] || 0, latitude: <number>categorical.Y[0].values[i] || 0 }
+                            : undefined;
+                        toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
+                    } else  {
+                        place = "Unknown";
+                        placeKey = "Unknown";
+                        location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
+                            ? { longitude: <number>categorical.X.values[i] || 0, latitude: <number>categorical.Y.values[i] || 0 }
+                            : undefined;
+                        toolTipDataLocationName = locations[i];
+                    }
 
+                    let renderDatum: GlobeMapDataPoint = {
+                            location: location,
+                            placeKey: placeKey,
+                            place: place,
+                            locationType: locationType,
+                            height: height ? height || GlobeMap.datapointShiftPoint : undefined,
+                            heightBySeries: heightsBySeries[i],
+                            seriesToolTipData: toolTipDataBySeries ? toolTipDataBySeries[i] : undefined,
+                            heat: heat || 0,
+                            toolTipData: {
+                                location: { displayName: toolTipDataLocationName, value: locations[i] },
+                                height: { displayName: !_.isEmpty(categorical.Height) && categorical.Height[0].source.displayName, value: heightFormatter.format(heights[i]) },
+                                heat: { displayName: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.displayName, value: heatFormatter.format(heats[i]) }
+                            }
+                        };
                     dataPoints.push(renderDatum);
                 }
             }
@@ -768,7 +785,6 @@ module powerbi.extensibility.visual {
             this.data.dataPoints.forEach((d) => {
                 return d.location = this.globeMapLocationCache[d.placeKey] || d.location;
             });
-
             if (!this.readyToRender) {
                 this.defferedRender();
                 return;
@@ -899,8 +915,6 @@ module powerbi.extensibility.visual {
                     e = e.originalEvent;
                     const delta: number = e.wheelDelta > 0 || e.detail < 0 ? 1 : -1;
                     this.updateBarsAndHeatMapByZoom(delta);
-
-                    
                 }
             });
         }
@@ -1235,12 +1249,15 @@ module powerbi.extensibility.visual {
         }
 
         private updateBarsAndHeatMapByZoom(delta: number = 0): void {
+            if (!this.data) {
+                return;
+            }
             // delta > 0 ? Zoom increased
             // delta < 0 ? Zoom decreased
             let heatSizeScale: number = delta > 0 ? GlobeMap.GlobeSettings.heatmapScaleOnZoom : (1 / GlobeMap.GlobeSettings.heatmapScaleOnZoom);
             let barHeightScale: number = delta > 0 ? GlobeMap.GlobeSettings.barHeightScaleOnZoom : (1 / GlobeMap.GlobeSettings.barHeightScaleOnZoom);
             let barWidthtScale: number = delta > 0 ? GlobeMap.GlobeSettings.barWidthScaleOnZoom : (1 / GlobeMap.GlobeSettings.barWidthScaleOnZoom);
-            
+
             if (delta === 0) {
                 heatSizeScale = 1;
                 barHeightScale = 1;
@@ -1271,7 +1288,7 @@ module powerbi.extensibility.visual {
                     if (renderDatum.heat < 0.1) renderDatum.heat = 0.1;
                     const x: number = (180 + renderDatum.location.longitude) / 360 * GlobeMap.GlobeSettings.heatmapSize;
                     const y: number = (1 - ((90 + renderDatum.location.latitude) / 180)) * GlobeMap.GlobeSettings.heatmapSize;
-                    
+
                     this.heatmap.addPoint(x, y, GlobeMap.GlobeSettings.heatPointSize, renderDatum.heat * GlobeMap.GlobeSettings.heatIntensity);
                 }
 
@@ -1286,7 +1303,7 @@ module powerbi.extensibility.visual {
                     const vector: THREE.Vector3 = new THREE.Vector3(x, y, z);
 
                     this.averageBarVector.add(vector);
-                    
+
                     const barHeight: number =  GlobeMap.GlobeSettings.barHeight * renderDatum.height;
                     // this array holds the relative series values to the actual measure for example [0.2,0.3,0.5]
                     // this is how we draw the vectors relativly to the complete value one on top of another.
@@ -1313,7 +1330,6 @@ module powerbi.extensibility.visual {
                         const position: THREE.Vector3 = vector.clone().multiplyScalar(GlobeMap.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
                         bar.position.set(position.x, position.y, position.z);
                         bar.lookAt(vector);
-                        //bar.
                         (<any>bar).toolTipData = dataPointToolTip.length === 0
                             ? renderDatum.toolTipData
                             : this.getToolTipDataForSeries(renderDatum.toolTipData, dataPointToolTip[j]);
@@ -1330,7 +1346,7 @@ module powerbi.extensibility.visual {
 
         private calculateNewSizeOfShape(size: number, scale: number, minSize: number, maxSize: number): number {
             size *= scale;
-            if (size > maxSize){
+            if (size > maxSize) {
                 size = maxSize;
             } else if (size < minSize) {
                 size = minSize;

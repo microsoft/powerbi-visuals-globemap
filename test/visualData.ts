@@ -36,7 +36,7 @@ module powerbi.extensibility.visual.test {
     import getRandomNumbers = powerbi.extensibility.utils.test.helpers.getRandomNumbers;
 
     export class GlobeMapData extends TestDataViewBuilder {
-        public static ColumnSource: string = "Category";
+        public static ColumnSource: string = "Location";
         public static ColumnValue: string = "Height";
 
         public valuesSourceDestination: string[] = [

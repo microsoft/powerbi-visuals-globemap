@@ -1,3 +1,7 @@
+## 2.1.0
+* Bars and heats have dynamic size, depends on the zoom level
+* Building coordinates only by longitude and latitude fields
+
 ## 2.0.1
 * Increase the resolution level of map
 
