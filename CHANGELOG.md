@@ -1,3 +1,7 @@
+## 2.1.1
+* Reduce min height of bars
+* Increase speed of bars height resizing at zoom
+
 ## 2.1.0
 * Bars and heats have dynamic size, depends on the zoom level
 * Building coordinates only by longitude and latitude fields

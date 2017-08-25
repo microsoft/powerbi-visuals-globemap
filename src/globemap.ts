@@ -74,9 +74,9 @@ module powerbi.extensibility.visual {
             maxBarWidth: 0.3,
             barWidthScaleOnZoom: 0.9,
             barHeight: 5,
-            minBarHeight: 0.9,
+            minBarHeight: 0.75,
             maxBarHeight: 5,
-            barHeightScaleOnZoom: 0.95,
+            barHeightScaleOnZoom: 0.9,
             rotateSpeed: 0.5,
             zoomSpeed: 0.8,
             cameraAnimDuration: 1000, // ms
