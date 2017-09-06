@@ -132,8 +132,8 @@ module powerbi.extensibility.visual {
             const categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
             if (!categorical
                 || !categorical.Location
-                || _.isEmpty(categorical.Location.values) && !(categorical.X && categorical.Y)
-                || (_.isEmpty(categorical.Height) && _.isEmpty(categorical.Heat))) {
+                || _.isEmpty(categorical.Location.values) && !(categorical.X && categorical.Y)) {
+                //|| (_.isEmpty(categorical.Height) && _.isEmpty(categorical.Heat))) {
                 return null;
             }
             const properties: GlobeMapSettings = GlobeMapSettings.getDefault() as GlobeMapSettings;
@@ -185,7 +185,7 @@ module powerbi.extensibility.visual {
                                 toolTipDataBySeries[j] = [];
                             }
                             toolTipDataBySeries[j][i] = {
-                                displayName: categorical.Series && categorical.Series.source.displayName,
+                                displayName: categorical.Series && categorical.Series.source && categorical.Series.source.displayName,
                                 value: dataView.categorical.values.grouped()[i].name,
                                 dataPointValue: values[j]
                             };
@@ -199,15 +199,49 @@ module powerbi.extensibility.visual {
                         }
                     }
                 } else {
-                    heights = categorical.Height[0].values;
-                    heightsBySeries = [];
-                    seriesDataPoints[0] = GlobeMap.createDataPointForEnumeration(
-                        dataView, groupedColumns[0].Height.source, 0, dataView.metadata, colorHelper, colors, visualHost);
+                //     heights = categorical.Height[0].values;
+                //     heightsBySeries = [];
+                //     // let heightLenght = heights.length;
+                //  heights.forEach((element, index) => {
+                //          let lat;
+                //          let long;
+                //          if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
+                //             lat = categorical.Y.values[index];
+                //             long = categorical.X.values[index];
+                //          }
+                //         seriesDataPoints[index] = GlobeMap.createDataPointForEnumeration(
+                //         dataView, {...groupedColumns[0].Height.source, displayName: groupedColumns[0].Height.source.displayName + index}, 0, dataView.metadata, colorHelper, colors, visualHost, index, lat, long);
+                //    });
+                heights = categorical.Height[0].values;
+                heightsBySeries = [];
+                seriesDataPoints[0] = GlobeMap.createDataPointForEnumeration(
+                    dataView, groupedColumns[0].Height.source, 0, dataView.metadata, colorHelper, colors, visualHost);   
                 }
             } else {
                 heightsBySeries = [];
                 heights = [];
-            }
+                if (categorical.Location && categorical.Location.values || categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
+                        let heightsLenght: number = 0;;
+                        if (categorical.Location && categorical.Location.values){
+                            heightsLenght = categorical.Location.values.length;
+                        } else if (categorical.X  && categorical.X.values){
+                            heightsLenght = categorical.X.values.length;
+                        }
+                       
+                        for (let i = 0; i < heightsLenght; i++){
+                            heights.push(1);
+                        }
+                        
+                        const color: string = colorHelper.getColorForMeasure(dataView.metadata.objects, "")
+                        seriesDataPoints[0] = {
+                            label: 'label',
+                            identity: 'identity',
+                            category: 'category',
+                            color: color,
+                            selected: null
+                        };
+                }
+            }     
             if (!_.isEmpty(categorical.Heat)) {
                 if (groupedColumns.length > 1) {
                     heats = [];
@@ -248,8 +282,10 @@ module powerbi.extensibility.visual {
                     let place: any;
                     let placeKey: string;
                     let toolTipDataLocationName: string;
+                    let toolTipDataLongName: string;
+                    let toolTipDataLatName: string;
                     let location: ILocation;
-
+                    
                     if (typeof (locations[i]) === "string") {
                         place = locations[i].toLowerCase();
                         placeKey = place + "/" + locationType;
@@ -258,12 +294,13 @@ module powerbi.extensibility.visual {
                             : undefined;
                         toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
                     } else  {
-                        place = this.Unknown;
-                        placeKey = this.Unknown;
+                        place = categorical.X.values[i] + " " + categorical.Y.values[i];//this.Unknown;
+                        placeKey = categorical.X.values[i] + " " + categorical.Y.values[i];//this.Unknown;
                         location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
                             ? { longitude: <number>categorical.X.values[i] || 0, latitude: <number>categorical.Y.values[i] || 0 }
                             : undefined;
-                        toolTipDataLocationName = locations[i];
+                        toolTipDataLongName = categorical.X && categorical.X.source && categorical.X.source.displayName;
+                        toolTipDataLatName = categorical.Y && categorical.Y.source && categorical.Y.source.displayName;
                     }
 
                     let renderDatum: GlobeMapDataPoint = {
@@ -276,7 +313,9 @@ module powerbi.extensibility.visual {
                             seriesToolTipData: toolTipDataBySeries ? toolTipDataBySeries[i] : undefined,
                             heat: heat || 0,
                             toolTipData: {
-                                location: { displayName: toolTipDataLocationName, value: locations[i] },
+                                location: { displayName: !_.isEmpty(toolTipDataLocationName) && toolTipDataLocationName, value: locations[i] },
+                                longitude: {displayName: !_.isEmpty(toolTipDataLongName) && toolTipDataLongName, value: categorical.X && categorical.X.values && categorical.X.values[i].toString()},
+                                latitude: {displayName: !_.isEmpty(toolTipDataLatName) && toolTipDataLatName, value: categorical.Y && categorical.Y.values && categorical.Y.values[i].toString()},
                                 height: { displayName: !_.isEmpty(categorical.Height) && categorical.Height[0].source.displayName, value: heightFormatter.format(heights[i]) },
                                 heat: { displayName: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.displayName, value: heatFormatter.format(heats[i]) }
                             }
@@ -314,7 +353,7 @@ module powerbi.extensibility.visual {
                 sourceForFormat = values.source;
                 nameForFormat = source.groupName;
             }
-
+            
             const label: string = valueFormatter.format(nameForFormat, valueFormatter.getFormatString(sourceForFormat, null));
 
             let measureValues = values[0];
@@ -323,11 +362,27 @@ module powerbi.extensibility.visual {
                 values: null,
                 identity: [measureValues.identity]
             };
+            
+            // let uniqKey = JSON.stringify({lat: lat, lon: long});
+            // console.log('uniqKey = ', uniqKey);
+            // const identity: ISelectionId = 
+            //         visualHost.createSelectionIdBuilder()
+            //             .withCategory(categoryColumn, 0)
+            //           //  .withMeasure(measureValues.source.queryName)
+            //           .withMeasure(uniqKey)
+            //             .createSelectionId();
+            // console.log('identity = ', identity);      
+            // const category: any = <string>converterHelper.getSeriesName(source);
+            // const objects: any = <any>columns.objects || <any>source.objects;
+            // const color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
+            //     ? colorHelper.getColorForMeasure(metaData.objects, "")
+            //     : colors.getColor(seriesIndex).value;
+            //     console.log('color = ', color);    
 
             const identity: ISelectionId = visualHost.createSelectionIdBuilder()
-                .withCategory(categoryColumn, 0)
-                .withMeasure(measureValues.source.queryName)
-                .createSelectionId();
+            .withCategory(categoryColumn, 0)
+            .withMeasure(measureValues.source.queryName)
+            .createSelectionId();
 
             const category: any = <string>converterHelper.getSeriesName(source);
             const objects: any = <any>columns.objects || <any>source.objects;
@@ -795,7 +850,7 @@ module powerbi.extensibility.visual {
             if (this.barsGroup.children.length > 0 && this.camera) {
                 this.averageBarVector.multiplyScalar(1 / this.barsGroup.children.length);
                 if (this.locationsLoaded === this.locationsToLoad) {
-                    this.animateCamera(this.averageBarVector);
+                    //this.animateCamera(this.averageBarVector);
                 }
             }
 
@@ -945,6 +1000,14 @@ module powerbi.extensibility.visual {
 
                 if (toolTipData.location.displayName) {
                     toolTipItems.push(toolTipData.location);
+                }
+
+                if (toolTipData.longitude.displayName) {
+                    toolTipItems.push(toolTipData.longitude);
+                }
+
+                if (toolTipData.latitude.displayName) {
+                    toolTipItems.push(toolTipData.latitude);
                 }
 
                 if (toolTipData.series) {
