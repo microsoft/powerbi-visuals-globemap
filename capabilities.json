@@ -193,23 +193,6 @@
           "Heat": {
             "max": 1
           }
-        },
-        {
-          "Location": {
-            "max": 0
-          },
-          "X": {
-            "max": 1
-          },
-          "Y": {
-            "max": 1
-          },
-          "Height": {
-            "max": 1
-          },
-          "Heat": {
-            "max": 1
-          }
         }
       ],
       "categorical": {
@@ -223,8 +206,6 @@
           }
         },
         "values": {
-          "group": {
-            "by": "X",
             "select": [
               {
                 "bind": {
@@ -240,7 +221,6 @@
             "dataReductionAlgorithm": {
               "top": {}
             }
-          }
         }
       }
     }

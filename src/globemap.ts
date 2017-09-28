@@ -199,23 +199,84 @@ module powerbi.extensibility.visual {
                         }
                     }
                 } else {
-                //     heights = categorical.Height[0].values;
+                    heights = categorical.Height[0].values;
+                    heightsBySeries = [];
+                    // let heightLenght = heights.length;
+                 heights.forEach((element, index) => {
+                         let lat;
+                         let long;
+                         if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
+                            lat = categorical.Y.values[index];
+                            long = categorical.X.values[index];
+                         }
+                        seriesDataPoints[index] = GlobeMap.createDataPointForEnumeration(
+                        dataView, {...groupedColumns[0].Height.source, displayName: groupedColumns[0].Height.source.displayName + index}, 0, dataView.metadata, colorHelper, colors, visualHost, lat, long);
+                   });
+
+
+               
+                   
+                // heights = categorical.Height[0].values;
+                // //heightsBySeries = [...heights];
                 //     heightsBySeries = [];
-                //     // let heightLenght = heights.length;
-                //  heights.forEach((element, index) => {
-                //          let lat;
-                //          let long;
-                //          if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
-                //             lat = categorical.Y.values[index];
-                //             long = categorical.X.values[index];
-                //          }
-                //         seriesDataPoints[index] = GlobeMap.createDataPointForEnumeration(
-                //         dataView, {...groupedColumns[0].Height.source, displayName: groupedColumns[0].Height.source.displayName + index}, 0, dataView.metadata, colorHelper, colors, visualHost, index, lat, long);
-                //    });
-                heights = categorical.Height[0].values;
-                heightsBySeries = [];
-                seriesDataPoints[0] = GlobeMap.createDataPointForEnumeration(
-                    dataView, groupedColumns[0].Height.source, 0, dataView.metadata, colorHelper, colors, visualHost);   
+                //     toolTipDataBySeries = [];
+                // heights.forEach((element, index) => {
+                //     const color: string = colorHelper.getColorForMeasure(dataView.metadata.objects, "");
+                //     heightsBySeries.push(heights);    
+                //     seriesDataPoints[index] = {
+                //         label: 'label',
+                //         identity: 'identity' + index,
+                //         category: 'category',
+                //         color: color,
+                //         selected: null
+                //     };
+                // });
+                // seriesDataPoints[0] = GlobeMap.createDataPointForEnumeration(
+                //     dataView, groupedColumns[0].Height.source, 0, dataView.metadata, colorHelper, colors, visualHost);   
+
+
+                    // heights = [];
+                    // heightsBySeries = [];
+                    // toolTipDataBySeries = [];
+                    // seriesDataPoints = [];
+                    // debugger;
+                    // // creating a matrix for drawing values by series later.
+                    // for (let i: number = 0; i < groupedColumns.length; i++) {
+                    //     const values: any = groupedColumns[i].Height.values;
+
+                    //     seriesDataPoints[i] = GlobeMap.createDataPointForEnumeration(
+                    //         dataView, groupedColumns[i].Height.source, i, null, colorHelper, colors, visualHost);
+                    //     for (let j: number = 0; j < values.length; j++) {
+                    //         if (!heights[j]) {
+                    //             heights[j] = 0;
+                    //         }
+                    //         heights[j] += values[j] ? values[j] : 0;
+                    //         if (!heightsBySeries[j]) {
+                    //             heightsBySeries[j] = [];
+                    //         }
+                    //         heightsBySeries[j][i] = values[j];
+                    //         if (!toolTipDataBySeries[j]) {
+                    //             toolTipDataBySeries[j] = [];
+                    //         }
+                    //         toolTipDataBySeries[j][i] = {
+                    //             displayName: categorical.Series && categorical.Series.source && categorical.Series.source.displayName,
+                    //             value: dataView.categorical.values.grouped()[i].name,
+                    //             dataPointValue: values[j]
+                    //         };
+                    //     }
+                    // }
+                    // for (let i: number = 0; i < groupedColumns.length; i++) {
+                    //     const values: any = groupedColumns[i].Height.values;
+                    //     for (let j: number = 0; j < values.length; j++) {
+                    //         // calculating relative size of series
+                    //         heightsBySeries[j][i] = <number>values[j] / heights[j];
+                    //     }
+                    // }
+
+                    // heights = categorical.Height[0].values;
+                    // heightsBySeries = [];
+                    // seriesDataPoints[0] = GlobeMap.createDataPointForEnumeration(
+                    //     dataView, groupedColumns[0].Height.source, 0, dataView.metadata, colorHelper, colors, visualHost);       
                 }
             } else {
                 heightsBySeries = [];
@@ -232,7 +293,7 @@ module powerbi.extensibility.visual {
                             heights.push(1);
                         }
                         
-                        const color: string = colorHelper.getColorForMeasure(dataView.metadata.objects, "")
+                        const color: string = colorHelper.getColorForMeasure(dataView.metadata.objects, "");
                         seriesDataPoints[0] = {
                             label: 'label',
                             identity: 'identity',
@@ -261,7 +322,7 @@ module powerbi.extensibility.visual {
             } else {
                 heats = [];
             }
-
+// debugger;
             const maxHeight: any = Math.max.apply(null, heights) || 1;
             const maxHeat: any = Math.max.apply(null, heats) || 1;
             const heatFormatter: IValueFormatter = valueFormatter.create({
@@ -342,7 +403,9 @@ module powerbi.extensibility.visual {
             metaData,
             colorHelper: ColorHelper,
             colors: IColorPalette,
-            visualHost: IVisualHost
+            visualHost: IVisualHost,
+            lat?,
+            long?
         ): GlobeMapSeriesDataPoint {
 
             const columns: DataViewValueColumnGroup = dataView.categorical.values.grouped()[seriesIndex];
@@ -363,32 +426,33 @@ module powerbi.extensibility.visual {
                 identity: [measureValues.identity]
             };
             
-            // let uniqKey = JSON.stringify({lat: lat, lon: long});
-            // console.log('uniqKey = ', uniqKey);
-            // const identity: ISelectionId = 
-            //         visualHost.createSelectionIdBuilder()
-            //             .withCategory(categoryColumn, 0)
-            //           //  .withMeasure(measureValues.source.queryName)
-            //           .withMeasure(uniqKey)
-            //             .createSelectionId();
-            // console.log('identity = ', identity);      
-            // const category: any = <string>converterHelper.getSeriesName(source);
-            // const objects: any = <any>columns.objects || <any>source.objects;
-            // const color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
-            //     ? colorHelper.getColorForMeasure(metaData.objects, "")
-            //     : colors.getColor(seriesIndex).value;
-            //     console.log('color = ', color);    
-
-            const identity: ISelectionId = visualHost.createSelectionIdBuilder()
-            .withCategory(categoryColumn, 0)
-            .withMeasure(measureValues.source.queryName)
-            .createSelectionId();
-
+            let uniqKey = JSON.stringify({lat: lat, lon: long});
+            console.log('uniqKey = ', uniqKey);
+            const identity: ISelectionId = 
+                    visualHost.createSelectionIdBuilder()
+                        .withCategory(categoryColumn, 0)
+                      //  .withMeasure(measureValues.source.queryName)
+                      .withMeasure(uniqKey)
+                        .createSelectionId();
+            console.log('identity = ', identity);      
             const category: any = <string>converterHelper.getSeriesName(source);
             const objects: any = <any>columns.objects || <any>source.objects;
             const color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
                 ? colorHelper.getColorForMeasure(metaData.objects, "")
                 : colors.getColor(seriesIndex).value;
+                console.log('color = ', color);    
+
+
+            // const identity: ISelectionId = visualHost.createSelectionIdBuilder()
+            // .withCategory(categoryColumn, 0)
+            // .withMeasure(measureValues.source.queryName)
+            // .createSelectionId();
+
+            // const category: any = <string>converterHelper.getSeriesName(source);
+            // const objects: any = <any>columns.objects || <any>source.objects;
+            // const color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
+            //     ? colorHelper.getColorForMeasure(metaData.objects, "")
+            //     : colors.getColor(seriesIndex).value;
             return {
                 label: label,
                 identity: identity,
@@ -797,6 +861,7 @@ module powerbi.extensibility.visual {
             if (options.dataViews === undefined || options.dataViews === null) {
                 return;
             }
+            debugger;
             this.layout.viewport = options.viewport;
             this.root.css(this.layout.viewportIn);
             this.zoomContainer.style({
@@ -836,6 +901,7 @@ module powerbi.extensibility.visual {
             if (!this.data) {
                 return;
             }
+            //debugger;
             this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d)); // all coordinates (latitude/longitude) will be gained here
             this.data.dataPoints.forEach((d) => {
                 return d.location = this.globeMapLocationCache[d.placeKey] || d.location;
@@ -1317,6 +1383,7 @@ module powerbi.extensibility.visual {
             }
             // delta > 0 ? Zoom increased
             // delta < 0 ? Zoom decreased
+            //debugger;
             let heatSizeScale: number = delta > 0 ? this.GlobeSettings.heatmapScaleOnZoom : (1 / this.GlobeSettings.heatmapScaleOnZoom);
             let barHeightScale: number = delta > 0 ? this.GlobeSettings.barHeightScaleOnZoom : (1 / this.GlobeSettings.barHeightScaleOnZoom);
             let barWidthtScale: number = delta > 0 ? this.GlobeSettings.barWidthScaleOnZoom : (1 / this.GlobeSettings.barWidthScaleOnZoom);
@@ -1378,7 +1445,7 @@ module powerbi.extensibility.visual {
                             if (renderDatum.heightBySeries[c] || renderDatum.heightBySeries[c] === 0) {
                                 measuresBySeries.push(renderDatum.heightBySeries[c]);
                             }
-                            dataPointToolTip.push(renderDatum.seriesToolTipData[c]);
+                            dataPointToolTip.push(renderDatum.seriesToolTipData && renderDatum.seriesToolTipData[c] ? renderDatum.seriesToolTipData[c] : "");
                         }
                     } else {
                         // no category series so we'll just draw one value
@@ -1403,6 +1470,7 @@ module powerbi.extensibility.visual {
                     }
                 }
             }
+            //debugger;
 
             this.heatmap.update();
         }
