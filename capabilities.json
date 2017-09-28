@@ -208,13 +208,13 @@
         "values": {
             "select": [
               {
-                "bind": {
-                  "to": "Height"
+                "for": {
+                  "in": "Height"
                 }
               },
               {
-                "bind": {
-                  "to": "Heat"
+                "for": {
+                  "in": "Heat"
                 }
               }
             ],

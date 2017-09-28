@@ -210,7 +210,7 @@ module powerbi.extensibility.visual {
                             long = categorical.X.values[index];
                          }
                         seriesDataPoints[index] = GlobeMap.createDataPointForEnumeration(
-                        dataView, {...groupedColumns[0].Height.source, displayName: groupedColumns[0].Height.source.displayName + index}, 0, dataView.metadata, colorHelper, colors, visualHost, lat, long);
+                        dataView, {...groupedColumns[0].Height.source, displayName: groupedColumns[0].Height.source.displayName + index}, 0, dataView.metadata, colorHelper, colors, visualHost, lat, long, index);
                    });
 
 
@@ -405,7 +405,8 @@ module powerbi.extensibility.visual {
             colors: IColorPalette,
             visualHost: IVisualHost,
             lat?,
-            long?
+            long?,
+            catIndex?
         ): GlobeMapSeriesDataPoint {
 
             const columns: DataViewValueColumnGroup = dataView.categorical.values.grouped()[seriesIndex];
@@ -428,13 +429,13 @@ module powerbi.extensibility.visual {
             
             let uniqKey = JSON.stringify({lat: lat, lon: long});
             console.log('uniqKey = ', uniqKey);
-            const identity: ISelectionId = 
+            const identity: ISelectionId =
                     visualHost.createSelectionIdBuilder()
-                        .withCategory(categoryColumn, 0)
+                        .withCategory(dataView.categorical.categories[0], catIndex)
                       //  .withMeasure(measureValues.source.queryName)
-                      .withMeasure(uniqKey)
+                    //   .withMeasure(uniqKey)
                         .createSelectionId();
-            console.log('identity = ', identity);      
+            console.log('identity = ', identity);
             const category: any = <string>converterHelper.getSeriesName(source);
             const objects: any = <any>columns.objects || <any>source.objects;
             const color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
@@ -479,8 +480,10 @@ module powerbi.extensibility.visual {
             let instances: VisualObjectInstanceEnumeration = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
             switch (options.objectName) {
                 case "dataPoint": if (this.data && this.data.seriesDataPoints) {
+                    console.log("dataPoint objects");
                     for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
                         let dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
+                        console.log(ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()));
                         this.addAnInstanceToEnumeration(instances, {
                             objectName: "dataPoint",
                             displayName: dataPoint.label,
