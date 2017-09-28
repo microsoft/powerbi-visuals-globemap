@@ -1,3 +1,8 @@
+## 2.2.0
+* Show data only by Location field
+* Remove group bucket field
+* Code refactoring
+
 ## 2.1.1
 * Reduce min height of bars
 * Increase speed of bars height resizing at zoom
