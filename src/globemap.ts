@@ -159,7 +159,7 @@ module powerbi.extensibility.visual {
                     locations = new Array(categorical.X.values.length);
                 }
             }
-
+            debugger;
             if (!_.isEmpty(categorical.Height)) {
                 if (groupedColumns.length > 1) {
                     heights = [];
@@ -205,12 +205,16 @@ module powerbi.extensibility.visual {
                  heights.forEach((element, index) => {
                          let lat;
                          let long;
+                         let displayName;
                          if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
                             lat = categorical.Y.values[index];
                             long = categorical.X.values[index];
+                            displayName = groupedColumns[0].Height.source.displayName + index;
+                         } else if (categorical.Location) {
+                            displayName = categorical.Location.values[index];
                          }
                         seriesDataPoints[index] = GlobeMap.createDataPointForEnumeration(
-                        dataView, {...groupedColumns[0].Height.source, displayName: groupedColumns[0].Height.source.displayName + index}, 0, dataView.metadata, colorHelper, colors, visualHost, lat, long, index);
+                        dataView, {...groupedColumns[0].Height.source, displayName: displayName}, 0, dataView.metadata, colorHelper, colors, visualHost, lat, long, index);
                    });
 
 
@@ -239,7 +243,6 @@ module powerbi.extensibility.visual {
                     // heightsBySeries = [];
                     // toolTipDataBySeries = [];
                     // seriesDataPoints = [];
-                    // debugger;
                     // // creating a matrix for drawing values by series later.
                     // for (let i: number = 0; i < groupedColumns.length; i++) {
                     //     const values: any = groupedColumns[i].Height.values;
@@ -322,7 +325,6 @@ module powerbi.extensibility.visual {
             } else {
                 heats = [];
             }
-// debugger;
             const maxHeight: any = Math.max.apply(null, heights) || 1;
             const maxHeat: any = Math.max.apply(null, heats) || 1;
             const heatFormatter: IValueFormatter = valueFormatter.create({
@@ -437,12 +439,14 @@ module powerbi.extensibility.visual {
                         .createSelectionId();
             console.log('identity = ', identity);
             const category: any = <string>converterHelper.getSeriesName(source);
-            const objects: any = <any>columns.objects || <any>source.objects;
-            const color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
+            const objects: any = <any>dataView.categorical.categories[0].objects;
+            ;
+            const color: string = objects && objects[catIndex] && objects[catIndex].dataPoint ? objects[catIndex].dataPoint.fill.solid.color : metaData && metaData.objects
+            // const color: string = objects && objects.dataPoint ? objects.dataPoint.fill.solid.color : metaData && metaData.objects
                 ? colorHelper.getColorForMeasure(metaData.objects, "")
                 : colors.getColor(seriesIndex).value;
-                console.log('color = ', color);    
-
+                console.log('color = ', color);
+           // debugger;
 
             // const identity: ISelectionId = visualHost.createSelectionIdBuilder()
             // .withCategory(categoryColumn, 0)
@@ -481,6 +485,7 @@ module powerbi.extensibility.visual {
             switch (options.objectName) {
                 case "dataPoint": if (this.data && this.data.seriesDataPoints) {
                     console.log("dataPoint objects");
+                    // debugger;
                     for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
                         let dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
                         console.log(ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()));
@@ -864,7 +869,6 @@ module powerbi.extensibility.visual {
             if (options.dataViews === undefined || options.dataViews === null) {
                 return;
             }
-            debugger;
             this.layout.viewport = options.viewport;
             this.root.css(this.layout.viewportIn);
             this.zoomContainer.style({
@@ -904,7 +908,6 @@ module powerbi.extensibility.visual {
             if (!this.data) {
                 return;
             }
-            //debugger;
             this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d)); // all coordinates (latitude/longitude) will be gained here
             this.data.dataPoints.forEach((d) => {
                 return d.location = this.globeMapLocationCache[d.placeKey] || d.location;
@@ -1386,7 +1389,6 @@ module powerbi.extensibility.visual {
             }
             // delta > 0 ? Zoom increased
             // delta < 0 ? Zoom decreased
-            //debugger;
             let heatSizeScale: number = delta > 0 ? this.GlobeSettings.heatmapScaleOnZoom : (1 / this.GlobeSettings.heatmapScaleOnZoom);
             let barHeightScale: number = delta > 0 ? this.GlobeSettings.barHeightScaleOnZoom : (1 / this.GlobeSettings.barHeightScaleOnZoom);
             let barWidthtScale: number = delta > 0 ? this.GlobeSettings.barWidthScaleOnZoom : (1 / this.GlobeSettings.barWidthScaleOnZoom);
@@ -1459,7 +1461,7 @@ module powerbi.extensibility.visual {
                     for (let j: number = 0; j < measuresBySeries.length; j++) {
                         previousMeasureValue += measuresBySeries[j];
                         const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(this.GlobeSettings.barWidth, this.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
-                        const bar: THREE.Mesh = new THREE.Mesh(geometry, this.getBarMaterialByIndex(j));
+                        const bar: THREE.Mesh = new THREE.Mesh(geometry, this.getBarMaterialByIndex(i));
                         const position: THREE.Vector3 = vector.clone().multiplyScalar(this.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
                         bar.position.set(position.x, position.y, position.z);
                         bar.lookAt(vector);
@@ -1473,7 +1475,6 @@ module powerbi.extensibility.visual {
                     }
                 }
             }
-            //debugger;
 
             this.heatmap.update();
         }

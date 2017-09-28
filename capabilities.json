@@ -136,35 +136,34 @@
       ],
       "categorical": {
         "categories": {
-          "for": {
-            "in": "Location"
-          },
-          "dataReductionAlgorithm": {
-            "top": {}
-          }
+          "select": [
+            { "bind": { "to": "Location" } }
+           ],
+           "dataReductionAlgorithm": {
+             "top": {}
+           }
         },
         "values": {
-          "group": {
-            "by": "Location",
+
             "select": [
               {
-                "bind": {
-                  "to": "Height"
+                "for": {
+                  "in": "Height"
                 }
               },
               {
-                "bind": {
-                  "to": "Heat"
+                "for": {
+                  "in": "Heat"
                 }
               },
               {
-                "bind": {
-                  "to": "X"
+                "for": {
+                  "in": "X"
                 }
               },
               {
-                "bind": {
-                  "to": "Y"
+                "for": {
+                  "in": "Y"
                 }
               }
             ],
@@ -173,7 +172,7 @@
             }
           }
         }
-      }
+      
     },
     {
       "conditions": [
