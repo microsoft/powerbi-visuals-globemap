@@ -54,14 +54,8 @@
       ]
     },
     {
-      "name": "Series",
-      "kind": "Grouping",
-      "displayName": "Group",
-      "displayNameKey": "Role_DisplayName_Group"
-    },
-    {
       "name": "X",
-      "kind": "GroupingOrMeasure",
+      "kind": "Grouping",
       "displayName": "Longitude",
       "description": "Used to override the longitude of locations",
       "displayNameKey": "Role_DisplayName_Longitude",
@@ -75,7 +69,7 @@
     },
     {
       "name": "Y",
-      "kind": "GroupingOrMeasure",
+      "kind": "Grouping",
       "displayName": "Latitude",
       "description": "Used to override the latitude of locations",
       "displayNameKey": "Role_DisplayName_Latitude",
@@ -108,9 +102,6 @@
             "min": 1,
             "max": 1
           },
-          "Series": {
-            "max": 1
-          },
           "X": {
             "max": 1
           },
@@ -129,9 +120,6 @@
             "min": 1,
             "max": 1
           },
-          "Series": {
-            "max": 0
-          },
           "X": {
             "max": 1
           },
@@ -148,35 +136,34 @@
       ],
       "categorical": {
         "categories": {
-          "for": {
-            "in": "Location"
-          },
-          "dataReductionAlgorithm": {
-            "top": {}
-          }
+          "select": [
+            { "bind": { "to": "Location" } }
+           ],
+           "dataReductionAlgorithm": {
+             "top": {}
+           }
         },
         "values": {
-          "group": {
-            "by": "Series",
+
             "select": [
               {
-                "bind": {
-                  "to": "Height"
+                "for": {
+                  "in": "Height"
                 }
               },
               {
-                "bind": {
-                  "to": "Heat"
+                "for": {
+                  "in": "Heat"
                 }
               },
               {
-                "bind": {
-                  "to": "X"
+                "for": {
+                  "in": "X"
                 }
               },
               {
-                "bind": {
-                  "to": "Y"
+                "for": {
+                  "in": "Y"
                 }
               }
             ],
@@ -185,36 +172,13 @@
             }
           }
         }
-      }
+      
     },
     {
       "conditions": [
         {
           "Location": {
             "max": 0
-          },
-          "Series": {
-            "max": 0
-          },
-          "X": {
-            "max": 1
-          },
-          "Y": {
-            "max": 1
-          },
-          "Height": {
-            "max": 1
-          },
-          "Heat": {
-            "max": 1
-          }
-        },
-        {
-          "Location": {
-            "max": 0
-          },
-          "Series": {
-            "max": 1
           },
           "X": {
             "max": 1
@@ -241,24 +205,21 @@
           }
         },
         "values": {
-          "group": {
-            "by": "Series",
             "select": [
               {
-                "bind": {
-                  "to": "Height"
+                "for": {
+                  "in": "Height"
                 }
               },
               {
-                "bind": {
-                  "to": "Heat"
+                "for": {
+                  "in": "Heat"
                 }
               }
             ],
             "dataReductionAlgorithm": {
               "top": {}
             }
-          }
         }
       }
     }
