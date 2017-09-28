@@ -209,9 +209,9 @@ module powerbi.extensibility.visual {
                     heightsBySeries = [];
                     // let heightLenght = heights.length;
                  heights.forEach((element, index) => {
-                         let lat;
-                         let long;
-                         let displayName;
+                         let lat: PrimitiveValue;
+                         let long: PrimitiveValue;
+                         let displayName: PrimitiveValue;
                          if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
                             lat = categorical.Y.values[index];
                             long = categorical.X.values[index];
@@ -308,7 +308,7 @@ module powerbi.extensibility.visual {
                             : undefined;
                         toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
                     } else  {
-                        place = categorical.X.values[i] + " " + categorical.Y.values[i];
+                        place = "${categorical.X.values[i]} ${categorical.Y.values[i]}";
                         placeKey = categorical.X.values[i] + " " + categorical.Y.values[i];
                         location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
                             ? { longitude: <number>categorical.X.values[i] || 0, latitude: <number>categorical.Y.values[i] || 0 }
@@ -350,7 +350,6 @@ module powerbi.extensibility.visual {
         }
 
         private static createDataPointForEnumeration(dataPointsParams: any): GlobeMapSeriesDataPoint {
-debugger;
             const columns: DataViewValueColumnGroup = dataPointsParams.dataView.categorical.values.grouped()[dataPointsParams.seriesIndex];
             const values: DataViewValueColumns = <DataViewValueColumns>columns.values;
             let sourceForFormat: DataViewMetadataColumn = dataPointsParams.source;
@@ -408,10 +407,8 @@ debugger;
             let instances: VisualObjectInstanceEnumeration = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
             switch (options.objectName) {
                 case "dataPoint": if (this.data && this.data.seriesDataPoints) {
-                    console.log("dataPoint objects");
                     for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
                         let dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
-                        console.log(ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()));
                         this.addAnInstanceToEnumeration(instances, {
                             objectName: "dataPoint",
                             displayName: dataPoint.label,
