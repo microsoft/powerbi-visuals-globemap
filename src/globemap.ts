@@ -111,6 +111,7 @@ module powerbi.extensibility.visual {
         private globeMapLocationCache: { [i: string]: ILocation };
         private locationsToLoad: number = 0;
         private locationsLoaded: number = 0;
+        private initialLocationsLength: number = 0;
         private renderLoopEnabled = true;
         private needsRender = false;
         private mousePosNormalized: any;
@@ -839,6 +840,14 @@ module powerbi.extensibility.visual {
 
             this.updateBarsAndHeatMapByZoom();
 
+            if (this.barsGroup.children.length > 0 && this.camera && (this.initialLocationsLength !== this.barsGroup.children.length || this.barsGroup.children.length === 1) ) {
+                this.averageBarVector.multiplyScalar(1 / this.barsGroup.children.length);
+                if (this.locationsLoaded === this.locationsToLoad) {
+                    this.initialLocationsLength = this.barsGroup.children.length;
+                    this.animateCamera(this.averageBarVector);
+                }
+            }
+
             this.heatmap.blur();
             this.heatTexture.needsUpdate = true;
             this.needsRender = true;
@@ -1048,7 +1057,7 @@ module powerbi.extensibility.visual {
             const startPos: THREE.Vector3 = this.camera.position.clone().normalize();
             const endPos: THREE.Vector3 = to.clone().normalize();
             const length: number = this.camera.position.length();
-            const two: number = 2;
+            const two: number = 1.9;
             const one: number = 2;
             const easeInOut = (t) => {
                 t *= two;
