@@ -45,9 +45,9 @@ module powerbi.extensibility.visual {
         placeKey: string;
         height: number;
         heightBySeries: number[];
-        seriesToolTipData: any[];
+        seriesToolTipData: {};
         heat: number;
-        toolTipData: any;
+        toolTipData: {};
     }
 
     export interface GlobeMapSeriesDataPoint extends SelectableDataPoint {

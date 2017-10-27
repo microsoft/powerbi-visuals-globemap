@@ -111,7 +111,7 @@ module powerbi.extensibility.visual.test {
             });
 
             it("getGroupedValueColumns should group dataView columns", function () {
-                let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] | any = GlobeMapColumns.getGroupedValueColumns(dataView);
+                let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] | {}[] = GlobeMapColumns.getGroupedValueColumns(dataView);
                 expect(groupedColumns.length).toBe(1);
             });
         });

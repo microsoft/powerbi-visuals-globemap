@@ -12,6 +12,7 @@
        "no-string-based-set-immediate": true,
        "no-string-based-set-interval": true,
        "no-string-based-set-timeout": true,
+       "no-any": true,
        "no-eval": true,
         "class-name": true,
         "comment-format": [
@@ -65,6 +66,17 @@
             "check-operator",
             "check-separator",
             "check-type"
-        ]
+        ],
+        /**
+         * Security Rules. The following rules should be turned on because they find security issues
+         * or are recommended in the Microsoft Secure Development Lifecycle (SDL)
+         */
+         "insecure-random": true,
+
+         "no-document-write": true,
+         "no-http-string": [true, "http://www.example.com/?.*", "http://www.examples.com/?.*"],
+         "no-inner-html": true,
+         "non-literal-require": true,
+         "possible-timing-attack": true
     }
 }

@@ -49,7 +49,7 @@ module powerbi.extensibility.geocoder {
 
         /** Maximum cache overflow of cached geocode data to kick the cache reducing. */
         MaxCacheSizeOverflow: 100,
-        // TODO: Add your Bing key here
+        // Add your Bing key here
         BingKey: "AlzEsHuemcvyHL9zokjJx85LFxp8sy4Ch2aSwrmn6AKCojiBUahyJzNwoV0oRlvm"
     };
 
@@ -105,15 +105,15 @@ module powerbi.extensibility.geocoder {
         protected abstract bingGeocodingUrl(): string;
         protected abstract bingSpatialDataUrl(): string;
 
-        public geocode(query: string, category: string = '', options?: GeocodeOptions): any {
+        public geocode(query: string, category: string = '', options?: GeocodeOptions): IPromise<IGeocodeCoordinate> {
             return this.geocodeCore("geocode", new GeocodeQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), query, category), options);
         }
 
-        public geocodeBoundary(latitude: number, longitude: number, category: string = '', levelOfDetail: number = 2, maxGeoData: number = 3, options?: GeocodeOptions): any {
+        public geocodeBoundary(latitude: number, longitude: number, category: string = '', levelOfDetail: number = 2, maxGeoData: number = 3, options?: GeocodeOptions): IPromise<IGeocodeBoundaryCoordinate> {
             return this.geocodeCore("geocodeBoundary", new GeocodeBoundaryQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, category, levelOfDetail, maxGeoData), options);
         }
 
-        public geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): any {
+        public geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): IPromise<IGeocodeCoordinate | IGeocodeResource> {
             return this.geocodeCore("geocodePoint", new GeocodePointQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, entities), options);
         }
 
@@ -125,7 +125,7 @@ module powerbi.extensibility.geocoder {
             return GeocodeCacheManager.getCoordinates(new GeocodeBoundaryQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, category, levelOfDetail, maxGeoData).key);
         }
 
-        private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): any {
+        private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): IPromise<IGeocodeCoordinate> {
             let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(geocodeQuery.getKey());
             let deferred: JQueryDeferred<{}> = $.Deferred();
 
@@ -161,7 +161,7 @@ module powerbi.extensibility.geocoder {
     export interface BingAjaxRequest {
         abort: () => void;
         always: (callback: () => void) => void;
-        then: (successFn: (data: any) => void, errorFn: (error: { statusText: string }) => void) => void;
+        then: (successFn: (data: {}) => void, errorFn: (error: { statusText: string }) => void) => void;
     }
 
     export interface BingAjaxService {
@@ -214,12 +214,12 @@ module powerbi.extensibility.geocoder {
     export interface IGeocodeQuery {
         getKey(): string;
         getUrl(): string;
-        getResult(data: any): IGeocodeResult;
+        getResult(data: {}): IGeocodeResult;
     }
 
     export interface IGeocodeQueueItem {
         query: IGeocodeQuery;
-        deferred: JQueryDeferred<any>;
+        deferred: JQueryDeferred<{}>;
     }
 
     // Static variables for caching, maps, etc.
@@ -308,7 +308,7 @@ module powerbi.extensibility.geocoder {
                 }
             }
 
-            let cultureName: any = navigator["userLanguage"] || navigator["language"];
+            let cultureName: string = navigator["userLanguage"] || navigator["language"];
             cultureName = mapLocalesForBing(cultureName);
             if (cultureName) {
                 parameters["c"] = cultureName;
@@ -360,7 +360,7 @@ module powerbi.extensibility.geocoder {
         }
     }
 
-    // TODO: Double check this function
+    // Double check this function
     function getBestLocation(data: BingGeocodeResponse, quality: (location: BingLocation) => number): BingLocation {
         let resources: BingLocation[] = data && !_.isEmpty(data.resourceSets) && data.resourceSets[0].resources;
         if (Array.isArray(resources)) {
@@ -391,7 +391,7 @@ module powerbi.extensibility.geocoder {
             let urlAndQuery = UrlUtils.splitUrlAndQuery(this.bingGeocodingUrl);
 
             // add backlash if it's missing
-            let url = !_.endsWith(urlAndQuery.baseUrl, '/') ? urlAndQuery.baseUrl + '/' : urlAndQuery.baseUrl;
+            let url = !_.endsWith(urlAndQuery.baseUrl, '/') ? `${urlAndQuery.baseUrl}/` : urlAndQuery.baseUrl;
 
             url += [this.latitude, this.longitude].join();
 
@@ -474,14 +474,14 @@ module powerbi.extensibility.geocoder {
                 return null;
             }
 
-            let cultureName: any = navigator["userLanguage"] || navigator["language"];
+            let cultureName: string = navigator["userLanguage"] || navigator["language"];
             cultureName = mapLocalesForBing(cultureName);
-            let cultures: any = cultureName.split("-");
-            let data: any = [this.latitude, this.longitude, this.levelOfDetail, "'" + entityType + "'", 1, 0, "'" + cultureName + "'"];
+            let cultures: string[] = cultureName.split("-");
+            let data: PrimitiveValue[] = [this.latitude, this.longitude, this.levelOfDetail, `'${entityType}'`, 1, 0, `'${cultureName}'`];
             if (cultures.length > 1) {
-                data.push("'" + cultures[1] + "'");
+                data.push(`'${cultures[1]}'`);
             }
-            parameters["SpatialFilter"] = "GetBoundary(" + data.join(", ") + ")";
+            parameters["SpatialFilter"] = `GetBoundary(${data.join(", ")})`;
             return UrlUtils.setQueryParameters(this.bingSpatialDataUrl, parameters, /*keepExisting*/true);
         }
 
@@ -670,10 +670,12 @@ module powerbi.extensibility.geocoder {
             }
 
             let guidSequence = () => {
-                return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+                let cryptoObj = window.crypto || window.msCrypto; // For IE11
+                return cryptoObj.getRandomValues(new Uint32Array(1))[0].toString(16).substring(0, 4);
+                //  return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
             };
 
-            let guid = "GeocodeCallback" + guidSequence() + guidSequence() + guidSequence();
+            let guid = `GeocodeCallback${guidSequence()}${guidSequence()}${guidSequence()}`;
 
             window.window[guid] = (data) => {
                 if (entry.request) {

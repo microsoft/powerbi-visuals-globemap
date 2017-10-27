@@ -33,7 +33,7 @@ namespace powerbi.extensibility.utils {
          * @param keepExisting if true, existing query parameters will be maintained, even if specified in the parameters argument. Else, all existing parameters are removed
          */
         export function setQueryParameters(url: string, parameters: _.Dictionary<string>, keepExisting = false): string {
-            const splitUrl: any = splitUrlAndQuery(url);
+            const splitUrl: {} = splitUrlAndQuery(url);
             let result: string = splitUrl.baseUrl;
 
             if (keepExisting) {
@@ -44,11 +44,13 @@ namespace powerbi.extensibility.utils {
                 return result;
             }
 
-            result += "?" + _.chain(parameters)
+            result += `?${
+                _.chain(parameters)
                 .toPairs()
                 .map(pair => pair.join("="))
                 .value()
-                .join("&");
+                .join("&")
+            }`;
 
             return result;
         }
