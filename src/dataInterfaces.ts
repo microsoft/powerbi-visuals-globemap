@@ -81,6 +81,18 @@ module powerbi.extensibility.visual {
         x: number;
         y: number;
     }
+
+    export interface GlobeMapValueTypeDescriptor extends ValueTypeDescriptor {
+        category: string;
+    }
+
+    export interface GlobeMapObject3DWithToolTipData extends THREE.Object3D {
+        toolTipData: {location, longitude, latitude, series, height, heat};
+    }
+
+    export interface GlobeMapMercartorSphere extends THREE.BufferGeometry {
+        prototype: {};
+    }
 }
 
 

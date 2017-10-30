@@ -29,13 +29,13 @@ module powerbi.extensibility.visual {
     import DataViewValueColumns = powerbi.DataViewValueColumns;
     import DataViewCategoricalColumn = powerbi.DataViewCategoricalColumn;
     import DataViewValueColumn = powerbi.DataViewValueColumn;
+    export type GlobeMapCategoricalColumns = DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns;
 
     // powerbi.extensibility.utils.dataview
     import converterHelper = powerbi.extensibility.utils.dataview.converterHelper;
 
     export class GlobeMapColumns<T> {
-
-        public static getCategoricalColumns(dataView: DataView): DataViewCategorical | {} {
+        public static getCategoricalColumns(dataView: DataView): GlobeMapColumns<GlobeMapCategoricalColumns> {
             let categorical = dataView && dataView.categorical;
             let categories = categorical && categorical.categories || [];
             let values = categorical && categorical.values || <DataViewValueColumns>[];
@@ -46,7 +46,7 @@ module powerbi.extensibility.visual {
                     || values.filter(x => x.source.roles && x.source.roles[i]));
         }
 
-        public static getGroupedValueColumns(dataView: DataView): DataViewValueColumnGroup[] | {}[] {
+        public static getGroupedValueColumns(dataView: DataView):  GlobeMapColumns<DataViewValueColumn>[]  {
             let categorical: DataViewCategorical = dataView && dataView.categorical;
             let values = categorical && categorical.values;
             let grouped: DataViewValueColumnGroup[] = values && values.grouped();
