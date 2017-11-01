@@ -24,9 +24,7 @@
  *  THE SOFTWARE.
  */
 class GlobeMapHeatMapClass {
-    constructor() {
-
-    }
+    constructor(propertyes: {}) {}
     public display() {}
     public blur() {}
     public update() {}
@@ -34,7 +32,7 @@ class GlobeMapHeatMapClass {
     public addPoint(x: number, y: number, heatPointSize: number, heatIntensity: number) {}
     canvas: HTMLVideoElement;
 }
-let WebGLHeatmap: GlobeMapHeatMapClass = window["createWebGLHeatmap"];
+let WebGLHeatmap = <typeof GlobeMapHeatMapClass> window["createWebGLHeatmap"];
 
 module powerbi.extensibility.visual {
     // powerbi.extensibility.geocoder
@@ -63,9 +61,17 @@ module powerbi.extensibility.visual {
     interface ExtendedPromise<T> extends IPromise<T> {
         always(value: {}): void;
     }
+
+    export class GlobeMapBufferGeometry extends THREE.BufferGeometry {
+        constructor (earthRadius: number, earthSegmentsX: number, earthSegmentsY: number) {
+            super();
+        }
+        prototype: GlobeMapBufferGeometry;
+    }
+
     export class GlobeMap implements IVisual {
         private localStorageService: IStorageService;
-        public static MercartorSphere: THREE.BufferGeometry;
+        public static MercartorSphere = <typeof GlobeMapBufferGeometry> GlobeMapBufferGeometry;
         private GlobeSettings = {
             autoRotate: false,
             earthRadius: 30,
@@ -455,7 +461,7 @@ module powerbi.extensibility.visual {
 
             this.colors = options.host.colorPalette;
 
-            if (window.THREE) {
+            if (window["THREE"]) {
                 this.setup();
             }
         }
@@ -1184,7 +1190,7 @@ module powerbi.extensibility.visual {
         private initZoomControl() {
             const controlContainer: HTMLElement = document.createElement("div");
             controlContainer.classList.add("controls-container");
-            controlContainer.innerText = GlobeMap.ZoomControlSettings.markup;
+            controlContainer.innerHTML = GlobeMap.ZoomControlSettings.markup;
             this.root.append(controlContainer);
             function onMouseDown(callback: (element: SVGElement) => void) {
                 (d3.event as MouseEvent).stopPropagation();
@@ -1209,9 +1215,9 @@ module powerbi.extensibility.visual {
                     }));
         }
         private initMercartorSphere() {
+            debugger;
             if (GlobeMap.MercartorSphere) return;
-
-            const MercartorSphere: THREE.BufferGeometry = function (radius: number, widthSegments: number, heightSegments: number): void {
+            const MercartorSphere: {prototype} = function (radius: number, widthSegments: number, heightSegments: number): void {
                 THREE.Geometry.call(this);
 
                 this.radius = radius;
@@ -1311,7 +1317,7 @@ module powerbi.extensibility.visual {
             };
 
             MercartorSphere.prototype = Object.create(THREE.Geometry.prototype);
-            GlobeMap.MercartorSphere = <THREE.BufferGeometry> MercartorSphere;
+            GlobeMap.MercartorSphere = <typeof GlobeMapBufferGeometry> MercartorSphere;
         }
 
         private updateBarsAndHeatMapByZoom(delta: number = 0): void {

@@ -670,7 +670,7 @@ module powerbi.extensibility.geocoder {
             }
 
             let guidSequence = () => {
-                let cryptoObj = window.crypto || window.msCrypto; // For IE
+                let cryptoObj = window.crypto || window["msCrypto"]; // For IE
                 return cryptoObj.getRandomValues(new Uint32Array(1))[0].toString(16).substring(0, 4);
                 //  return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
             };
