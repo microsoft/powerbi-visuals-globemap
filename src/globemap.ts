@@ -372,9 +372,9 @@ module powerbi.extensibility.visual {
                         }
                         const color: string = colorHelper.getColorForMeasure(dataView.metadata.objects, "");
                         seriesDataPoints[0] = {
-                            label: 'label',
-                            identity: 'identity',
-                            category: 'category',
+                            label: "label",
+                            identity: "identity",
+                            category: "category",
                             color: color,
                             selected: null
                         };
@@ -827,7 +827,7 @@ module powerbi.extensibility.visual {
                             successCallback();
                         }
                     };
-                    // So the canvas doesn't get tainted
+                    // So the canvas doesn"t get tainted
                     tile.crossOrigin = "";
                     tile.src = tiles[quadKey];
                 }
@@ -1297,7 +1297,8 @@ module powerbi.extensibility.visual {
         private initZoomControl() {
             const controlContainer: HTMLElement = document.createElement("div");
             controlContainer.classList.add("controls-container");
-            controlContainer.innerHTML = GlobeMap.ZoomControlSettings.markup;
+            const controlElements: Element = this.createControlElements();
+            controlContainer.appendChild(controlElements);
             this.root.append(controlContainer);
             function onMouseDown(callback: (element: SVGElement) => void) {
                 (d3.event as MouseEvent).stopPropagation();
@@ -1438,6 +1439,80 @@ module powerbi.extensibility.visual {
             }
 
             return size;
+        }
+        private createControlElements(): Element {
+            let svgNS: string = "http://www.w3.org/2000/svg";
+
+            const circle = (cx: number, cy: number, r: number, classNames?: string) => {
+                let c = document.createElementNS(svgNS, "circle");
+                c.setAttribute("cx", cx.toString());
+                c.setAttribute("cy", cy.toString());
+                c.setAttribute("r", r.toString());
+                if (classNames) classNames.split(" ").forEach((cl) => c.classList.add(cl));
+                return c;
+            };
+
+            const path = (d: string, classNames?: string) => {
+                let p = document.createElementNS(svgNS, "path");
+                p.setAttribute("d", d);
+                if (classNames) classNames.split(" ").forEach((cl) => p.classList.add(cl));
+                return p;
+            };
+
+            const rect = (x: number, y: number, width: number, height: number, classNames?: string ) => {
+                let r = document.createElementNS(svgNS, "rect");
+                r.setAttribute("x", x.toString());
+                r.setAttribute("y", y.toString());
+                r.setAttribute("width", width.toString());
+                r.setAttribute("height", height.toString());
+                if (classNames) classNames.split(" ").forEach((cl) => r.classList.add(cl));
+                return r;
+            };
+
+            const g = (classNames: string) => {
+                let g = document.createElementNS(svgNS, "g");
+                if (classNames) classNames.split(" ").forEach((cl) => g.classList.add(cl));
+                return g;
+            };
+
+            let g1 = g("control js-control--move-up");
+            g1.appendChild(circle(85, 20, 17));
+            g1.appendChild(path("M85 8 l12 20 a40,70 0 0,0 -24,0z"));
+
+            let g2 = g("control js-control--move-right");
+            g2.appendChild(circle(119, 54, 17, "zoomControlCircle"));
+            g2.appendChild(path("M130.9 54 l-20 -12 a70,40 0 0,1 0,24z", "zoomControlPath"));
+
+            let g3 = g("control js-control--move-down");
+            g3.appendChild(circle(85, 88, 17));
+            g3.appendChild(path("M 85 100 l12 -20 a40,70 0 0,1 -24,0z"));
+
+            let g4 = g("control js-control--move-left");
+            g4.appendChild(circle(51, 54, 17));
+            g4.appendChild(path("M39 54 l20 -12 a70,40 0 0,0 0,24z"));
+
+            let g5 = g("control js-control--zoom-down");
+            g5.appendChild(circle(51, 122, 17));
+            g5.appendChild(rect(42, 120, 17, 6, "zoomControlPath"));
+
+            let g6 = g("control js-control--zoom-up");
+            g6.appendChild(circle(119, 122, 17));
+            g6.appendChild(rect(110.5, 120, 17, 6));
+            g6.appendChild(rect(116, 114, 6, 17));
+
+            let svg = document.createElementNS(svgNS, "svg");
+            svg.classList.add("controls");
+            svg.setAttribute("width", "145");
+            svg.setAttribute("height", "145");
+
+            svg.appendChild(g1);
+            svg.appendChild(g2);
+            svg.appendChild(g3);
+            svg.appendChild(g4);
+            svg.appendChild(g5);
+            svg.appendChild(g6);
+
+            return svg;
         }
     }
 }
