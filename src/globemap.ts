@@ -63,15 +63,122 @@ module powerbi.extensibility.visual {
     }
 
     export class GlobeMapBufferGeometry extends THREE.BufferGeometry {
-        constructor (earthRadius: number, earthSegmentsX: number, earthSegmentsY: number) {
-            super();
-        }
+        // constructor (earthRadius: number, earthSegmentsX: number, earthSegmentsY: number) {
+        //     super();
+        // }
         prototype: GlobeMapBufferGeometry;
+    }
+
+    export class MercartorSphere extends THREE.Geometry {
+        radius: number;
+        widthSegments: number;
+        heightSegments: number;
+        t: number;
+        vertices: THREE.Vector3[];
+        prototype: {};
+        constructor (radius: number, widthSegments: number, heightSegments: number) {
+            // THREE.Geometry.call(this);
+            super();
+            this.radius = radius;
+            this.widthSegments = widthSegments;
+            this.heightSegments = heightSegments;
+
+            this.t = 0;
+
+            let x: number;
+            let y: number;
+            const vertices = [];
+            const uvs = [];
+
+            function interplolate(a, b, t) {
+                return (1 - t) * a + t * b;
+            }
+
+            // interpolates between sphere and plane
+            function interpolateVertex(u: number, v: number, t: number) {
+                const maxLng: number = Math.PI * 2;
+                const maxLat: number = Math.PI;
+
+                const sphereX: number = - this.radius * Math.cos(u * maxLng) * Math.sin(v * maxLat);
+                const sphereY: number = - this.radius * Math.cos(v * maxLat);
+                const sphereZ: number = this.radius * Math.sin(u * maxLng) * Math.sin(v * maxLat);
+
+                const planeX: number = u * this.radius * 2 - this.radius;
+                const planeY: number = v * this.radius * 2 - this.radius;
+                const planeZ: number = 0;
+
+                const x1: number = interplolate(sphereX, planeX, t);
+                const y1: number = interplolate(sphereY, planeY, t);
+                const z: number = interplolate(sphereZ, planeZ, t);
+
+                return new THREE.Vector3(x1, y1, z);
+            }
+
+            // http://mathworld.wolfram.com/MercatorProjection.html
+            // Mercator projection goes form +85.05 to -85.05 degrees
+            function interpolateUV(u: number, v: number, t: number) {
+                const lat: number = (v - 0.5) * 89.99 * 2 / 180 * Math.PI; // turn from 0-1 into lat in radians
+                const sin: number = Math.sin(lat);
+                const normalizedV: number = 0.5 + 0.25 * Math.log((1 + sin) / (1 - sin)) / Math.PI;
+                return new THREE.Vector2(u, normalizedV); // interplolate(normalizedV1, v, t))
+            }
+
+            for (y = 0; y <= heightSegments; y++) {
+
+                const verticesRow: number[] = [];
+                const uvsRow: number[] = [];
+
+                for (x = 0; x <= widthSegments; x++) {
+
+                    const u: number = x / widthSegments;
+                    const v: number = y / heightSegments;
+
+                    this.vertices.push(interpolateVertex.call(this, u, v, this.t));
+                    uvsRow.push(interpolateUV.call(this, u, v, this.t));
+                    verticesRow.push(this.vertices.length - 1);
+                }
+
+                vertices.push(verticesRow);
+                uvs.push(uvsRow);
+
+            }
+
+            for (y = 0; y < this.heightSegments; y++) {
+
+                for (x = 0; x < this.widthSegments; x++) {
+
+                    const v1: number = vertices[y][x + 1];
+                    const v2: number = vertices[y][x];
+                    const v3: number = vertices[y + 1][x];
+                    const v4: number = vertices[y + 1][x + 1];
+
+                    const n1: THREE.Vector3 = this.vertices[v1].clone().normalize();
+                    const n2: THREE.Vector3 = this.vertices[v2].clone().normalize();
+                    const n3: THREE.Vector3 = this.vertices[v3].clone().normalize();
+                    const n4: THREE.Vector3 = this.vertices[v4].clone().normalize();
+
+                    const uv1: THREE.Vector2 = uvs[y][x + 1];
+                    const uv2: THREE.Vector2 = uvs[y][x];
+                    const uv3: THREE.Vector2 = uvs[y + 1][x];
+                    const uv4: THREE.Vector2 = uvs[y + 1][x + 1];
+
+                    this.faces.push(new THREE.Face3(v1, v2, v3, [n1, n2, n3]));
+                    this.faces.push(new THREE.Face3(v1, v3, v4, [n1, n3, n4]));
+
+                    this.faceVertexUvs[0].push([uv1.clone(), uv2.clone(), uv3.clone()]);
+                    this.faceVertexUvs[0].push([uv1.clone(), uv3.clone(), uv4.clone()]);
+                }
+            }
+
+            this.computeFaceNormals();
+            this.computeVertexNormals();
+            this.computeBoundingSphere();
+        }
     }
 
     export class GlobeMap implements IVisual {
         private localStorageService: IStorageService;
-        public static MercartorSphere = <typeof GlobeMapBufferGeometry> GlobeMapBufferGeometry;
+        public static MercartorSphere: MercartorSphere;
         private GlobeSettings = {
             autoRotate: false,
             earthRadius: 30,
@@ -567,7 +674,7 @@ module powerbi.extensibility.visual {
         }
 
         private createEarth(): THREE.Mesh {
-            const geometry: THREE.BufferGeometry = new GlobeMap.MercartorSphere(
+            const geometry: MercartorSphere = new MercartorSphere(
                 this.GlobeSettings.earthRadius,
                 this.GlobeSettings.earthSegments,
                 this.GlobeSettings.earthSegments);
@@ -846,6 +953,7 @@ module powerbi.extensibility.visual {
             }
             this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d)); // all coordinates (latitude/longitude) will be gained here
             this.data.dataPoints.forEach((d) => {
+                console.log(d);
                 return d.location = this.globeMapLocationCache[d.placeKey] || d.location;
             });
             if (!this.readyToRender) {
@@ -886,7 +994,7 @@ module powerbi.extensibility.visual {
                 return;
             }
 
-            let location: ILocation;
+            const location: ILocation = {latitude: null, longitude: null};
             let geocoder: IGeocoder;
             this.globeMapLocationCache[renderDatum.placeKey] = location; // store empty object so we don't send AJAX request again
             this.locationsToLoad++;
@@ -1215,109 +1323,118 @@ module powerbi.extensibility.visual {
                     }));
         }
         private initMercartorSphere() {
-            debugger;
             if (GlobeMap.MercartorSphere) return;
-            const MercartorSphere: {prototype} = function (radius: number, widthSegments: number, heightSegments: number): void {
-                THREE.Geometry.call(this);
 
-                this.radius = radius;
-                this.widthSegments = widthSegments;
-                this.heightSegments = heightSegments;
+            let  ms = new MercartorSphere(
+                this.GlobeSettings.earthRadius,
+                this.GlobeSettings.earthSegments,
+                this.GlobeSettings.earthSegments);
+            ms.prototype = Object.create(THREE.Geometry.prototype);
 
-                this.t = 0;
+            // .prototype = Object.create(THREE.Geometry.prototype);
+            GlobeMap.MercartorSphere = ms;
 
-                let x: number;
-                let y: number;
-                const vertices = [];
-                const uvs = [];
+            // const MercartorSphere: {prototype} = function (radius: number, widthSegments: number, heightSegments: number): void {
+            //     THREE.Geometry.call(this);
 
-                function interplolate(a, b, t) {
-                    return (1 - t) * a + t * b;
-                }
+            //     this.radius = radius;
+            //     this.widthSegments = widthSegments;
+            //     this.heightSegments = heightSegments;
 
-                // interpolates between sphere and plane
-                function interpolateVertex(u: number, v: number, t: number) {
-                    const maxLng: number = Math.PI * 2;
-                    const maxLat: number = Math.PI;
+            //     this.t = 0;
 
-                    const sphereX: number = - this.radius * Math.cos(u * maxLng) * Math.sin(v * maxLat);
-                    const sphereY: number = - this.radius * Math.cos(v * maxLat);
-                    const sphereZ: number = this.radius * Math.sin(u * maxLng) * Math.sin(v * maxLat);
+            //     let x: number;
+            //     let y: number;
+            //     const vertices = [];
+            //     const uvs = [];
 
-                    const planeX: number = u * this.radius * 2 - this.radius;
-                    const planeY: number = v * this.radius * 2 - this.radius;
-                    const planeZ: number = 0;
+            //     function interplolate(a, b, t) {
+            //         return (1 - t) * a + t * b;
+            //     }
 
-                    const x1: number = interplolate(sphereX, planeX, t);
-                    const y1: number = interplolate(sphereY, planeY, t);
-                    const z: number = interplolate(sphereZ, planeZ, t);
+            //     // interpolates between sphere and plane
+            //     function interpolateVertex(u: number, v: number, t: number) {
+            //         const maxLng: number = Math.PI * 2;
+            //         const maxLat: number = Math.PI;
 
-                    return new THREE.Vector3(x1, y1, z);
-                }
+            //         const sphereX: number = - this.radius * Math.cos(u * maxLng) * Math.sin(v * maxLat);
+            //         const sphereY: number = - this.radius * Math.cos(v * maxLat);
+            //         const sphereZ: number = this.radius * Math.sin(u * maxLng) * Math.sin(v * maxLat);
 
-                // http://mathworld.wolfram.com/MercatorProjection.html
-                // Mercator projection goes form +85.05 to -85.05 degrees
-                function interpolateUV(u: number, v: number, t: number) {
-                    const lat: number = (v - 0.5) * 89.99 * 2 / 180 * Math.PI; // turn from 0-1 into lat in radians
-                    const sin: number = Math.sin(lat);
-                    const normalizedV: number = 0.5 + 0.25 * Math.log((1 + sin) / (1 - sin)) / Math.PI;
-                    return new THREE.Vector2(u, normalizedV); // interplolate(normalizedV1, v, t))
-                }
+            //         const planeX: number = u * this.radius * 2 - this.radius;
+            //         const planeY: number = v * this.radius * 2 - this.radius;
+            //         const planeZ: number = 0;
 
-                for (y = 0; y <= heightSegments; y++) {
+            //         const x1: number = interplolate(sphereX, planeX, t);
+            //         const y1: number = interplolate(sphereY, planeY, t);
+            //         const z: number = interplolate(sphereZ, planeZ, t);
 
-                    const verticesRow: number[] = [];
-                    const uvsRow: number[] = [];
+            //         return new THREE.Vector3(x1, y1, z);
+            //     }
 
-                    for (x = 0; x <= widthSegments; x++) {
+            //     // http://mathworld.wolfram.com/MercatorProjection.html
+            //     // Mercator projection goes form +85.05 to -85.05 degrees
+            //     function interpolateUV(u: number, v: number, t: number) {
+            //         const lat: number = (v - 0.5) * 89.99 * 2 / 180 * Math.PI; // turn from 0-1 into lat in radians
+            //         const sin: number = Math.sin(lat);
+            //         const normalizedV: number = 0.5 + 0.25 * Math.log((1 + sin) / (1 - sin)) / Math.PI;
+            //         return new THREE.Vector2(u, normalizedV); // interplolate(normalizedV1, v, t))
+            //     }
 
-                        const u: number = x / widthSegments;
-                        const v: number = y / heightSegments;
+            //     for (y = 0; y <= heightSegments; y++) {
 
-                        this.vertices.push(interpolateVertex.call(this, u, v, this.t));
-                        uvsRow.push(interpolateUV.call(this, u, v, this.t));
-                        verticesRow.push(this.vertices.length - 1);
-                    }
+            //         const verticesRow: number[] = [];
+            //         const uvsRow: number[] = [];
 
-                    vertices.push(verticesRow);
-                    uvs.push(uvsRow);
+            //         for (x = 0; x <= widthSegments; x++) {
 
-                }
+            //             const u: number = x / widthSegments;
+            //             const v: number = y / heightSegments;
 
-                for (y = 0; y < this.heightSegments; y++) {
+            //             this.vertices.push(interpolateVertex.call(this, u, v, this.t));
+            //             uvsRow.push(interpolateUV.call(this, u, v, this.t));
+            //             verticesRow.push(this.vertices.length - 1);
+            //         }
 
-                    for (x = 0; x < this.widthSegments; x++) {
+            //         vertices.push(verticesRow);
+            //         uvs.push(uvsRow);
 
-                        const v1: number = vertices[y][x + 1];
-                        const v2: number = vertices[y][x];
-                        const v3: number = vertices[y + 1][x];
-                        const v4: number = vertices[y + 1][x + 1];
+            //     }
 
-                        const n1: THREE.Vector3 = this.vertices[v1].clone().normalize();
-                        const n2: THREE.Vector3 = this.vertices[v2].clone().normalize();
-                        const n3: THREE.Vector3 = this.vertices[v3].clone().normalize();
-                        const n4: THREE.Vector3 = this.vertices[v4].clone().normalize();
+            //     for (y = 0; y < this.heightSegments; y++) {
 
-                        const uv1: THREE.Vector3 = uvs[y][x + 1];
-                        const uv2: THREE.Vector3 = uvs[y][x];
-                        const uv3: THREE.Vector3 = uvs[y + 1][x];
-                        const uv4: THREE.Vector3 = uvs[y + 1][x + 1];
+            //         for (x = 0; x < this.widthSegments; x++) {
 
-                        this.faces.push(new THREE.Face3(v1, v2, v3, [n1, n2, n3]));
-                        this.faces.push(new THREE.Face3(v1, v3, v4, [n1, n3, n4]));
+            //             const v1: number = vertices[y][x + 1];
+            //             const v2: number = vertices[y][x];
+            //             const v3: number = vertices[y + 1][x];
+            //             const v4: number = vertices[y + 1][x + 1];
 
-                        this.faceVertexUvs[0].push([uv1.clone(), uv2.clone(), uv3.clone()]);
-                        this.faceVertexUvs[0].push([uv1.clone(), uv3.clone(), uv4.clone()]);
-                    }
-                }
+            //             const n1: THREE.Vector3 = this.vertices[v1].clone().normalize();
+            //             const n2: THREE.Vector3 = this.vertices[v2].clone().normalize();
+            //             const n3: THREE.Vector3 = this.vertices[v3].clone().normalize();
+            //             const n4: THREE.Vector3 = this.vertices[v4].clone().normalize();
 
-                this.computeFaceNormals();
-                this.computeVertexNormals();
-                this.computeBoundingSphere();
-            };
+            //             const uv1: THREE.Vector3 = uvs[y][x + 1];
+            //             const uv2: THREE.Vector3 = uvs[y][x];
+            //             const uv3: THREE.Vector3 = uvs[y + 1][x];
+            //             const uv4: THREE.Vector3 = uvs[y + 1][x + 1];
 
-            MercartorSphere.prototype = Object.create(THREE.Geometry.prototype);
-            GlobeMap.MercartorSphere = <typeof GlobeMapBufferGeometry> MercartorSphere;
+            //             this.faces.push(new THREE.Face3(v1, v2, v3, [n1, n2, n3]));
+            //             this.faces.push(new THREE.Face3(v1, v3, v4, [n1, n3, n4]));
+
+            //             this.faceVertexUvs[0].push([uv1.clone(), uv2.clone(), uv3.clone()]);
+            //             this.faceVertexUvs[0].push([uv1.clone(), uv3.clone(), uv4.clone()]);
+            //         }
+            //     }
+
+            //     this.computeFaceNormals();
+            //     this.computeVertexNormals();
+            //     this.computeBoundingSphere();
+            // };
+
+            // MercartorSphere.prototype = Object.create(THREE.Geometry.prototype);
+            // GlobeMap.MercartorSphere = <MercartorSphere> MercartorSphere;
         }
 
         private updateBarsAndHeatMapByZoom(delta: number = 0): void {
