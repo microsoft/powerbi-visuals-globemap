@@ -125,7 +125,7 @@ module powerbi.extensibility.visual.test {
 
                 let objectsChecker: Function = (obj) => {
                     for (let property in obj) {
-                        let value: any = obj[property];
+                        let value: {displayName, displayNameKey} = obj[property];
 
                         if (value.displayName) {
                             expect(value.displayNameKey).toBeDefined();
