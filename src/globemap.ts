@@ -62,13 +62,6 @@ module powerbi.extensibility.visual {
         always(value: {}): void;
     }
 
-    export class GlobeMapBufferGeometry extends THREE.BufferGeometry {
-        // constructor (earthRadius: number, earthSegmentsX: number, earthSegmentsY: number) {
-        //     super();
-        // }
-        prototype: GlobeMapBufferGeometry;
-    }
-
     export class MercartorSphere extends THREE.Geometry {
         radius: number;
         widthSegments: number;
@@ -77,7 +70,6 @@ module powerbi.extensibility.visual {
         vertices: THREE.Vector3[];
         prototype: {};
         constructor (radius: number, widthSegments: number, heightSegments: number) {
-            // THREE.Geometry.call(this);
             super();
             this.radius = radius;
             this.widthSegments = widthSegments;
@@ -827,7 +819,7 @@ module powerbi.extensibility.visual {
                             successCallback();
                         }
                     };
-                    // So the canvas doesn"t get tainted
+                    // So the canvas doesn't get tainted
                     tile.crossOrigin = "";
                     tile.src = tiles[quadKey];
                 }
