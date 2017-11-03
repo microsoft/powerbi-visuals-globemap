@@ -1440,14 +1440,18 @@ module powerbi.extensibility.visual {
                 c.setAttribute("cx", cx.toString());
                 c.setAttribute("cy", cy.toString());
                 c.setAttribute("r", r.toString());
-                if (classNames) classNames.split(" ").forEach((cl) => c.classList.add(cl));
+                if (classNames) {
+                    classNames.split(" ").forEach((cl) => c.classList.add(cl));
+                }
                 return c;
             };
 
             const path = (d: string, classNames?: string) => {
                 let p = document.createElementNS(svgNS, "path");
                 p.setAttribute("d", d);
-                if (classNames) classNames.split(" ").forEach((cl) => p.classList.add(cl));
+                if (classNames) {
+                    classNames.split(" ").forEach((cl) => p.classList.add(cl));
+                }
                 return p;
             };
 
@@ -1457,13 +1461,17 @@ module powerbi.extensibility.visual {
                 r.setAttribute("y", y.toString());
                 r.setAttribute("width", width.toString());
                 r.setAttribute("height", height.toString());
-                if (classNames) classNames.split(" ").forEach((cl) => r.classList.add(cl));
+                if (classNames) {
+                    classNames.split(" ").forEach((cl) => r.classList.add(cl));
+                }
                 return r;
             };
 
             const g = (classNames: string) => {
                 let g = document.createElementNS(svgNS, "g");
-                if (classNames) classNames.split(" ").forEach((cl) => g.classList.add(cl));
+                if (classNames) {
+                    classNames.split(" ").forEach((cl) => g.classList.add(cl));
+                }
                 return g;
             };
 
