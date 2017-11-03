@@ -77,16 +77,16 @@ module powerbi.extensibility.visual {
         [quadKey: string]: string;
     }
 
-    export interface CanvasCoordinate {
+    export interface ICanvasCoordinate {
         x: number;
         y: number;
     }
 
-    export interface GlobeMapValueTypeDescriptor extends ValueTypeDescriptor {
+    export interface IGlobeMapValueTypeDescriptor extends ValueTypeDescriptor {
         category: string;
     }
 
-    export interface GlobeMapToolTipData {
+    export interface IGlobeMapToolTipData {
         location: PrimitiveValue;
         longitude: PrimitiveValue;
         latitude: PrimitiveValue;
@@ -95,8 +95,8 @@ module powerbi.extensibility.visual {
         heat: PrimitiveValue;
     }
 
-    export interface GlobeMapObject3DWithToolTipData extends THREE.Object3D {
-        toolTipData: GlobeMapToolTipData;
+    export interface IGlobeMapObject3DWithToolTipData extends THREE.Object3D {
+        toolTipData: IGlobeMapToolTipData;
     }
 }
 

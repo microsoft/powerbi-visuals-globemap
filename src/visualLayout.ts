@@ -78,7 +78,7 @@ module powerbi.extensibility.visual {
             this.originalViewportValue = _.clone(value);
             this.setUpdateObject(value,
                 (v: IViewport) => this.viewportValue = v,
-                (o: {}) => VisualLayout.restrictToMinMax(o, this.minViewport));
+                (o: IViewport) => VisualLayout.restrictToMinMax(o, this.minViewport));
         }
 
         public set margin(value: IMargin) {

@@ -266,7 +266,7 @@ module powerbi.extensibility.visual {
 
             if (categorical.Location && categorical.Location.values) {
                 locations = categorical.Location.values;
-                const sourceType: GlobeMapValueTypeDescriptor = <GlobeMapValueTypeDescriptor> categorical.Location.source.type;
+                const sourceType: IGlobeMapValueTypeDescriptor = <IGlobeMapValueTypeDescriptor> categorical.Location.source.type;
                 locationType = sourceType.category ? (<string>sourceType.category).toLowerCase() : "";
             } else {
                 locations = [];
@@ -810,7 +810,7 @@ module powerbi.extensibility.visual {
             const canvasContext: CanvasRenderingContext2D = canvasEl.getContext("2d");
             for (let quadKey in tiles) {
                 if (tiles.hasOwnProperty(quadKey)) {
-                    const coords: CanvasCoordinate = this.getCoordByQuadKey(quadKey);
+                    const coords: ICanvasCoordinate = this.getCoordByQuadKey(quadKey);
                     const tile: HTMLImageElement = new Image();
                     tile.onload = (event: Event) => {
                         tilesLoaded++;
@@ -833,7 +833,7 @@ module powerbi.extensibility.visual {
          * @returns {CanvasCoordinate} image coordinate
          * @memberOf GlobeMap
          */
-        private getCoordByQuadKey(quard: string): CanvasCoordinate {
+        private getCoordByQuadKey(quard: string): ICanvasCoordinate {
             const last: number = quard.length - 1;
             let x: number = 0;
             let y: number = 0;
@@ -1097,7 +1097,7 @@ module powerbi.extensibility.visual {
             const intersects: THREE.Intersection[] = rayCaster.intersectObjects(this.barsGroup.children);
 
             if (intersects && intersects.length > 0) {
-                const object: GlobeMapObject3DWithToolTipData = <GlobeMapObject3DWithToolTipData> intersects[0].object;
+                const object: IGlobeMapObject3DWithToolTipData = <IGlobeMapObject3DWithToolTipData> intersects[0].object;
 
                 if (!object || !(object).toolTipData) {
                     return;
@@ -1432,6 +1432,7 @@ module powerbi.extensibility.visual {
 
             return size;
         }
+
         private createControlElements(): Element {
             const protocol: string = "http";
             let svgNS: string = `${protocol}://www.w3.org/2000/svg`;
@@ -1476,44 +1477,44 @@ module powerbi.extensibility.visual {
                 return g;
             };
 
-            let g1 = g("control js-control--move-up");
-            g1.appendChild(circle(85, 20, 17));
-            g1.appendChild(path("M85 8 l12 20 a40,70 0 0,0 -24,0z"));
+            let moveUpButton = g("control js-control--move-up");
+            moveUpButton.appendChild(circle(85, 20, 17));
+            moveUpButton.appendChild(path("M85 8 l12 20 a40,70 0 0,0 -24,0z"));
 
-            let g2 = g("control js-control--move-right");
-            g2.appendChild(circle(119, 54, 17, "zoomControlCircle"));
-            g2.appendChild(path("M130.9 54 l-20 -12 a70,40 0 0,1 0,24z", "zoomControlPath"));
+            let moveRightButton = g("control js-control--move-right");
+            moveRightButton.appendChild(circle(119, 54, 17, "zoomControlCircle"));
+            moveRightButton.appendChild(path("M130.9 54 l-20 -12 a70,40 0 0,1 0,24z", "zoomControlPath"));
 
-            let g3 = g("control js-control--move-down");
-            g3.appendChild(circle(85, 88, 17));
-            g3.appendChild(path("M 85 100 l12 -20 a40,70 0 0,1 -24,0z"));
+            let moveDownButton = g("control js-control--move-down");
+            moveDownButton.appendChild(circle(85, 88, 17));
+            moveDownButton.appendChild(path("M 85 100 l12 -20 a40,70 0 0,1 -24,0z"));
 
-            let g4 = g("control js-control--move-left");
-            g4.appendChild(circle(51, 54, 17));
-            g4.appendChild(path("M39 54 l20 -12 a70,40 0 0,0 0,24z"));
+            let moveLeftButton = g("control js-control--move-left");
+            moveLeftButton.appendChild(circle(51, 54, 17));
+            moveLeftButton.appendChild(path("M39 54 l20 -12 a70,40 0 0,0 0,24z"));
 
-            let g5 = g("control js-control--zoom-down");
-            g5.appendChild(circle(51, 122, 17));
-            g5.appendChild(rect(42, 120, 17, 6, "zoomControlPath"));
+            let zoomDownButton = g("control js-control--zoom-down");
+            zoomDownButton.appendChild(circle(51, 122, 17));
+            zoomDownButton.appendChild(rect(42, 120, 17, 6, "zoomControlPath"));
 
-            let g6 = g("control js-control--zoom-up");
-            g6.appendChild(circle(119, 122, 17));
-            g6.appendChild(rect(110.5, 120, 17, 6));
-            g6.appendChild(rect(116, 114, 6, 17));
+            let zoomUpButton = g("control js-control--zoom-up");
+            zoomUpButton.appendChild(circle(119, 122, 17));
+            zoomUpButton.appendChild(rect(110.5, 120, 17, 6));
+            zoomUpButton.appendChild(rect(116, 114, 6, 17));
 
-            let svg = document.createElementNS(svgNS, "svg");
-            svg.classList.add("controls");
-            svg.setAttribute("width", "145");
-            svg.setAttribute("height", "145");
+            let controlsContainerSVG = document.createElementNS(svgNS, "svg");
+            controlsContainerSVG.classList.add("controls");
+            controlsContainerSVG.setAttribute("width", "145");
+            controlsContainerSVG.setAttribute("height", "145");
 
-            svg.appendChild(g1);
-            svg.appendChild(g2);
-            svg.appendChild(g3);
-            svg.appendChild(g4);
-            svg.appendChild(g5);
-            svg.appendChild(g6);
+            controlsContainerSVG.appendChild(moveUpButton);
+            controlsContainerSVG.appendChild(moveRightButton);
+            controlsContainerSVG.appendChild(moveDownButton);
+            controlsContainerSVG.appendChild(moveLeftButton);
+            controlsContainerSVG.appendChild(zoomDownButton);
+            controlsContainerSVG.appendChild(zoomUpButton);
 
-            return svg;
+            return controlsContainerSVG;
         }
     }
 }
