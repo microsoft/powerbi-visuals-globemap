@@ -57,7 +57,7 @@ module powerbi.extensibility.visual.test {
             return renderTimeout(fn, timeout);
         }
 
-        protected build(options: any) {
+        protected build(options: VisualConstructorOptions) {
             return new VisualClass(options);
         }
 

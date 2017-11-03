@@ -1,3 +1,6 @@
+## 2.2.2
+* Update tslint rules and code refactoring
+
 ## 2.2.1
 * Focus on bar under cross selection
 
