@@ -86,12 +86,17 @@ module powerbi.extensibility.visual {
         category: string;
     }
 
-    export interface GlobeMapObject3DWithToolTipData extends THREE.Object3D {
-        toolTipData: {location, longitude, latitude, series, height, heat};
+    export interface GlobeMapToolTipData {
+        location: PrimitiveValue;
+        longitude: PrimitiveValue;
+        latitude: PrimitiveValue;
+        series: PrimitiveValue;
+        height: PrimitiveValue;
+        heat: PrimitiveValue;
     }
 
-    export interface GlobeMapMercartorSphere extends THREE.BufferGeometry {
-        prototype: {};
+    export interface GlobeMapObject3DWithToolTipData extends THREE.Object3D {
+        toolTipData: GlobeMapToolTipData;
     }
 }
 

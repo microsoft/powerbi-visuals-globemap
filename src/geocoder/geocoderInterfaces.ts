@@ -3,7 +3,7 @@
     /** Defines geocoding services. */
     export interface GeocodeOptions {
         /** promise that should abort the request when resolved */
-        timeout?: IPromise<{}>;
+        timeout?: IPromise<number>;
     }
 
     export interface IRect {

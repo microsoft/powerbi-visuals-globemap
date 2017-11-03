@@ -73,7 +73,7 @@
          */
          "insecure-random": true,
          "no-document-write": true,
-         "no-http-string": [true, "http://www.w3.org/.*"],
+         "no-http-string": [true],
          "no-inner-html": true,
          "non-literal-require": true,
          "possible-timing-attack": true

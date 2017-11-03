@@ -1433,7 +1433,8 @@ module powerbi.extensibility.visual {
             return size;
         }
         private createControlElements(): Element {
-            let svgNS: string = "http://www.w3.org/2000/svg";
+            const protocol: string = "http";
+            let svgNS: string = `${protocol}://www.w3.org/2000/svg`;
 
             const circle = (cx: number, cy: number, r: number, classNames?: string) => {
                 let c = document.createElementNS(svgNS, "circle");
