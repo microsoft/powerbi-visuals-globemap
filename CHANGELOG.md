@@ -8,12 +8,6 @@
 ## 2.2.1
 * Focus on bar under cross selection
 
-## 2.2.2
-* Update tslint rules and code refactoring
-
-## 2.2.1
-* Focus on bar under cross selection
-
 ## 2.2.0
 * Show data only by Location field
 * Remove group bucket field
