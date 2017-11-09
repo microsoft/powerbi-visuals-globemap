@@ -237,7 +237,7 @@ module powerbi.extensibility.geocoder {
         constructor(bingGeocodingUrl: string, bingSpatialDataUrl: string, query: string, category: string) {
             this.bingGeocodingUrl = bingGeocodingUrl;
             this.bingSpatialDataUrl = bingSpatialDataUrl;
-            this.query = query != null ? query : "";
+            this.query = query != null ? !(/[<()>#@!$%&*\^`'"/+:]/).test(query) && !(/(javascript:|data:)/i).test(query) ? query : "" : "";
             this.category = category != null ? category : "";
             this.key = (`G:${this.bingGeocodingUrl}; S:${this.bingSpatialDataUrl};${this.query}/${this.category}`).toLowerCase();
         }
@@ -663,6 +663,11 @@ module powerbi.extensibility.geocoder {
         }
 
         private makeRequest(entry: GeocodeQueueEntry): void {
+            if (entry.item.query["query"] === "") {
+                this.cancel(entry);
+                return;
+            }
+
             let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(entry.item.query.getKey());
             if (result) {
                 this.complete(entry, { coordinates: result });
