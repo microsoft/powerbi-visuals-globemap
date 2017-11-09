@@ -235,7 +235,7 @@ module powerbi.extensibility.visual {
         private selectedBar: THREE.Object3D;
         private hoveredBar: THREE.Object3D;
         private averageBarVector: THREE.Vector3;
-        private zoomContainer: Element;
+        private controlContainer: HTMLElement;
         public colors: IColorPalette;
         private animationFrameId: number;
         private cameraAnimationFrameId: number;
@@ -906,7 +906,7 @@ module powerbi.extensibility.visual {
             }
             this.layout.viewport = options.viewport;
             this.root.css(this.layout.viewportIn);
-            this.zoomContainer.setAttribute("style",
+            this.controlContainer.setAttribute("style",
                 `display: ${this.layout.viewportIn.height > GlobeMap.ZoomControlSettings.height
                     && this.layout.viewportIn.width > GlobeMap.ZoomControlSettings.width
                     ? null : "none"}`);
@@ -1286,13 +1286,12 @@ module powerbi.extensibility.visual {
 
         };
         private initZoomControl() {
-            const controlContainer: HTMLElement = document.createElement("div");
-            controlContainer.classList.add("controls-container");
-            const controlElements: Element = this.createControlElements();
-            controlContainer.appendChild(controlElements);
-            this.root.append(controlContainer);
-            this.zoomContainer = document.querySelector("div.controls-container");
-            let allG = this.zoomContainer.querySelectorAll("g");
+            this.controlContainer = document.createElement("div");
+            this.controlContainer.classList.add("controls-container");
+            this.controlContainer.appendChild(this.createControlElements());
+            this.root.append(this.controlContainer);
+            let allG = this.controlContainer.querySelectorAll("g");
+
             for (let i = 0; i < allG.length; ++i) {
                 allG[i].onmousedown = (event) => {
                     event.stopPropagation();
