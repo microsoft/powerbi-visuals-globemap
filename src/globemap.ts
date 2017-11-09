@@ -235,7 +235,7 @@ module powerbi.extensibility.visual {
         private selectedBar: THREE.Object3D;
         private hoveredBar: THREE.Object3D;
         private averageBarVector: THREE.Vector3;
-        private zoomContainer: d3.Selection<HTMLElement>;
+        private controlContainer: HTMLElement;
         public colors: IColorPalette;
         private animationFrameId: number;
         private cameraAnimationFrameId: number;
@@ -906,11 +906,10 @@ module powerbi.extensibility.visual {
             }
             this.layout.viewport = options.viewport;
             this.root.css(this.layout.viewportIn);
-            this.zoomContainer.style({
-                "display": this.layout.viewportIn.height > GlobeMap.ZoomControlSettings.height
+            this.controlContainer.setAttribute("style",
+                `display: ${this.layout.viewportIn.height > GlobeMap.ZoomControlSettings.height
                     && this.layout.viewportIn.width > GlobeMap.ZoomControlSettings.width
-                    ? null : "none"
-            });
+                    ? null : "none"}`);
 
             if (this.layout.viewportChanged) {
                 if (this.camera && this.renderer) {
@@ -1287,23 +1286,17 @@ module powerbi.extensibility.visual {
 
         };
         private initZoomControl() {
-            const controlContainer: HTMLElement = document.createElement("div");
-            controlContainer.classList.add("controls-container");
-            const controlElements: Element = this.createControlElements();
-            controlContainer.appendChild(controlElements);
-            this.root.append(controlContainer);
-            function onMouseDown(callback: (element: SVGElement) => void) {
-                (d3.event as MouseEvent).stopPropagation();
-                if ((d3.event as MouseEvent).button === 0) {
-                    callback(<SVGElement> (d3.event as MouseEvent).currentTarget);
-                }
-            }
-            this.zoomContainer = d3.select(controlContainer);
-            this.zoomContainer
-                .selectAll("g")
-                .on("mousedown", () => onMouseDown(
-                    (element: SVGElement) => {
-                        const controlType = element.classList.toString().split(" ").filter(className => className.search("js-") !== -1)[0];
+            this.controlContainer = document.createElement("div");
+            this.controlContainer.classList.add("controls-container");
+            this.controlContainer.appendChild(this.createControlElements());
+            this.root.append(this.controlContainer);
+            let allG = this.controlContainer.querySelectorAll("g");
+
+            for (let i = 0; i < allG.length; ++i) {
+                allG[i].onmousedown = (event) => {
+                    event.stopPropagation();
+                    if (event.button === 0) {
+                        const controlType = (event.currentTarget as HTMLHtmlElement).classList.toString().split(" ").filter(className => className.search("js-") !== -1)[0];
                         switch (controlType) {
                             case "js-control--move-up": this.rotateCam(0, GlobeMap.ZoomControlSettings.angleOfRotation); break;
                             case "js-control--move-down": this.rotateCam(0, -GlobeMap.ZoomControlSettings.angleOfRotation); break;
@@ -1312,7 +1305,9 @@ module powerbi.extensibility.visual {
                             case "js-control--zoom-up": this.zoomClicked(-GlobeMap.ZoomControlSettings.zoomStep); break;
                             case "js-control--zoom-down": this.zoomClicked(GlobeMap.ZoomControlSettings.zoomStep); break;
                         }
-                    }));
+                    }
+                };
+            }
         }
         private initMercartorSphere() {
             if (GlobeMap.MercartorSphere) return;

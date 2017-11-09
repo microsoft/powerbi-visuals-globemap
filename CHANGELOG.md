@@ -1,3 +1,7 @@
+## 2.3.0
+* Remove d3 dependency
+* Code refactoring
+
 ## 2.2.2
 * Update tslint rules and code refactoring
 

@@ -1,7 +1,7 @@
 {
   "name": "powerbi-visuals-globemap",
   "description": "GlobeMap",
-  "version": "2.2.2",
+  "version": "2.3.0",
   "author": {
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
@@ -21,7 +21,6 @@
     "url": "git+https://github.com/Microsoft/PowerBI-visuals-globemap.git"
   },
   "dependencies": {
-    "d3": "3.5.5",
     "globalize": "0.1.0-a2",
     "jquery": "3.1.1",
     "lodash": "4.17.4",
