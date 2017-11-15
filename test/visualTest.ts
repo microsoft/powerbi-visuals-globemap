@@ -114,6 +114,18 @@ module powerbi.extensibility.visual.test {
                 let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] = GlobeMapColumns.getGroupedValueColumns(dataView);
                 expect(groupedColumns.length).toBe(1);
             });
+            it("getCategoricalValueByIndex shoud return longitude value", function () {
+                // let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
+                let longitude = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[1], 1);
+                expect(longitude).toEqual(dataView.categorical.values[1].values[1])
+            });
+
+            it("getCategoricalValueByIndex shoud return latitude value", function () {
+                debugger;
+                // let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
+                let latitude = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[2], 1);
+                expect(latitude).toEqual(dataView.categorical.values[2].values[1])
+            });
         });
     });
 

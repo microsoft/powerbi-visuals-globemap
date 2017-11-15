@@ -414,7 +414,7 @@ module powerbi.extensibility.visual {
                     let toolTipDataLongName: string;
                     let toolTipDataLatName: string;
                     let location: ILocation;
-
+                    let locationValue: string;
                     if (typeof (locations[i]) === "string") {
                         place = (<string>locations[i]).toLowerCase();
                         placeKey = `${place} / ${locationType}`;
@@ -422,6 +422,7 @@ module powerbi.extensibility.visual {
                             ? { longitude: <number>categorical.X[0].values[i] || 0, latitude: <number>categorical.Y[0].values[i] || 0 }
                             : undefined;
                         toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
+                        locationValue = <string> locations[i];
                     } else  {
                         place = `${categorical.X.values[i]} ${categorical.Y.values[i]}`;
                         placeKey = categorical.X.values[i] + " " + categorical.Y.values[i];
@@ -430,7 +431,11 @@ module powerbi.extensibility.visual {
                             : undefined;
                         toolTipDataLongName = categorical.X && categorical.X.source && categorical.X.source.displayName;
                         toolTipDataLatName = categorical.Y && categorical.Y.source && categorical.Y.source.displayName;
+                        locationValue = "";
                     }
+
+                    const longitudeValue = GlobeMap.getCategoricalValueByIndex(categorical.X, i);
+                    const latitudeValue  = GlobeMap.getCategoricalValueByIndex(categorical.Y, i);
 
                     let renderDatum: GlobeMapDataPoint = {
                             location: location,
@@ -443,8 +448,8 @@ module powerbi.extensibility.visual {
                             heat: heat || 0,
                             toolTipData: {
                                 location: { displayName: !_.isEmpty(toolTipDataLocationName) && toolTipDataLocationName, value: locations[i] },
-                                longitude: {displayName: !_.isEmpty(toolTipDataLongName) && toolTipDataLongName, value: categorical.X && categorical.X.values && categorical.X.values[i].toString()},
-                                latitude: {displayName: !_.isEmpty(toolTipDataLatName) && toolTipDataLatName, value: categorical.Y && categorical.Y.values && categorical.Y.values[i].toString()},
+                                longitude: {displayName: !_.isEmpty(toolTipDataLongName) && toolTipDataLongName, value: longitudeValue},
+                                latitude: {displayName: !_.isEmpty(toolTipDataLatName) && toolTipDataLatName, value: latitudeValue},
                                 height: { displayName: !_.isEmpty(categorical.Height) && categorical.Height[0].source.displayName, value: heightFormatter.format(heights[i]) },
                                 heat: { displayName: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.displayName, value: heatFormatter.format(heats[i]) }
                             }
@@ -1510,6 +1515,15 @@ module powerbi.extensibility.visual {
             controlsContainerSVG.appendChild(zoomUpButton);
 
             return controlsContainerSVG;
+        }
+
+        public static getCategoricalValueByIndex(category: DataViewCategoryColumn, index: number): string {
+            if (!category ||
+                !Array.isArray(category.values) ||
+                category.values.length <= index) {
+                    return "";
+                }
+            return <string> category.values[index];
         }
     }
 }

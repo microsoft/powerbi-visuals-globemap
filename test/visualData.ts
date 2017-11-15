@@ -38,6 +38,8 @@ module powerbi.extensibility.visual.test {
     export class GlobeMapData extends TestDataViewBuilder {
         public static ColumnSource: string = "Location";
         public static ColumnValue: string = "Height";
+        public static ColumnLongitude: string = "Longitude";
+        public static ColumnLalitude: string = "Lalitude";
 
         public valuesSourceDestination: string[] = [
             'Riyadh, Saudi Arabia',
@@ -59,7 +61,50 @@ module powerbi.extensibility.visual.test {
             'Ahmedabad, India',
             'Mexico City, Mexico',
             'Chennai, India'
+        ];
 
+        public latitudeSourceDestination: number[] = [
+            24.7388,
+            24.911449,
+            -6.199707,
+            33.557617,
+            22.603919,
+            8.958422,
+            30.053986,
+            21.142542,
+            35.707666,
+            6.499765,
+            21.370158,
+            -33.925165,
+            31.170009,
+            -12.045775,
+            -29.845546,
+            51.513605,
+            23.036129,
+            19.377726,
+            13.05915
+        ];
+
+        public longitudeSourceDestination: number[] = [
+            46.872447,
+            121.517012,
+            106.760508,
+            -7.649532,
+            113.951561,
+            38.725271,
+            31.244216,
+            72.815901,
+            51.32757,
+            3.273896,
+            39.212623,
+            18.568671,
+            121.204812,
+            -77.058747,
+            30.966266,
+            -0.168895,
+            72.510046,
+            -99.136068,
+            80.237908
         ];
 
         public valuesValue: number[] = getRandomNumbers(this.valuesSourceDestination.length, 10, 500);
@@ -84,6 +129,24 @@ module powerbi.extensibility.visual.test {
                             type: ValueType.fromDescriptor({ numeric: true }),
                         },
                         values: this.valuesValue
+                    },
+                    {
+                        source: {
+                            displayName: GlobeMapData.ColumnLalitude,
+                            roles: { [GlobeMapData.ColumnLalitude]: true },
+                            isMeasure: true,
+                            type: ValueType.fromDescriptor({ numeric: true }),
+                        },
+                        values: this.latitudeSourceDestination
+                    },
+                    {
+                        source: {
+                            displayName: GlobeMapData.ColumnLongitude,
+                            roles: { [GlobeMapData.ColumnLongitude]: true },
+                            isMeasure: true,
+                            type: ValueType.fromDescriptor({ numeric: true }),
+                        },
+                        values: this.longitudeSourceDestination
                     }
                 ], columnNames).build();
         }
