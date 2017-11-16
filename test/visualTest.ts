@@ -53,7 +53,7 @@ module powerbi.extensibility.visual.test {
             dataView: DataView;
 
         beforeEach(() => {
-            jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
+            jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
             visualBuilder = new GlobeMapBuilder(1024, 1024);
 
             defaultDataViewBuilder = new GlobeMapDataViewBuilder();
