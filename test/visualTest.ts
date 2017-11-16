@@ -53,7 +53,7 @@ module powerbi.extensibility.visual.test {
             dataView: DataView;
 
         beforeEach(() => {
-            jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
+            jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
             visualBuilder = new GlobeMapBuilder(1024, 1024);
 
             defaultDataViewBuilder = new GlobeMapDataViewBuilder();
@@ -63,9 +63,10 @@ module powerbi.extensibility.visual.test {
         });
 
         describe("DOM tests", () => {
-            it("canvas element created", () => {
+            it("canvas element created", (done) => {
                 visualBuilder.updateRenderTimeout(dataView, () => {
                     expect(visualBuilder.element.find("canvas")).toBeInDOM();
+                    done();
                 });
             });
         });
@@ -113,6 +114,15 @@ module powerbi.extensibility.visual.test {
             it("getGroupedValueColumns should group dataView columns", function () {
                 let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] = GlobeMapColumns.getGroupedValueColumns(dataView);
                 expect(groupedColumns.length).toBe(1);
+            });
+            it("getCategoricalValueByIndex should return longitude value", function () {
+                let longitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[1], 1);
+                expect(longitude).toEqual(`${dataView.categorical.values[1].values[1]}`);
+            });
+
+            it("getCategoricalValueByIndex should return latitude value", function () {
+                let latitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[2], 1);
+                expect(latitude).toEqual(`${dataView.categorical.values[2].values[1]}`);
             });
         });
     });

@@ -267,7 +267,7 @@ module powerbi.extensibility.visual {
             if (categorical.Location && categorical.Location.values) {
                 locations = categorical.Location.values;
                 const sourceType: IGlobeMapValueTypeDescriptor = <IGlobeMapValueTypeDescriptor> categorical.Location.source.type;
-                locationType = sourceType.category ? (<string>sourceType.category).toLowerCase() : "";
+                locationType = sourceType.category ? `${sourceType.category}`.toLowerCase() : "";
             } else {
                 locations = [];
                 if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
@@ -414,14 +414,15 @@ module powerbi.extensibility.visual {
                     let toolTipDataLongName: string;
                     let toolTipDataLatName: string;
                     let location: ILocation;
-
+                    let locationValue: string;
                     if (typeof (locations[i]) === "string") {
-                        place = (<string>locations[i]).toLowerCase();
+                        place = `${locations[i]}`.toLowerCase();
                         placeKey = `${place} / ${locationType}`;
                         location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
                             ? { longitude: <number>categorical.X[0].values[i] || 0, latitude: <number>categorical.Y[0].values[i] || 0 }
                             : undefined;
                         toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
+                        locationValue = `${locations[i]}`;
                     } else  {
                         place = `${categorical.X.values[i]} ${categorical.Y.values[i]}`;
                         placeKey = categorical.X.values[i] + " " + categorical.Y.values[i];
@@ -430,7 +431,11 @@ module powerbi.extensibility.visual {
                             : undefined;
                         toolTipDataLongName = categorical.X && categorical.X.source && categorical.X.source.displayName;
                         toolTipDataLatName = categorical.Y && categorical.Y.source && categorical.Y.source.displayName;
+                        locationValue = "";
                     }
+
+                    const longitudeValue: string = GlobeMap.getCategoricalValueByIndex(categorical.X, i);
+                    const latitudeValue: string  = GlobeMap.getCategoricalValueByIndex(categorical.Y, i);
 
                     let renderDatum: GlobeMapDataPoint = {
                             location: location,
@@ -442,9 +447,9 @@ module powerbi.extensibility.visual {
                             seriesToolTipData: toolTipDataBySeries ? toolTipDataBySeries[i] : undefined,
                             heat: heat || 0,
                             toolTipData: {
-                                location: { displayName: !_.isEmpty(toolTipDataLocationName) && toolTipDataLocationName, value: locations[i] },
-                                longitude: {displayName: !_.isEmpty(toolTipDataLongName) && toolTipDataLongName, value: categorical.X && categorical.X.values && categorical.X.values[i].toString()},
-                                latitude: {displayName: !_.isEmpty(toolTipDataLatName) && toolTipDataLatName, value: categorical.Y && categorical.Y.values && categorical.Y.values[i].toString()},
+                                location: { displayName: !_.isEmpty(toolTipDataLocationName) && toolTipDataLocationName, value: locationValue },
+                                longitude: {displayName: !_.isEmpty(toolTipDataLongName) && toolTipDataLongName, value: longitudeValue},
+                                latitude: {displayName: !_.isEmpty(toolTipDataLatName) && toolTipDataLatName, value: latitudeValue},
                                 height: { displayName: !_.isEmpty(categorical.Height) && categorical.Height[0].source.displayName, value: heightFormatter.format(heights[i]) },
                                 heat: { displayName: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.displayName, value: heatFormatter.format(heats[i]) }
                             }
@@ -488,7 +493,7 @@ module powerbi.extensibility.visual {
                     .withCategory(dataPointsParams.dataView.categorical.categories[0], dataPointsParams.catIndex)
                     .createSelectionId();
 
-            const category: string = <string>converterHelper.getSeriesName(dataPointsParams.source);
+            const category: string = `${converterHelper.getSeriesName(dataPointsParams.source)}`;
             const objects: {} = dataPointsParams.dataView.categorical.categories[0].objects;
             const color: string =
                 objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint ?
@@ -1510,6 +1515,15 @@ module powerbi.extensibility.visual {
             controlsContainerSVG.appendChild(zoomUpButton);
 
             return controlsContainerSVG;
+        }
+
+        public static getCategoricalValueByIndex(category: DataViewCategoryColumn, index: number): string {
+            if (!category ||
+                !Array.isArray(category.values) ||
+                category.values.length <= index) {
+                    return "";
+                }
+            return `${category.values[index]}`;
         }
     }
 }

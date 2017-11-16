@@ -1,3 +1,7 @@
+## 2.3.1
+* Fix selection issue in Safari
+* Add unit tests
+
 ## 2.3.0
 * Remove d3 dependency
 * Code refactoring
