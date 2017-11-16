@@ -116,13 +116,13 @@ module powerbi.extensibility.visual.test {
                 expect(groupedColumns.length).toBe(1);
             });
             it("getCategoricalValueByIndex should return longitude value", function () {
-                let longitude = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[1], 1);
-                expect(longitude).toEqual(dataView.categorical.values[1].values[1]);
+                let longitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[1], 1);
+                expect(longitude).toEqual(`${dataView.categorical.values[1].values[1]}`);
             });
 
             it("getCategoricalValueByIndex should return latitude value", function () {
-                let latitude = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[2], 1);
-                expect(latitude).toEqual(dataView.categorical.values[2].values[1]);
+                let latitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[2], 1);
+                expect(latitude).toEqual(`${dataView.categorical.values[2].values[1]}`);
             });
         });
     });

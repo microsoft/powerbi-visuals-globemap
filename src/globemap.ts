@@ -434,8 +434,8 @@ module powerbi.extensibility.visual {
                         locationValue = "";
                     }
 
-                    const longitudeValue = GlobeMap.getCategoricalValueByIndex(categorical.X, i);
-                    const latitudeValue  = GlobeMap.getCategoricalValueByIndex(categorical.Y, i);
+                    const longitudeValue: string = GlobeMap.getCategoricalValueByIndex(categorical.X, i);
+                    const latitudeValue: string  = GlobeMap.getCategoricalValueByIndex(categorical.Y, i);
 
                     let renderDatum: GlobeMapDataPoint = {
                             location: location,
@@ -1523,7 +1523,7 @@ module powerbi.extensibility.visual {
                 category.values.length <= index) {
                     return "";
                 }
-            return <string> category.values[index];
+            return `${category.values[index]}`;
         }
     }
 }
