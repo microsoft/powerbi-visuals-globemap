@@ -1288,11 +1288,10 @@ module powerbi.extensibility.visual {
             `,
             zoomStep: 1,
             angleOfRotation: 5
-
         };
         private initZoomControl() {
             this.controlContainer = document.createElement("div");
-            this.controlContainer.classList.add("controls-container");
+            this.controlContainer.className = "controls-container";
             this.controlContainer.appendChild(this.createControlElements());
             this.root.append(this.controlContainer);
             let allG = this.controlContainer.querySelectorAll("g");
@@ -1301,7 +1300,7 @@ module powerbi.extensibility.visual {
                 allG[i].onmousedown = (event) => {
                     event.stopPropagation();
                     if (event.button === 0) {
-                        const controlType = (event.currentTarget as HTMLHtmlElement).classList.toString().split(" ").filter(className => className.search("js-") !== -1)[0];
+                        const controlType = (<{className}>(event.currentTarget as HTMLHtmlElement)).className.baseVal.toString().split(" ").filter(className => className.search("js-") !== -1)[0];
                         switch (controlType) {
                             case "js-control--move-up": this.rotateCam(0, GlobeMap.ZoomControlSettings.angleOfRotation); break;
                             case "js-control--move-down": this.rotateCam(0, -GlobeMap.ZoomControlSettings.angleOfRotation); break;
@@ -1443,7 +1442,7 @@ module powerbi.extensibility.visual {
                 c.setAttribute("cy", cy.toString());
                 c.setAttribute("r", r.toString());
                 if (classNames) {
-                    classNames.split(" ").forEach((cl) => c.classList.add(cl));
+                    (<{className}>c).className.baseVal = classNames;
                 }
                 return c;
             };
@@ -1452,7 +1451,7 @@ module powerbi.extensibility.visual {
                 let p = document.createElementNS(svgNS, "path");
                 p.setAttribute("d", d);
                 if (classNames) {
-                    classNames.split(" ").forEach((cl) => p.classList.add(cl));
+                    (<{className}>p).className.baseVal = classNames;
                 }
                 return p;
             };
@@ -1464,7 +1463,7 @@ module powerbi.extensibility.visual {
                 r.setAttribute("width", width.toString());
                 r.setAttribute("height", height.toString());
                 if (classNames) {
-                    classNames.split(" ").forEach((cl) => r.classList.add(cl));
+                    (<{className}>r).className.baseVal = classNames;
                 }
                 return r;
             };
@@ -1472,7 +1471,7 @@ module powerbi.extensibility.visual {
             const g = (classNames: string) => {
                 let g = document.createElementNS(svgNS, "g");
                 if (classNames) {
-                    classNames.split(" ").forEach((cl) => g.classList.add(cl));
+                    (<{className}>g).className.baseVal = classNames;
                 }
                 return g;
             };
@@ -1503,7 +1502,7 @@ module powerbi.extensibility.visual {
             zoomUpButton.appendChild(rect(116, 114, 6, 17));
 
             let controlsContainerSVG = document.createElementNS(svgNS, "svg");
-            controlsContainerSVG.classList.add("controls");
+            (<{className}>controlsContainerSVG).className.baseVal = "controls";
             controlsContainerSVG.setAttribute("width", "145");
             controlsContainerSVG.setAttribute("height", "145");
 

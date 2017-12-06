@@ -1,3 +1,6 @@
+## 2.3.2
+* Fixed breaking issue in IE 11 
+
 ## 2.3.1
 * Fix selection issue in Safari
 * Add unit tests
