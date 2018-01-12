@@ -1,3 +1,6 @@
+## 2.3.3
+* Fixed breaking Bing key issue
+
 ## 2.3.2
 * Fixed breaking issue in IE 11 
 
