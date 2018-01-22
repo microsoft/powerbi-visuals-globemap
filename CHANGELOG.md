@@ -1,3 +1,6 @@
+## 2.3.4
+* Bing key is hidden now
+
 ## 2.3.3
 * Fixed breaking Bing key issue
 
