@@ -1,3 +1,23 @@
+## 2.3.4
+* Bing key is hidden now
+
+## 2.3.3
+* Fixed breaking Bing key issue
+
+## 2.3.2
+* Fixed breaking issue in IE 11 
+
+## 2.3.1
+* Fix selection issue in Safari
+* Add unit tests
+
+## 2.3.0
+* Remove d3 dependency
+* Code refactoring
+
+## 2.2.2
+* Update tslint rules and code refactoring
+
 ## 2.2.1
 * Focus on bar under cross selection
 

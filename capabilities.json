@@ -59,11 +59,17 @@
       "displayName": "Longitude",
       "description": "Used to override the longitude of locations",
       "displayNameKey": "Role_DisplayName_Longitude",
-      "preferredTypes": [
+      "requiredTypes": [
         {
           "geography": {
             "longitude": true
           }
+        },
+        {
+          "numeric": true
+        },
+        {
+          "integer": true
         }
       ]
     },
@@ -73,11 +79,17 @@
       "displayName": "Latitude",
       "description": "Used to override the latitude of locations",
       "displayNameKey": "Role_DisplayName_Latitude",
-      "preferredTypes": [
+      "requiredTypes": [
         {
           "geography": {
             "latitude": true
           }
+        },
+        {
+          "numeric": true
+        },
+        {
+          "integer": true
         }
       ]
     },

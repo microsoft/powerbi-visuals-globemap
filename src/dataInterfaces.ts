@@ -45,9 +45,9 @@ module powerbi.extensibility.visual {
         placeKey: string;
         height: number;
         heightBySeries: number[];
-        seriesToolTipData: any[];
+        seriesToolTipData: {};
         heat: number;
-        toolTipData: any;
+        toolTipData: {};
     }
 
     export interface GlobeMapSeriesDataPoint extends SelectableDataPoint {
@@ -77,9 +77,26 @@ module powerbi.extensibility.visual {
         [quadKey: string]: string;
     }
 
-    export interface CanvasCoordinate {
+    export interface ICanvasCoordinate {
         x: number;
         y: number;
+    }
+
+    export interface IGlobeMapValueTypeDescriptor extends ValueTypeDescriptor {
+        category: string;
+    }
+
+    export interface IGlobeMapToolTipData {
+        location: PrimitiveValue;
+        longitude: PrimitiveValue;
+        latitude: PrimitiveValue;
+        series: PrimitiveValue;
+        height: PrimitiveValue;
+        heat: PrimitiveValue;
+    }
+
+    export interface IGlobeMapObject3DWithToolTipData extends THREE.Object3D {
+        toolTipData: IGlobeMapToolTipData;
     }
 }
 

@@ -78,7 +78,7 @@ module powerbi.extensibility.visual {
             this.originalViewportValue = _.clone(value);
             this.setUpdateObject(value,
                 (v: IViewport) => this.viewportValue = v,
-                (o: any) => VisualLayout.restrictToMinMax(o, this.minViewport));
+                (o: IViewport) => VisualLayout.restrictToMinMax(o, this.minViewport));
         }
 
         public set margin(value: IMargin) {
@@ -121,7 +121,7 @@ module powerbi.extensibility.visual {
         }
 
         private static createNotifyChangedObject<T>(object: T, objectChanged: (o?: T, key?: string) => void): T {
-            let result: T = <any>{};
+            let result: T = <T>{};
             _.keys(object).forEach(key => Object.defineProperty(result, key, {
                 get: () => object[key],
                 set: (value) => { object[key] = value; objectChanged(object, key); },

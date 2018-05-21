@@ -3,7 +3,7 @@
     /** Defines geocoding services. */
     export interface GeocodeOptions {
         /** promise that should abort the request when resolved */
-        timeout?: IPromise<any>;
+        timeout?: IPromise<number>;
     }
 
     export interface IRect {
@@ -14,9 +14,9 @@
     }
 
     export interface IGeocoder {
-        geocode(query: string, category?: string, options?: GeocodeOptions): IPromise<IGeocodeCoordinate>;
-        geocodeBoundary(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData?: number, options?: GeocodeOptions): IPromise<IGeocodeBoundaryCoordinate>;
-        geocodePoint(latitude: number, longitude: number, options?: GeocodeOptions): IPromise<IGeocodeResource>;
+        geocode(query: string, category?: string, options?: GeocodeOptions): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate>;
+        geocodeBoundary(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData?: number, options?: GeocodeOptions): IPromise<IGeocodeBoundaryCoordinate> | JQueryDeferred<IGeocodeCoordinate>;
+        geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): IPromise<IGeocodeCoordinate | IGeocodeResource> | JQueryDeferred<IGeocodeCoordinate>;
 
         /** returns data immediately if it is locally available (e.g. in cache), null if not in cache */
         tryGeocodeImmediate(query: string, category?: string): IGeocodeCoordinate;
