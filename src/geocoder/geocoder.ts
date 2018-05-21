@@ -269,7 +269,7 @@ module powerbi.extensibility.geocoder {
 
         public getUrl(): string {
             let parameters: _.Dictionary<string> = {
-                key: Settings.BingKey,
+                key: Settings.BingKey || <string>process.env.BING_KEY,
             };
 
             let entityType: string = this.getBingEntity();
