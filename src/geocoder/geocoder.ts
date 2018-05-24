@@ -50,7 +50,7 @@ module powerbi.extensibility.geocoder {
         /** Maximum cache overflow of cached geocode data to kick the cache reducing. */
         MaxCacheSizeOverflow: 100,
         // Add your Bing key here
-        BingKey: "Add your Bing key here"
+        BingKey: undefined
     };
 
     export enum JQueryPromiseState {
@@ -269,7 +269,7 @@ module powerbi.extensibility.geocoder {
 
         public getUrl(): string {
             let parameters: _.Dictionary<string> = {
-                key: Settings.BingKey,
+                key: Settings.BingKey || process.env.BING_KEY,
             };
 
             let entityType: string = this.getBingEntity();
@@ -396,7 +396,7 @@ module powerbi.extensibility.geocoder {
             url += [this.latitude, this.longitude].join();
 
             let parameters: _.Dictionary<string> = {
-                key: Settings.BingKey,
+                key: Settings.BingKey || process.env.BING_KEY,
                 include: 'ciso2'
             };
 
@@ -464,7 +464,7 @@ module powerbi.extensibility.geocoder {
 
         public getUrl(): string {
             let parameters: _.Dictionary<string> = {
-                key: Settings.BingKey,
+                key: Settings.BingKey || process.env.BING_KEY,
                 $format: "json",
             };
 

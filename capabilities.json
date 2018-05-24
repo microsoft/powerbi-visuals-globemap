@@ -57,8 +57,9 @@
       "name": "X",
       "kind": "Grouping",
       "displayName": "Longitude",
-      "description": "Used to override the longitude of locations",
       "displayNameKey": "Role_DisplayName_Longitude",
+      "description": "Used to override the longitude of locations",
+      "descriptionKey": "Role_Description_DisplayName_Longitude",
       "requiredTypes": [
         {
           "geography": {
@@ -77,8 +78,9 @@
       "name": "Y",
       "kind": "Grouping",
       "displayName": "Latitude",
-      "description": "Used to override the latitude of locations",
       "displayNameKey": "Role_DisplayName_Latitude",
+      "description": "Used to override the latitude of locations",
+      "descriptionKey": "Role_Description_DisplayName_Latitude",
       "requiredTypes": [
         {
           "geography": {

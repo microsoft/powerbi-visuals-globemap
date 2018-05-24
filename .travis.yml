@@ -1,22 +1,25 @@
 os:
-  - linux
+- linux
 sudo: required
 dist: trusty
 language: node_js
 node_js:
-  - "8"
+- '8'
 addons:
   chrome: stable
 before_install:
-  - export CHROME_BIN=google-chrome-stable
-  - export DISPLAY=:99.0
-  - sh -e /etc/init.d/xvfb start
+- export CHROME_BIN=google-chrome-stable
+- export DISPLAY=:99.0
+- sh -e /etc/init.d/xvfb start
 install:
-  - npm install
+- npm install
 script:
-  - npm run lint
-  - npm run test
+- npm run lint
+- npm run test
 after_success:
-  - node node_modules/coveralls/bin/coveralls.js < coverage/lcov.info
+- node node_modules/coveralls/bin/coveralls.js < coverage/lcov.info
 notifications:
   email: false
+env:
+  global:
+    secure: Li/nmv4iP4hvaREfC1tKzQAE0npc3kp/lV3nLMkEy9kJzAVdFFypnWfwGOGfJQNu5juuXiKIFzWpvouApI2PGdIzC+V/7NDtRebwj2jVtp6AP8K4S+MqcO8+Nkt9ObI8QAhjWv/3pbSm3Y0iehqnmPs1JAb+Yu9jZccOEDVpyc0ls1RsSQYRyl0+s3bh2XjotQqumR3vKLsbMcODbErQZzlknxd0vyzNQLuvI5NPQ8LLxfMGqeKVH86oHoZEtpFeuR1HrSR4NkUix58lsmU66kCfuLAR6q16urQK86BVlF00oD4S7+iN7tvAccO9VCGtCzpnzkq0vfwXbi1dKe9uBIgqyMTtUlLEiacP0CEbnwfQTLCvgyuOumfGaZmrbuf1Q/VoxoNF48wC1AY8Goed9GqBPk/Gq8AXA2jqUxcoHs85Zwv0OOul6Urak7qNv4+hwz+WK5YgISn4M6V/BD68QYgcD56AvXCjUtWa9tEgM7N0A3fPLi4GL8fUWWB/t1bDMsclph6I3srk+JdWPbtHGXY4WgvnHb4juWksSX07AD+bdL/XvhW5y7yymlqF1ySbiioJRFhjWirou8OvycG6AWO/84OhfQOye18GWoDiLdOuCA/2k9zb2p+pbeO14qcCjdyhVJ1XFUOdd7Bip5mrvQwyjMwmk96ADjfSllN0Tcg=

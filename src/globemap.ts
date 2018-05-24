@@ -222,7 +222,7 @@ module powerbi.extensibility.visual {
         private mapTextures: THREE.Texture[];
         public barsGroup: THREE.Object3D;
         private readyToRender: boolean;
-        private deferredRenderTimerId: number;
+        private deferredRenderTimerId: NodeJS.Timer;
         private globeMapLocationCache: { [i: string]: ILocation };
         private locationsToLoad: number = 0;
         private locationsLoaded: number = 0;
