@@ -85,21 +85,13 @@ module powerbi.extensibility.visual.test {
                 expect(data.dataPoints.length).toBe(dataView.categorical.values[0].values.length);
             });
 
-            it("should create same count of datapoints as valid categories", () => {
+             it("should create same count of datapoints as valid categories", () => {
                 let invalidDataSet = [null, "0qqa123", undefined, "value", 1, 2, 3, 4, 5, 6];
-                let validStringValueCount = 0;
-
-                invalidDataSet.forEach((item) => {
-                    if (typeof item === "string") {
-                        ++validStringValueCount;
-                    }
-                });
 
                 dataView.categorical.categories[0].values = invalidDataSet;
-
                 let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
-                expect(data.dataPoints.length).toBe(validStringValueCount);
+                expect(data.dataPoints.length).toBe(dataView.categorical.categories[0].values.length);
             });
         });
 

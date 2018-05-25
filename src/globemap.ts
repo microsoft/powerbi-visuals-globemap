@@ -1016,7 +1016,8 @@ module powerbi.extensibility.visual {
 
         private defferedRender() {
             if (!this.deferredRenderTimerId) {
-                this.deferredRenderTimerId = setTimeout(() => {
+                // tslint:disable-next-line
+                this.deferredRenderTimerId = <any>setTimeout(() => {
                     this.deferredRenderTimerId = null;
                     this.renderMagic();
                 }, 500);
