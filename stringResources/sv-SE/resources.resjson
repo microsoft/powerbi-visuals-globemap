@@ -1,0 +1,13 @@
+{
+	"Role_DisplayName_Location": "Plats",
+	"Role_DisplayName_Group": "Grupp",
+	"Role_DisplayName_Longitude": "Longitud",
+	"Role_DisplayName_Latitude": "Latitud",
+	"Role_DisplayName_BarHeight": "Stapelhöjd",
+	"Role_DisplayName_HeatIntensity": "Värmeintensitet",
+	"Visual_DataPoint": "Datafärger",
+	"Visual_DefaultColor": "Standardfärg",
+	"Visual_DataPoint_Show_All": "Visa alla",
+	"Visual_Fill": "Fyll",
+	"Visual_Gradient": "Färgmättnad"
+}

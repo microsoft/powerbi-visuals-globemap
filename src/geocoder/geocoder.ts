@@ -50,7 +50,7 @@ module powerbi.extensibility.geocoder {
         /** Maximum cache overflow of cached geocode data to kick the cache reducing. */
         MaxCacheSizeOverflow: 100,
         // Add your Bing key here
-        BingKey: "Add your Bing key here"
+        BingKey: "YzyBFJgUrMNy4UEJWNpt~3ia-8PWaplOLtxqAWUD9dQ~As3csOrjB7b4KJ7cY6vkaSZsJT4FsKjE0rvTYJPZx-xaFSvB5IV0u3-KJnM0zNon"
     };
 
     export enum JQueryPromiseState {

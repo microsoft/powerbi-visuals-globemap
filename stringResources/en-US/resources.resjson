@@ -9,5 +9,7 @@
     "Visual_DefaultColor": "Default color",
     "Visual_DataPoint_Show_All": "Show all",
     "Visual_Fill": "Fill",
-    "Visual_Gradient": "Color saturation"
+    "Visual_Gradient": "Color saturation",
+    "Role_Description_DisplayName_Longitude": "Overrides the longitude of locations",
+    "Role_Description_DisplayName_Latitude": "Overrides the latitude of locations"
 }
