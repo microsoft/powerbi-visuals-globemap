@@ -1,3 +1,6 @@
+## 2.4.0
+* Added localization for all supported languages
+
 ## 2.3.4
 * Bing key is hidden now
 
