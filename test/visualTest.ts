@@ -29,7 +29,6 @@
 module powerbi.extensibility.visual.test {
     // powerbi
     import DataView = powerbi.DataView;
-    import DataViewCategorical = powerbi.DataViewCategorical;
 
     // powerbi.extensibility.visual.test
     import GlobeMapDataViewBuilder = powerbi.extensibility.visual.test.GlobeMapData;
@@ -37,14 +36,7 @@ module powerbi.extensibility.visual.test {
 
     // powerbi.extensibility.visual.GlobeMap1447669447625
     import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMap;
-    import GlobeMapData = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMapData;
     import GlobeMapColumns = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMapColumns;
-
-    // powerbi.extensibility.utils.test
-    import clickElement = powerbi.extensibility.utils.test.helpers.clickElement;
-    import renderTimeout = powerbi.extensibility.utils.test.helpers.renderTimeout;
-    import getRandomNumbers = powerbi.extensibility.utils.test.helpers.getRandomNumbers;
-    import assertColorsMatch = powerbi.extensibility.utils.test.helpers.color.assertColorsMatch;
 
     describe("GlobeMap", () => {
         let visualBuilder: GlobeMapBuilder,
@@ -85,13 +77,31 @@ module powerbi.extensibility.visual.test {
                 expect(data.dataPoints.length).toBe(dataView.categorical.values[0].values.length);
             });
 
-             it("should create same count of datapoints as valid categories", () => {
+            it("should create same count of datapoints as valid categories", () => {
                 let invalidDataSet = [null, "0qqa123", undefined, "value", 1, 2, 3, 4, 5, 6];
 
                 dataView.categorical.categories[0].values = invalidDataSet;
                 let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
                 expect(data.dataPoints.length).toBe(dataView.categorical.categories[0].values.length);
+            });
+
+            describe("Data fields", () => {
+                let dataView: DataView;
+
+                beforeEach(() => {
+                    dataView = defaultDataViewBuilder.getDataView([
+                        GlobeMapDataViewBuilder.ColumnLatitude,
+                        GlobeMapDataViewBuilder.ColumnLongitude,
+                        GlobeMapDataViewBuilder.ColumnValue,
+                    ]);
+                });
+
+                it("Location should not be mandatory", () => {
+                    expect(() => {
+                        VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
+                    }).not.toThrow();
+                });
             });
         });
 
@@ -107,6 +117,7 @@ module powerbi.extensibility.visual.test {
                 let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] = GlobeMapColumns.getGroupedValueColumns(dataView);
                 expect(groupedColumns.length).toBe(1);
             });
+
             it("getCategoricalValueByIndex should return longitude value", function () {
                 let longitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[1], 1);
                 expect(longitude).toEqual(`${dataView.categorical.values[1].values[1]}`);
@@ -120,26 +131,26 @@ module powerbi.extensibility.visual.test {
     });
 
     describe("Capabilities tests", () => {
-            it("all items having displayName should have displayNameKey property", () => {
-                jasmine.getJSONFixtures().fixturesPath = "base";
+        it("all items having displayName should have displayNameKey property", () => {
+            jasmine.getJSONFixtures().fixturesPath = "base";
 
-                let jsonData = getJSONFixture("capabilities.json");
+            let jsonData = getJSONFixture("capabilities.json");
 
-                let objectsChecker: Function = (obj) => {
-                    for (let property in obj) {
-                        let value: {displayName, displayNameKey} = obj[property];
+            let objectsChecker: Function = (obj) => {
+                for (let property in obj) {
+                    let value: { displayName, displayNameKey } = obj[property];
 
-                        if (value.displayName) {
-                            expect(value.displayNameKey).toBeDefined();
-                        }
-
-                        if (typeof value === "object") {
-                            objectsChecker(value);
-                        }
+                    if (value.displayName) {
+                        expect(value.displayNameKey).toBeDefined();
                     }
-                };
 
-                objectsChecker(jsonData);
-            });
+                    if (typeof value === "object") {
+                        objectsChecker(value);
+                    }
+                }
+            };
+
+            objectsChecker(jsonData);
         });
+    });
 }

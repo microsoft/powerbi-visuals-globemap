@@ -29,7 +29,6 @@
 module powerbi.extensibility.visual.test {
     // powerbi.extensibility.utils.type
     import ValueType = powerbi.extensibility.utils.type.ValueType;
-    import typeUtils = powerbi.extensibility.utils.type;
 
     // powerbi.extensibility.utils.test
     import TestDataViewBuilder = powerbi.extensibility.utils.test.dataViewBuilder.TestDataViewBuilder;
@@ -39,7 +38,7 @@ module powerbi.extensibility.visual.test {
         public static ColumnSource: string = "Location";
         public static ColumnValue: string = "Height";
         public static ColumnLongitude: string = "Longitude";
-        public static ColumnLalitude: string = "Lalitude";
+        public static ColumnLatitude: string = "Latitude";
 
         public valuesSourceDestination: string[] = [
             'Riyadh, Saudi Arabia',
@@ -132,8 +131,8 @@ module powerbi.extensibility.visual.test {
                     },
                     {
                         source: {
-                            displayName: GlobeMapData.ColumnLalitude,
-                            roles: { [GlobeMapData.ColumnLalitude]: true },
+                            displayName: GlobeMapData.ColumnLatitude,
+                            roles: { [GlobeMapData.ColumnLatitude]: true },
                             isMeasure: true,
                             type: ValueType.fromDescriptor({ numeric: true }),
                         },
