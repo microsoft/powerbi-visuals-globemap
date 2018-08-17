@@ -1,7 +1,7 @@
 {
   "name": "powerbi-visuals-globemap",
   "description": "GlobeMap",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "author": {
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
@@ -39,12 +39,12 @@
     "@types/jquery": "2.0.41",
     "@types/lodash": "4.14.55",
     "@types/three": "0.0.19",
-    "bower": "1.8.0",
+    "bower": "1.8.4",
     "coveralls": "2.13.1",
     "jasmine": "2.6.0",
     "jasmine-jquery": "2.1.1",
-    "karma": "1.6.0",
-    "karma-chrome-launcher": "2.0.0",
+    "karma": "3.0.0",
+    "karma-chrome-launcher": "2.2.0",
     "karma-coverage": "1.1.1",
     "karma-jasmine": "1.0.2",
     "karma-remap-istanbul": "0.4.0",
@@ -52,6 +52,7 @@
     "karma-typescript-preprocessor": "0.3.0",
     "powerbi-visuals-tools": "1.12.0",
     "powerbi-visuals-utils-testutils": "1.2.1",
+    "puppeteer": "^1.7.0",
     "tslint": "5.4.3",
     "tslint-microsoft-contrib": "5.0.1",
     "typescript": "2.1.4"

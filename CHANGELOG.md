@@ -1,3 +1,6 @@
+## 2.4.1
+* Location data field is no longer mandatory
+
 ## 2.4.0
 * Added localization for all supported languages
 

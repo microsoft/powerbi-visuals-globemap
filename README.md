@@ -12,4 +12,4 @@ Use it with any location data. The location could be an address, city, county , 
 
 Globe Map also supports heat map on the spatial map. You can use a second measure for heat intensity and draw immediate attention to the right areas.
 
-See also [GlobeMap at Microsoft Office store](https://store.office.com/en-us/app.aspx?assetid=WA104380799&sourcecorrid=21c5c9e1-a21a-4d44-ab42-2134f0c9fc27&searchapppos=0&ui=en-US&rs=en-US&ad=US&appredirect=false)
+See also [Globe Map at Microsoft AppStore](https://appsource.microsoft.com/en-us/product/power-bi-visuals/WA104380799)
