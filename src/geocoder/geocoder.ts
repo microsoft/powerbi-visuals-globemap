@@ -572,6 +572,8 @@ module powerbi.extensibility.geocoder {
     }
 
     export class GeocodeQueue {
+        private callbackObjectName: string = "powerbi";
+
         private entries: GeocodeQueueEntry[] = [];
         private activeEntries: GeocodeQueueEntry[] = [];
         private dequeueTimeout: number;
@@ -676,13 +678,15 @@ module powerbi.extensibility.geocoder {
 
             let guidSequence = () => {
                 let cryptoObj = window.crypto || window["msCrypto"]; // For IE
+
                 return cryptoObj.getRandomValues(new Uint32Array(1))[0].toString(16).substring(0, 4);
-                //  return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
             };
 
-            let guid = `GeocodeCallback${guidSequence()}${guidSequence()}${guidSequence()}`;
+            const callbackGuid: string = `GeocodeCallback${guidSequence()}${guidSequence()}${guidSequence()}`;
 
-            window.window[guid] = (data) => {
+            // This is super dirty hack to bypass faked window object in order to use jsonp
+            // We use jsonp because sandboxed iframe does not have an origin. This fact breaks regular AJAX queries.
+            window[this.callbackObjectName][callbackGuid] = (data) => {
                 if (entry.request) {
                     entry.request.always(() => {
                         _.pull(this.activeEntries, entry);
@@ -695,25 +699,28 @@ module powerbi.extensibility.geocoder {
                 catch (error) {
                     this.complete(entry, { error: error });
                 }
-                delete window.window[guid];
+
+                delete window[this.callbackObjectName][callbackGuid];
             };
 
             entry.jsonp = true;
 
             let url: string = entry.item.query.getUrl();
+
             if (!url) {
                 this.complete(entry, { error: new Error("Unsupported query.") });
                 return;
             }
 
             this.activeEntries.push(entry);
+
             entry.request = $.ajax({
                 url: url,
                 dataType: 'jsonp',
                 crossDomain: true,
                 jsonp: "jsonp",
                 context: entry,
-                jsonpCallback: guid
+                jsonpCallback: `window.${this.callbackObjectName}.${callbackGuid}`
             });
         }
     }
