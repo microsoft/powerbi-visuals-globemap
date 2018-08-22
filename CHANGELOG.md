@@ -1,3 +1,6 @@
+## 2.4.2
+* Fixes geocoding because it used to be broken since we converted Globe Map to API 1.12.0
+
 ## 2.4.1
 * Location data field is no longer mandatory
 
