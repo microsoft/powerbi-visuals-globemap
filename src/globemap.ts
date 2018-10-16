@@ -239,6 +239,8 @@ module powerbi.extensibility.visual {
         public visualHost: IVisualHost;
         private static Unknown: string = "unknown";
 
+        private isFirstLoad: boolean = true;
+
         private tooltipService: ITooltipService;
         private static datapointShiftPoint: number = 0.01;
         public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
@@ -610,13 +612,18 @@ module powerbi.extensibility.visual {
         private currentLanguage: string = "en-GB";
         private static TILE_STORAGE_KEY = "GLOBEMAP_TILES_STORAGE";
         private static TILE_LANGUAGE_CULTURE = "GLOBEMAP_TILE_LANGUAGE_CULTURE";
+
         private initScene(): void {
             this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
             this.rendererContainer = $("<div>").appendTo(this.root).addClass("globeMapView");
 
             this.rendererContainer.append(this.renderer.domElement);
             this.rendererCanvas = this.renderer.domElement;
-            this.camera = new THREE.PerspectiveCamera(GlobeMap.cameraFov, this.layout.viewportIn.width / this.layout.viewportIn.height, GlobeMap.cameraNear, GlobeMap.cameraFar);
+            this.camera = new THREE.PerspectiveCamera(
+                GlobeMap.cameraFov,
+                this.layout.viewportIn.width / this.layout.viewportIn.height,
+                GlobeMap.cameraNear,
+                GlobeMap.cameraFar);
             this.orbitControls = new THREE.OrbitControls(this.camera, this.rendererCanvas);
             this.orbitControls.enablePan = false;
             this.scene = new THREE.Scene();
@@ -961,13 +968,17 @@ module powerbi.extensibility.visual {
                 this.averageBarVector.multiplyScalar(1 / this.barsGroup.children.length);
                 if (this.locationsLoaded === this.locationsToLoad) {
                     this.initialLocationsLength = this.barsGroup.children.length;
-                    this.animateCamera(this.averageBarVector);
+                    this.isFirstLoad ? this.setCameraPosition(this.averageBarVector) : this.animateCamera(this.averageBarVector);
                 }
             }
 
             this.heatmap.blur();
             this.heatTexture.needsUpdate = true;
             this.needsRender = true;
+
+            if (this.isFirstLoad === true) {
+                this.isFirstLoad = false;
+            }
         }
 
         private getBarMaterialByIndex(index: number): THREE.MeshPhongMaterial {
@@ -1162,12 +1173,32 @@ module powerbi.extensibility.visual {
             this.tooltipService.hide(tooltipHideOptions);
         }
 
-        private animateCamera(to: THREE.Vector3, done?: Function) {
+        private setCameraPosition(to: THREE.Vector3) {
             this.hideTooltip();
 
             if (!this.camera) {
                 return;
             }
+
+            const endPos: THREE.Vector3 = to.clone().normalize();
+            const length: number = this.camera.position.length();
+            const pos: THREE.Vector3 = new THREE.Vector3()
+                 .add(endPos.clone().multiplyScalar(2))
+                 .normalize()
+                 .multiplyScalar(length);
+
+            this.camera.position.x = pos.x;
+            this.camera.position.y = pos.y;
+            this.camera.position.z = pos.z;
+        }
+
+        private animateCamera(to: THREE.Vector3, done?: Function) {
+            this.hideTooltip();
+ 
+            if (!this.camera) {
+                return;
+            }
+
             cancelAnimationFrame(this.cameraAnimationFrameId);
             const startTime: number = Date.now();
             const duration: number = this.GlobeSettings.cameraAnimDuration;
@@ -1177,14 +1208,7 @@ module powerbi.extensibility.visual {
             const length: number = this.camera.position.length();
             const alpha: number = 2;
             const beta: number = 1.9;
-            const easeInOut = (t) => {
-                t *= beta;
-                if (t < alpha) {
-                    return (t * t * t) / beta;
-                }
-                t -= beta;
-                return (t * t * t + beta) / beta;
-            };
+            const easeInOutQuint = (t) => { return t < alpha ? beta * t * t * t * t * t : 1 + beta * (--t) * t * t * t * t; };
 
             const onUpdate: FrameRequestCallback = () => {
                 const now: number = Date.now();
@@ -1192,7 +1216,7 @@ module powerbi.extensibility.visual {
                 if (t > alpha) {
                     t = alpha;
                 }
-                t = easeInOut(t);
+                t = easeInOutQuint(t);
 
                 const pos: THREE.Vector3 = new THREE.Vector3()
                     .add(startPos.clone().multiplyScalar(alpha - t))

@@ -1,3 +1,7 @@
+## 2.5.0
+* UPD: using of easeInOutQuint algorithm to animate point selection
+* UPD: animation is disabled for the initial load
+
 ## 2.4.2
 * Fixes geocoding because it used to be broken since we converted Globe Map to API 1.12.0
 
