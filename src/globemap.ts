@@ -1194,7 +1194,7 @@ module powerbi.extensibility.visual {
 
         private animateCamera(to: THREE.Vector3, done?: Function) {
             this.hideTooltip();
- 
+
             if (!this.camera) {
                 return;
             }
