@@ -1187,9 +1187,7 @@ module powerbi.extensibility.visual {
                  .normalize()
                  .multiplyScalar(length);
 
-            this.camera.position.x = pos.x;
-            this.camera.position.y = pos.y;
-            this.camera.position.z = pos.z;
+            this.camera.position.set(pos.x, pos.y, pos.z);
         }
 
         private animateCamera(to: THREE.Vector3, done?: Function) {
@@ -1208,7 +1206,12 @@ module powerbi.extensibility.visual {
             const length: number = this.camera.position.length();
             const alpha: number = 2;
             const beta: number = 1.9;
-            const easeInOutQuint = (t) => { return t < alpha ? beta * t * t * t * t * t : 1 + beta * (--t) * t * t * t * t; };
+            const easeInOutQuint = (t) => { 
+                if (t < alpha) {
+                    return beta * t * t * t * t * t;
+                }
+                return 1 + beta * (--t) * t * t * t * t; 
+            };
 
             const onUpdate: FrameRequestCallback = () => {
                 const now: number = Date.now();
