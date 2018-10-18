@@ -1206,11 +1206,11 @@ module powerbi.extensibility.visual {
             const length: number = this.camera.position.length();
             const alpha: number = 2;
             const beta: number = 1.9;
-            const easeInOutQuint = (t) => { 
+            const easeInOutQuint = (t) => {
                 if (t < alpha) {
                     return beta * t * t * t * t * t;
                 }
-                return 1 + beta * (--t) * t * t * t * t; 
+                return 1 + beta * (--t) * t * t * t * t;
             };
 
             const onUpdate: FrameRequestCallback = () => {
