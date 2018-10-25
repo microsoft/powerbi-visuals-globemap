@@ -968,6 +968,28 @@ module powerbi.extensibility.visual {
                 this.averageBarVector.multiplyScalar(1 / this.barsGroup.children.length);
                 if (this.locationsLoaded === this.locationsToLoad) {
                     this.initialLocationsLength = this.barsGroup.children.length;
+
+                    const maxDistance: number = this.GlobeSettings.cameraRadius - this.GlobeSettings.earthRadius;
+                    const distance: number = (this.camera.position.length() - this.GlobeSettings.earthRadius) / maxDistance;
+
+                    let angleRate: number = 12;
+
+                    if (distance < 0.5) {
+                        angleRate = 36;
+                    } else if (distance < 0.25) {
+                        angleRate = 60;
+                    } else if (distance < 0.15) {
+                        angleRate = 0;
+                    }
+
+                    if (angleRate > 0) {
+                        const axisY = new THREE.Vector3(0, 1, 0);
+                        const axisZ = new THREE.Vector3(0, 0, 1);
+                        const angle = Math.PI / angleRate;
+                        this.averageBarVector.applyAxisAngle(axisY, angle);
+                        this.averageBarVector.applyAxisAngle(axisZ, angle);
+                    }
+
                     this.isFirstLoad ? this.setCameraPosition(this.averageBarVector) : this.animateCamera(this.averageBarVector);
                 }
             }
@@ -1183,9 +1205,9 @@ module powerbi.extensibility.visual {
             const endPos: THREE.Vector3 = to.clone().normalize();
             const length: number = this.camera.position.length();
             const pos: THREE.Vector3 = new THREE.Vector3()
-                 .add(endPos.clone().multiplyScalar(2))
-                 .normalize()
-                 .multiplyScalar(length);
+                .add(endPos.clone().multiplyScalar(2))
+                .normalize()
+                .multiplyScalar(length);
 
             this.camera.position.set(pos.x, pos.y, pos.z);
         }
