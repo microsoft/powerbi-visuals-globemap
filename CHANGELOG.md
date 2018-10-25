@@ -1,3 +1,6 @@
+## 2.5.1
+* FIX: shifting for camera position was repaired
+
 ## 2.5.0
 * UPD: using of easeInOutQuint algorithm to animate point selection
 * UPD: animation is disabled for the initial load
