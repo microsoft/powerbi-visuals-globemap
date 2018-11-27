@@ -719,7 +719,7 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
-        private initTextures(): JQueryPromise<any> {
+        private initTextures(): any {
             this.mapTextures = [];
             const tileCulturePromise: IPromise<string> = this.localStorageService.getStorageData(GlobeMap.TILE_LANGUAGE_CULTURE);
             let tileCachePromise: IPromise<string> = this.localStorageService.getStorageData(GlobeMap.TILE_STORAGE_KEY);
@@ -1030,7 +1030,12 @@ module powerbi.extensibility.visual {
             this.globeMapLocationCache[renderDatum.placeKey] = location; // store empty object so we don't send AJAX request again
             this.locationsToLoad++;
 
-            geocoder = powerbi.extensibility.geocoder.createGeocoder();
+            const localStorageService: storage.ILocalStorageServiceExtended = {
+                instance: this.localStorageService,
+                createLocalStorageService: () => this.visualHost.localStorageService()
+            };
+
+            geocoder = powerbi.extensibility.geocoder.createGeocoder(localStorageService);
 
             if (geocoder) {
                 (geocoder.geocode(

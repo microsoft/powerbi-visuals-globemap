@@ -24,9 +24,9 @@
  *  THE SOFTWARE.
  */
 
-module powerbi.extensibility.geocoder {
-    import IVisualHostLocalStorageService = powerbi.extensibility.visual.IVisualHostLocalStorageService;
+import IVisualHostLocalStorageService = powerbi.extensibility.visual.IVisualHostLocalStorageService;
 
+module powerbi.extensibility.geocoder {
     interface GeocodeCacheEntry {
         coordinate: IGeocodeCoordinate;
         hitCount: number;
@@ -38,11 +38,11 @@ module powerbi.extensibility.geocoder {
         registerCoordinates(key: string, coordinate: IGeocodeBoundaryCoordinate): void;
     }
 
-    export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService?: IVisualHostLocalStorageService): IGeocodingCache {
-        if (!localStorageService) {
-            localStorageService = new LocalStorageService();
+    export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number): IGeocodingCache {
+        if (!this.localStorageService.instance) {
+            this.localStorageService.instance = this.localStorageService.createLocalStorageService();
         }
-        return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, localStorageService);
+        return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, this.localStorageService.instance);
     }
 
     class GeocodingCache implements IGeocodingCache {
@@ -80,12 +80,6 @@ module powerbi.extensibility.geocoder {
                 }
                 return undefined;
             });
-            // pair = this.localStorageService.getStorageData(key);
-            // if (pair) {
-            //     this.registerInMemory(key, pair.coordinate);
-            //     return pair.coordinate;
-            // }
-            // return undefined;
         }
         /**
         * Registers the query and coordinate to the cache.
