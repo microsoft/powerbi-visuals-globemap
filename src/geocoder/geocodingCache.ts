@@ -25,9 +25,7 @@
  */
 
 module powerbi.extensibility.geocoder {
-    // powerbi.extensibility.utils.formatting
-    import IStorageService = powerbi.extensibility.utils.formatting.IStorageService;
-    import LocalStorageService = powerbi.extensibility.utils.formatting.LocalStorageService;
+    import IVisualHostLocalStorageService = powerbi.extensibility.visual.IVisualHostLocalStorageService;
 
     interface GeocodeCacheEntry {
         coordinate: IGeocodeCoordinate;
@@ -40,7 +38,7 @@ module powerbi.extensibility.geocoder {
         registerCoordinates(key: string, coordinate: IGeocodeBoundaryCoordinate): void;
     }
 
-    export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService?: IStorageService): IGeocodingCache {
+    export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService?: IVisualHostLocalStorageService): IGeocodingCache {
         if (!localStorageService) {
             localStorageService = new LocalStorageService();
         }
@@ -52,9 +50,9 @@ module powerbi.extensibility.geocoder {
         private geocodeCacheCount: number;
         private maxCacheSize: number;
         private maxCacheSizeOverflow: number;
-        private localStorageService: IStorageService;
+        private localStorageService: IVisualHostLocalStorageService;
 
-        constructor(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService: IStorageService) {
+        constructor(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService: IVisualHostLocalStorageService) {
             this.geocodeCache = {};
             this.geocodeCacheCount = 0;
             this.maxCacheSize = maxCacheSize;
@@ -62,9 +60,9 @@ module powerbi.extensibility.geocoder {
             this.localStorageService = localStorageService;
         }
 
-    /**
-    * Retrieves the coordinate for the key from the cache, returning undefined on a cache miss.
-    */
+        /**
+        * Retrieves the coordinate for the key from the cache, returning undefined on a cache miss.
+        */
         public getCoordinates(key: string): IGeocodeCoordinate {
             // Check in-memory cache
             let pair: GeocodeCacheEntry = this.geocodeCache[key];
@@ -73,16 +71,25 @@ module powerbi.extensibility.geocoder {
                 return pair.coordinate;
             }
             // Check local storage cache
-                pair = this.localStorageService.getData(key);
+            const localStoragePromise: IPromise<string> = this.localStorageService.getStorageData(key);
+            localStoragePromise.then((value) => {
+                pair = JSON.parse(value);
                 if (pair) {
                     this.registerInMemory(key, pair.coordinate);
                     return pair.coordinate;
                 }
-            return undefined;
+                return undefined;
+            });
+            // pair = this.localStorageService.getStorageData(key);
+            // if (pair) {
+            //     this.registerInMemory(key, pair.coordinate);
+            //     return pair.coordinate;
+            // }
+            // return undefined;
         }
-    /**
-    * Registers the query and coordinate to the cache.
-    */
+        /**
+        * Registers the query and coordinate to the cache.
+        */
         public registerCoordinates(key: string, coordinate: IGeocodeCoordinate): void {
             this.registerInMemory(key, coordinate);
             this.registerInStorage(key, coordinate);
@@ -133,7 +140,8 @@ module powerbi.extensibility.geocoder {
         }
 
         private registerInStorage(key: string, coordinate: IGeocodeCoordinate): void {
-            this.localStorageService.setData(key, { coordinate: coordinate });
+            let valueObjectToString: string = JSON.stringify({ coordinate: coordinate });
+            this.localStorageService.setStorageData(key, valueObjectToString);
         }
     }
 }

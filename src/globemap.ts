@@ -52,8 +52,7 @@ module powerbi.extensibility.visual {
     // powerbi.extensibility.utils.formatting
     import IValueFormatter = powerbi.extensibility.utils.formatting.IValueFormatter;
     import valueFormatter = powerbi.extensibility.utils.formatting.valueFormatter;
-    import LocalStorageService = powerbi.extensibility.utils.formatting.LocalStorageService;
-    import IStorageService = powerbi.extensibility.utils.formatting.IStorageService;
+    import IVisualHostLocalStorageService = powerbi.extensibility.visual.IVisualHostLocalStorageService;
 
     interface ExtendedPromise<T> extends IPromise<T> {
         always(value: {}): void;
@@ -166,7 +165,7 @@ module powerbi.extensibility.visual {
     }
 
     export class GlobeMap implements IVisual {
-        private localStorageService: IStorageService;
+        private localStorageService: IVisualHostLocalStorageService;
         public static MercartorSphere: MercartorSphere;
         private GlobeSettings = {
             autoRotate: false,
@@ -237,7 +236,6 @@ module powerbi.extensibility.visual {
         private animationFrameId: number;
         private cameraAnimationFrameId: number;
         public visualHost: IVisualHost;
-        private static Unknown: string = "unknown";
 
         private isFirstLoad: boolean = true;
 
@@ -547,7 +545,7 @@ module powerbi.extensibility.visual {
 
         constructor(options: VisualConstructorOptions) {
             this.currentLanguage = options.host.locale;
-            this.localStorageService = new LocalStorageService();
+            this.localStorageService = options.host.localStorageService();
             this.root = $("<div>").appendTo(options.element)
                 .attr("drag-resize-disabled", "true")
                 .css({
@@ -721,31 +719,37 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
-        private initTextures(): JQueryPromise<{}> {
+        private initTextures(): JQueryPromise<any> {
             this.mapTextures = [];
-            const tileCulture: string = this.localStorageService.getData(GlobeMap.TILE_LANGUAGE_CULTURE);
-            let tileCache: TileMap[] = this.localStorageService.getData(GlobeMap.TILE_STORAGE_KEY);
-            if (!tileCache || tileCulture !== this.currentLanguage) {
-                // Initialize once, since this is a CPU + Network heavy operation.
-                return this.getBingMapsServerMetadata()
-                    .then((metadata: BingResourceMetadata) => {
-                        tileCache = [];
-                        let urlTemplate = metadata.imageUrl.replace("{culture}", this.currentLanguage);
+            const tileCulturePromise: IPromise<string> = this.localStorageService.getStorageData(GlobeMap.TILE_LANGUAGE_CULTURE);
+            let tileCachePromise: IPromise<string> = this.localStorageService.getStorageData(GlobeMap.TILE_STORAGE_KEY);
+            tileCulturePromise.then((tileCultureValue) => {
+                const tileCulture: string = tileCultureValue;
+                tileCachePromise.then((tileCacheValues) => {
+                    let tileCacheValueObj = JSON.parse(tileCacheValues);
+                    if (!tileCacheValueObj || tileCulture !== this.currentLanguage) {
+                        // Initialize once, since this is a CPU + Network heavy operation.
+                        return this.getBingMapsServerMetadata()
+                            .then((metadata: BingResourceMetadata) => {
+                                tileCacheValueObj = [];
+                                let urlTemplate = metadata.imageUrl.replace("{culture}", this.currentLanguage);
+                                for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
+                                    let levelTiles = this.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
+                                    this.mapTextures.push(this.createTexture(level, levelTiles));
+                                    tileCacheValueObj.push(levelTiles);
+                                }
+                                this.localStorageService.setStorageData(GlobeMap.TILE_STORAGE_KEY, JSON.stringify(tileCacheValueObj));
+                                this.localStorageService.setStorageData(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
+                                return tileCacheValueObj;
+                            });
+                    } else {
                         for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                            let levelTiles = this.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
-                            this.mapTextures.push(this.createTexture(level, levelTiles));
-                            tileCache.push(levelTiles);
+                            this.mapTextures.push(this.createTexture(level, tileCacheValueObj[level - GlobeMap.initialResolutionLevel]));
                         }
-                        this.localStorageService.setData(GlobeMap.TILE_STORAGE_KEY, tileCache);
-                        this.localStorageService.setData(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
-                        return tileCache;
-                    });
-            } else {
-                for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                    this.mapTextures.push(this.createTexture(level, tileCache[level - GlobeMap.initialResolutionLevel]));
-                }
-                return jQuery.when(tileCache);
-            }
+                        return jQuery.when(tileCacheValueObj);
+                    }
+                });
+            });
         }
 
         private getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> {

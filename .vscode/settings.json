@@ -21,13 +21,13 @@
       "fileMatch": [
         "/pbiviz.json"
       ],
-      "url": "./.api/v1.11.0/schema.pbiviz.json"
+      "url": "./.api/v2.2.0/schema.pbiviz.json"
     },
     {
       "fileMatch": [
         "/capabilities.json"
       ],
-      "url": "./.api/v1.11.0/schema.capabilities.json"
+      "url": "./.api/v2.2.0/schema.capabilities.json"
     }
   ]
 }
