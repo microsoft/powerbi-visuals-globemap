@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 
-import IVisualHostLocalStorageService = powerbi.extensibility.visual.IVisualHostLocalStorageService;
+import ILocalVisualStorageService = powerbi.extensibility.visual.ILocalVisualStorageService;
 
 module powerbi.extensibility.geocoder {
     interface GeocodeCacheEntry {
@@ -39,10 +39,7 @@ module powerbi.extensibility.geocoder {
     }
 
     export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number): IGeocodingCache {
-        if (!this.localStorageService.instance) {
-            this.localStorageService.instance = this.localStorageService.createLocalStorageService();
-        }
-        return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, this.localStorageService.instance);
+        return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, this.localStorageService);
     }
 
     class GeocodingCache implements IGeocodingCache {
@@ -50,9 +47,9 @@ module powerbi.extensibility.geocoder {
         private geocodeCacheCount: number;
         private maxCacheSize: number;
         private maxCacheSizeOverflow: number;
-        private localStorageService: IVisualHostLocalStorageService;
+        private localStorageService: ILocalVisualStorageService;
 
-        constructor(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService: IVisualHostLocalStorageService) {
+        constructor(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService: ILocalVisualStorageService) {
             this.geocodeCache = {};
             this.geocodeCacheCount = 0;
             this.maxCacheSize = maxCacheSize;
@@ -71,7 +68,7 @@ module powerbi.extensibility.geocoder {
                 return pair.coordinate;
             }
             // Check local storage cache
-            const localStoragePromise: IPromise<string> = this.localStorageService.getStorageData(key);
+            const localStoragePromise: IPromise<string> = this.localStorageService.get(key);
             localStoragePromise.then((value) => {
                 pair = JSON.parse(value);
                 if (pair) {
@@ -135,7 +132,7 @@ module powerbi.extensibility.geocoder {
 
         private registerInStorage(key: string, coordinate: IGeocodeCoordinate): void {
             let valueObjectToString: string = JSON.stringify({ coordinate: coordinate });
-            this.localStorageService.setStorageData(key, valueObjectToString);
+            this.localStorageService.set(key, valueObjectToString);
         }
     }
 }

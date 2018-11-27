@@ -52,7 +52,6 @@ module powerbi.extensibility.visual {
     // powerbi.extensibility.utils.formatting
     import IValueFormatter = powerbi.extensibility.utils.formatting.IValueFormatter;
     import valueFormatter = powerbi.extensibility.utils.formatting.valueFormatter;
-    import IVisualHostLocalStorageService = powerbi.extensibility.visual.IVisualHostLocalStorageService;
 
     interface ExtendedPromise<T> extends IPromise<T> {
         always(value: {}): void;
@@ -165,7 +164,7 @@ module powerbi.extensibility.visual {
     }
 
     export class GlobeMap implements IVisual {
-        private localStorageService: IVisualHostLocalStorageService;
+        private localStorageService: ILocalVisualStorageService;
         public static MercartorSphere: MercartorSphere;
         private GlobeSettings = {
             autoRotate: false,
@@ -545,7 +544,7 @@ module powerbi.extensibility.visual {
 
         constructor(options: VisualConstructorOptions) {
             this.currentLanguage = options.host.locale;
-            this.localStorageService = options.host.localStorageService();
+            this.localStorageService = options.host.storageService;
             this.root = $("<div>").appendTo(options.element)
                 .attr("drag-resize-disabled", "true")
                 .css({
@@ -721,8 +720,8 @@ module powerbi.extensibility.visual {
 
         private initTextures(): any {
             this.mapTextures = [];
-            const tileCulturePromise: IPromise<string> = this.localStorageService.getStorageData(GlobeMap.TILE_LANGUAGE_CULTURE);
-            let tileCachePromise: IPromise<string> = this.localStorageService.getStorageData(GlobeMap.TILE_STORAGE_KEY);
+            const tileCulturePromise: IPromise<string> = this.localStorageService.get(GlobeMap.TILE_LANGUAGE_CULTURE);
+            let tileCachePromise: IPromise<string> = this.localStorageService.get(GlobeMap.TILE_STORAGE_KEY);
             tileCulturePromise.then((tileCultureValue) => {
                 const tileCulture: string = tileCultureValue;
                 tileCachePromise.then((tileCacheValues) => {
@@ -738,8 +737,8 @@ module powerbi.extensibility.visual {
                                     this.mapTextures.push(this.createTexture(level, levelTiles));
                                     tileCacheValueObj.push(levelTiles);
                                 }
-                                this.localStorageService.setStorageData(GlobeMap.TILE_STORAGE_KEY, JSON.stringify(tileCacheValueObj));
-                                this.localStorageService.setStorageData(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
+                                this.localStorageService.set(GlobeMap.TILE_STORAGE_KEY, JSON.stringify(tileCacheValueObj));
+                                this.localStorageService.set(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
                                 return tileCacheValueObj;
                             });
                     } else {
@@ -1030,13 +1029,7 @@ module powerbi.extensibility.visual {
             this.globeMapLocationCache[renderDatum.placeKey] = location; // store empty object so we don't send AJAX request again
             this.locationsToLoad++;
 
-            const localStorageService: storage.ILocalStorageServiceExtended = {
-                instance: this.localStorageService,
-                createLocalStorageService: () => this.visualHost.localStorageService()
-            };
-
-            geocoder = powerbi.extensibility.geocoder.createGeocoder(localStorageService);
-
+            geocoder = powerbi.extensibility.geocoder.createGeocoder(this.localStorageService);
             if (geocoder) {
                 (geocoder.geocode(
                     renderDatum.place,

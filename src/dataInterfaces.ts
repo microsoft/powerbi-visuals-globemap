@@ -23,12 +23,6 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-module powerbi.extensibility.storage {
-    export interface ILocalStorageServiceExtended {
-        instance: IVisualHostLocalStorageService;
-        createLocalStorageService: () => IVisualHostLocalStorageService;
-    }
-}
 
 module powerbi.extensibility.visual {
     // powerbi.extensibility.utils.interactivity
