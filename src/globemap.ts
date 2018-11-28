@@ -573,6 +573,7 @@ module powerbi.extensibility.visual {
             this.initMercartorSphere();
             this.initTextures().then(
                 () => {
+                    console.log("initialized!!!");
                     this.earth = this.createEarth();
                     this.scene.add(<THREE.Mesh>this.earth);
                     this.readyToRender = true;
@@ -718,37 +719,63 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
-        private initTextures(): any {
+        private setBingMetadata(): JQueryPromise<any> {
+            return this.getBingMapsServerMetadata()
+                .then((metadata: BingResourceMetadata) => {
+                    let tileCacheValueObj = [];
+                    let urlTemplate = metadata.imageUrl.replace("{culture}", this.currentLanguage);
+                    for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
+                        let levelTiles = this.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
+                        this.mapTextures.push(this.createTexture(level, levelTiles));
+                        tileCacheValueObj.push(levelTiles);
+                    }
+                    console.log("raw: ", tileCacheValueObj);
+                    console.log("STRINGIFIED: ", JSON.stringify(tileCacheValueObj));
+                    let obj = JSON.stringify(tileCacheValueObj);
+                    this.localStorageService.set(GlobeMap.TILE_STORAGE_KEY, JSON.stringify(tileCacheValueObj)).then(() => {
+                        this.localStorageService.get(GlobeMap.TILE_STORAGE_KEY).then((data) => console.log("from new ls: ", data)).catch((err) => { console.error(err) });
+                    })
+                        .catch((err) => { console.error(err) });
+                    localStorage.setItem(GlobeMap.TILE_STORAGE_KEY, JSON.stringify(tileCacheValueObj));
+                    console.log("get ls: ", localStorage.getItem(GlobeMap.TILE_STORAGE_KEY));
+                    debugger;
+                    this.localStorageService.set(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
+                    return tileCacheValueObj;
+                });
+        }
+
+        private setDataToLocalStorage(tileCulture: string, tileCacheValueObj: any): JQueryPromise<{}> {
+            console.log("tileCacheValueObj: ", tileCacheValueObj);
+            if (!tileCacheValueObj || tileCulture !== this.currentLanguage) {
+                this.setBingMetadata();
+            } else {
+                for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
+                    this.mapTextures.push(this.createTexture(level, tileCacheValueObj[level - GlobeMap.initialResolutionLevel]));
+                }
+                return jQuery.when(tileCacheValueObj);
+            }
+        }
+
+        private initTextures(): JQueryPromise<{}> {
             this.mapTextures = [];
             const tileCulturePromise: IPromise<string> = this.localStorageService.get(GlobeMap.TILE_LANGUAGE_CULTURE);
             let tileCachePromise: IPromise<string> = this.localStorageService.get(GlobeMap.TILE_STORAGE_KEY);
-            tileCulturePromise.then((tileCultureValue) => {
-                const tileCulture: string = tileCultureValue;
-                tileCachePromise.then((tileCacheValues) => {
-                    let tileCacheValueObj = JSON.parse(tileCacheValues);
-                    if (!tileCacheValueObj || tileCulture !== this.currentLanguage) {
-                        // Initialize once, since this is a CPU + Network heavy operation.
-                        return this.getBingMapsServerMetadata()
-                            .then((metadata: BingResourceMetadata) => {
-                                tileCacheValueObj = [];
-                                let urlTemplate = metadata.imageUrl.replace("{culture}", this.currentLanguage);
-                                for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                                    let levelTiles = this.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
-                                    this.mapTextures.push(this.createTexture(level, levelTiles));
-                                    tileCacheValueObj.push(levelTiles);
-                                }
-                                this.localStorageService.set(GlobeMap.TILE_STORAGE_KEY, JSON.stringify(tileCacheValueObj));
-                                this.localStorageService.set(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
-                                return tileCacheValueObj;
-                            });
-                    } else {
-                        for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                            this.mapTextures.push(this.createTexture(level, tileCacheValueObj[level - GlobeMap.initialResolutionLevel]));
-                        }
-                        return jQuery.when(tileCacheValueObj);
-                    }
+            let deferred = $.Deferred();
+
+            tileCulturePromise.then((tileCultureValue: string) => {
+                tileCachePromise.then((tileCacheValues: any) => {
+                    this.setDataToLocalStorage(tileCultureValue, JSON.parse(tileCacheValues)).then(data => { debugger; deferred.resolve(data) });
+                })
+                    .catch(() => {
+                        debugger;
+                        this.setBingMetadata().then(data => deferred.resolve(data));
+                    });
+            })
+                .catch(() => {
+                    debugger; this.setBingMetadata().then(data => deferred.resolve(data));
                 });
-            });
+
+            return deferred;
         }
 
         private getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> {
