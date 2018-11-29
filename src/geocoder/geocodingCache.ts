@@ -49,12 +49,18 @@ module powerbi.extensibility.geocoder {
         private maxCacheSizeOverflow: number;
         private localStorageService: ILocalVisualStorageService;
 
+        private static TILE_LOCATIONS = "GLOBEMAP_TILE_LOCATIONS";
+
         constructor(maxCacheSize: number, maxCacheSizeOverflow: number, localStorageService: ILocalVisualStorageService) {
             this.geocodeCache = {};
             this.geocodeCacheCount = 0;
             this.maxCacheSize = maxCacheSize;
             this.maxCacheSizeOverflow = maxCacheSizeOverflow;
             this.localStorageService = localStorageService;
+        }
+
+        private minimizeKey(key: string): string {
+            return key.split(";").pop().slice(0, -1);
         }
 
         /**
@@ -68,15 +74,30 @@ module powerbi.extensibility.geocoder {
                 return pair.coordinate;
             }
             // Check local storage cache
-            const localStoragePromise: IPromise<string> = this.localStorageService.get(key);
+            const minimizesKey: string = this.minimizeKey(key);
+            const localStoragePromise: IPromise<string> = this.localStorageService.get(GeocodingCache.TILE_LOCATIONS);
             localStoragePromise.then((value) => {
-                pair = JSON.parse(value);
-                if (pair) {
+                const parsedValue = JSON.parse(value);
+                if (!parsedValue)
+                    return undefined;
+
+                if (parsedValue[minimizesKey]) {
+                    const location = parsedValue[minimizesKey];
+                    pair = {
+                        coordinate: {
+                            latitude: location.lat,
+                            longitude: location.long
+                        }
+                    } as GeocodeCacheEntry;
                     this.registerInMemory(key, pair.coordinate);
                     return pair.coordinate;
                 }
+
                 return undefined;
-            });
+            })
+                .catch(() => {
+                    return undefined;
+                });
         }
         /**
         * Registers the query and coordinate to the cache.
@@ -131,8 +152,21 @@ module powerbi.extensibility.geocoder {
         }
 
         private registerInStorage(key: string, coordinate: IGeocodeCoordinate): void {
-            let valueObjectToString: string = JSON.stringify({ coordinate: coordinate });
-            this.localStorageService.set(key, valueObjectToString);
+            const valuesObj = {};
+            const minimizeKey: string = this.minimizeKey(key);
+            valuesObj[minimizeKey] = {
+                "long": coordinate.longitude,
+                "lat": coordinate.latitude
+            };
+            let valueObjectToString: string = JSON.stringify(valuesObj);
+            this.localStorageService.get(GeocodingCache.TILE_LOCATIONS).then((data) => {
+                const locations = JSON.parse(data);
+                const mergedObject = location ? _.extend(locations, valuesObj) : valuesObj;
+                valueObjectToString = JSON.stringify(mergedObject);
+                this.localStorageService.set(GeocodingCache.TILE_LOCATIONS, valueObjectToString);
+            }).catch(() => {
+                this.localStorageService.set(GeocodingCache.TILE_LOCATIONS, valueObjectToString);
+            });
         }
     }
 }

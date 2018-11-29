@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 class GlobeMapHeatMapClass {
-    constructor(propertyes: {}) { }
+    constructor(properties: {}) { }
     public display() { }
     public blur() { }
     public update() { }
@@ -719,40 +719,78 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
+        private minimizeBingMetadata(tileCacheArray): any[] {
+            if (!tileCacheArray || !tileCacheArray.length)
+                return [];
+
+            tileCacheArray.forEach((obj) => {
+                for (let key in obj) {
+                    if (obj.hasOwnProperty(key)) {
+                        const slpitedArray: string[] = obj[key].split("?")[0].split("/");
+                        let file: string = slpitedArray.pop().split(".")[0];
+                        let domain: string = slpitedArray[2].split(".")[1];
+                        obj[key] = {
+                            file,
+                            domain
+                        }
+                    }
+                }
+            });
+
+            return tileCacheArray;
+        }
+
+        private extendBingMetadata(tileCacheArray): any[] {
+            const additionsParams: string = "g=6766&mkt=en-US&shading=hill";
+            const extension: string = "jpeg";
+            const protocol: string = "https://";
+            const firstDomains: string = "tiles.virtualearth.net/tiles";
+            const lastDomain: string = "ecn";
+
+            if (!tileCacheArray || !tileCacheArray.length)
+                return null;
+
+            tileCacheArray.forEach((obj) => {
+                for (let key in obj) {
+                    if (obj.hasOwnProperty(key)) {
+                        const mainInfo = obj[key];
+                        obj[key] = `${protocol}${lastDomain}.${mainInfo.domain}.${firstDomains}/tiles/${mainInfo.file}.${extension}?${additionsParams}`;
+                    }
+                }
+            });
+
+            return tileCacheArray;
+        }
+
         private setBingMetadata(): JQueryPromise<any> {
             return this.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
-                    let tileCacheValueObj = [];
+                    let tileCacheValue = [];
                     let urlTemplate = metadata.imageUrl.replace("{culture}", this.currentLanguage);
                     for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
                         let levelTiles = this.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
                         this.mapTextures.push(this.createTexture(level, levelTiles));
-                        tileCacheValueObj.push(levelTiles);
+                        tileCacheValue.push(levelTiles);
                     }
-                    console.log("raw: ", tileCacheValueObj);
-                    console.log("STRINGIFIED: ", JSON.stringify(tileCacheValueObj));
-                    let obj = JSON.stringify(tileCacheValueObj);
-                    this.localStorageService.set(GlobeMap.TILE_STORAGE_KEY, JSON.stringify(tileCacheValueObj)).then(() => {
-                        this.localStorageService.get(GlobeMap.TILE_STORAGE_KEY).then((data) => console.log("from new ls: ", data)).catch((err) => { console.error(err) });
-                    })
-                        .catch((err) => { console.error(err) });
-                    localStorage.setItem(GlobeMap.TILE_STORAGE_KEY, JSON.stringify(tileCacheValueObj));
-                    console.log("get ls: ", localStorage.getItem(GlobeMap.TILE_STORAGE_KEY));
-                    debugger;
+
+                    const minimizedTileCacheData: string = JSON.stringify(this.minimizeBingMetadata(tileCacheValue));
+                    this.localStorageService.set(GlobeMap.TILE_STORAGE_KEY, minimizedTileCacheData);
                     this.localStorageService.set(GlobeMap.TILE_LANGUAGE_CULTURE, this.currentLanguage);
-                    return tileCacheValueObj;
+                    return tileCacheValue;
                 });
         }
 
         private setDataToLocalStorage(tileCulture: string, tileCacheValueObj: any): JQueryPromise<{}> {
-            console.log("tileCacheValueObj: ", tileCacheValueObj);
+
             if (!tileCacheValueObj || tileCulture !== this.currentLanguage) {
                 this.setBingMetadata();
             } else {
+                const titleCacheExtended = this.extendBingMetadata(tileCacheValueObj);
+                console.log("tileCacheValueObj: ", titleCacheExtended);
                 for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                    this.mapTextures.push(this.createTexture(level, tileCacheValueObj[level - GlobeMap.initialResolutionLevel]));
+                    this.mapTextures.push(this.createTexture(level, titleCacheExtended[level - GlobeMap.initialResolutionLevel]));
                 }
-                return jQuery.when(tileCacheValueObj);
+                return jQuery.when(titleCacheExtended);
             }
         }
 
@@ -763,16 +801,17 @@ module powerbi.extensibility.visual {
             let deferred = $.Deferred();
 
             tileCulturePromise.then((tileCultureValue: string) => {
-                tileCachePromise.then((tileCacheValues: any) => {
-                    this.setDataToLocalStorage(tileCultureValue, JSON.parse(tileCacheValues)).then(data => { debugger; deferred.resolve(data) });
+                tileCachePromise.then((tileCacheValues: string) => {
+                    this.setDataToLocalStorage(tileCultureValue, JSON.parse(tileCacheValues)).then(data => {
+                        deferred.resolve(data)
+                    });
                 })
                     .catch(() => {
-                        debugger;
                         this.setBingMetadata().then(data => deferred.resolve(data));
                     });
             })
                 .catch(() => {
-                    debugger; this.setBingMetadata().then(data => deferred.resolve(data));
+                    this.setBingMetadata().then(data => deferred.resolve(data));
                 });
 
             return deferred;
