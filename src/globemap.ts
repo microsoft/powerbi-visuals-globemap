@@ -744,7 +744,7 @@ module powerbi.extensibility.visual {
             const additionsParams: string = "g=6766&mkt=en-US&shading=hill";
             const extension: string = "jpeg";
             const protocol: string = "https://";
-            const firstDomains: string = "tiles.virtualearth.net/tiles";
+            const firstDomains: string = "tiles.virtualearth.net";
             const lastDomain: string = "ecn";
 
             if (!tileCacheArray || !tileCacheArray.length)
