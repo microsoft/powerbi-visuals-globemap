@@ -59,8 +59,8 @@ module powerbi.extensibility.geocoder {
             this.localStorageService = localStorageService;
         }
 
-        private minimizeKey(key: string): string {
-            return key.split(";").pop().slice(0, -1);
+        private getShortKey(key: string): string {
+            return key.match(/([^;]+)$/i)[0].replace(/\/$/g, '').trim();
         }
 
         /**
@@ -74,19 +74,20 @@ module powerbi.extensibility.geocoder {
                 return pair.coordinate;
             }
             // Check local storage cache
-            const minimizesKey: string = this.minimizeKey(key);
+            const shortKey: string = this.getShortKey(key);
             const localStoragePromise: IPromise<string> = this.localStorageService.get(GeocodingCache.TILE_LOCATIONS);
             localStoragePromise.then((value) => {
                 const parsedValue = JSON.parse(value);
-                if (!parsedValue)
+                if (!parsedValue) {
                     return undefined;
+                }
 
-                if (parsedValue[minimizesKey]) {
-                    const location = parsedValue[minimizesKey];
+                if (parsedValue[shortKey]) {
+                    const location = parsedValue[shortKey];
                     pair = {
                         coordinate: {
                             latitude: location.lat,
-                            longitude: location.long
+                            longitude: location.lon
                         }
                     } as GeocodeCacheEntry;
                     this.registerInMemory(key, pair.coordinate);
@@ -153,9 +154,9 @@ module powerbi.extensibility.geocoder {
 
         private registerInStorage(key: string, coordinate: IGeocodeCoordinate): void {
             const valuesObj = {};
-            const minimizeKey: string = this.minimizeKey(key);
-            valuesObj[minimizeKey] = {
-                "long": coordinate.longitude,
+            const shortKey: string = this.getShortKey(key);
+            valuesObj[shortKey] = {
+                "lon": coordinate.longitude,
                 "lat": coordinate.latitude
             };
             let valueObjectToString: string = JSON.stringify(valuesObj);
