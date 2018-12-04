@@ -718,7 +718,7 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
-        private minimizeTiles(tileCacheArray): any[] {
+        private minimizeTiles(tileCacheArray): string[][] {
             if (!tileCacheArray || !tileCacheArray.length) {
                 return [];
             }
@@ -738,7 +738,7 @@ module powerbi.extensibility.visual {
             return result;
         }
 
-        private extendTiles(tileCacheArray, deferred: JQueryDeferred<any>): Promise<any> {
+        private extendTiles(tileCacheArray, deferred: JQueryDeferred<{}>): Promise<{}> {
             if (!tileCacheArray || !tileCacheArray.length) {
                 return null;
             }
@@ -761,7 +761,7 @@ module powerbi.extensibility.visual {
                 });
         }
 
-        private loadFromBing(language: string, deferred: JQueryDeferred<any>): JQueryPromise<any> {
+        private loadFromBing(language: string, deferred: JQueryDeferred<{}>): JQueryPromise<void> {
             return GlobeMap.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
 
@@ -779,7 +779,7 @@ module powerbi.extensibility.visual {
                 });
         }
 
-        private getTilesData(language: string): JQueryPromise<any> {
+        private getTilesData(language: string): JQueryPromise<{}> {
             let deferred = $.Deferred();
             let tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
 
@@ -787,7 +787,7 @@ module powerbi.extensibility.visual {
                 const parsedData = JSON.parse(data);
                 this.extendTiles(parsedData, deferred);
             })
-                .catch(() => this.loadFromBing(language, deferred))
+                .catch(() => this.loadFromBing(language, deferred));
 
             return deferred;
         }
