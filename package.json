@@ -10,7 +10,7 @@
     "postinstall": "bower install && pbiviz update 2.3.0",
     "pbiviz": "pbiviz",
     "start": "pbiviz start",
-    "package": "pbiviz package --resources --no-minify",
+    "package": "pbiviz package",
     "lint": "tslint -r \"node_modules/tslint-microsoft-contrib\" \"+(src|test)/**/*.ts\"",
     "pretest": "pbiviz package --resources --no-minify --no-pbiviz --no-plugin",
     "test": "karma start",

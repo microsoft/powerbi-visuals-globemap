@@ -223,7 +223,7 @@ module powerbi.extensibility.visual.test {
             });
 
             it("on not valid keys", () => {
-                const notValidTiles = [null, undefined, []]
+                const notValidTiles = [null, undefined, []];
                 notValidTiles.forEach((notValidData) => {
                     const result = VisualClass.minimizeTiles(notValidData);
                     expect(result.length).toBe(0);
@@ -250,9 +250,9 @@ module powerbi.extensibility.visual.test {
                     "002": "https://ecn.t1.tiles.virtualearth.net/tiles/r002.jpeg?mkt=en-US&shading=hill",
                     "003": "https://ecn.t1.tiles.virtualearth.net/tiles/r003.jpeg?mkt=en-US&shading=hill"
                 }
-            ]
+            ];
 
-            const culture: string = "en-US"
+            const culture: string = "en-US";
 
             it("for not valid input", () => {
                 const tiles = [null, undefined, []];
@@ -278,7 +278,7 @@ module powerbi.extensibility.visual.test {
                         }
                         expect(data[i]).toBe(expectedResult[i]);
                     }
-                })
+                });
             });
         });
     });
