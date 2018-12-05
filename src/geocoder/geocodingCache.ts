@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 
-import ILocalVisualStorageService = powerbi.extensibility.visual.ILocalVisualStorageService;
+import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 
 module powerbi.extensibility.geocoder {
     interface GeocodeCacheEntry {

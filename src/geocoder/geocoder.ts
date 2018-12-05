@@ -26,7 +26,7 @@
 
 module powerbi.extensibility.geocoder {
     import UrlUtils = powerbi.extensibility.utils.UrlUtils;
-    import ILocalVisualStorageService = powerbi.extensibility.visual.ILocalVisualStorageService;
+    import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 
     export const CategoryTypes = {
         Address: "Address",
