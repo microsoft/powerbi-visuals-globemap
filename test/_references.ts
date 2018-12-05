@@ -25,7 +25,7 @@
  */
 
 // Power BI API
-/// <reference path="../.api/v2.2.1/PowerBI-visuals.d.ts" />
+/// <reference path="../.api/v2.3.0/PowerBI-visuals.d.ts" />
 
 // Power BI Extensibility
 /// <reference path="../node_modules/powerbi-visuals-utils-dataviewutils/lib/index.d.ts" />

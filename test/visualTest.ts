@@ -38,6 +38,9 @@ module powerbi.extensibility.visual.test {
     import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMap;
     import GlobeMapColumns = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMapColumns;
 
+    import getShortKey = powerbi.extensibility.geocoder.GeocodingCache.getShortKey;
+    import TileMap = powerbi.extensibility.visual.TileMap;
+
     describe("GlobeMap", () => {
         let visualBuilder: GlobeMapBuilder,
             visualInstance: VisualClass,
@@ -151,6 +154,132 @@ module powerbi.extensibility.visual.test {
             };
 
             objectsChecker(jsonData);
+        });
+    });
+
+    describe("LocalStorage and related methods test: ", () => {
+        describe("short key test", () => {
+            it("on valid keys", () => {
+                const rawKeys: string[] = [
+                    "g:https://dev.virtualearth.net/rest/v1/locations; s:https://platform.bing.com/geo/spatial/v1/public/geodata;tulsa, oklahoma/",
+                    "g:https://dev.virtualearth.net/rest/v1/locations; s:https://platform.bing.com/geo/spatial/v1/public/geodata;aurora, colorado/",
+                    "g:https://dev.virtualearth.net/rest/v1/locations; s:https://platform.bing.com/geo/spatial/v1/public/geodata;chicago, illinois/"
+                ];
+                const expectedResult: string[] = [
+                    "tulsa, oklahoma",
+                    "aurora, colorado",
+                    "chicago, illinois"
+                ];
+
+                for (let i = 0; i < rawKeys.length; i++) {
+                    const shortKey: string = getShortKey(rawKeys[i]);
+                    expect(shortKey).toEqual(expectedResult[i]);
+                }
+            });
+
+            it("on not valid keys", () => {
+                const rawKeys: string[] = [
+                    "",
+                    null,
+                    undefined,
+                    "hello"
+                ];
+                const expectedResult: string[] = rawKeys;
+                for (let i = 0; i < rawKeys.length; i++) {
+                    const shortKey: string = getShortKey(rawKeys[i]);
+                    expect(shortKey).toEqual(expectedResult[i]);
+                }
+            });
+
+        });
+
+        describe("minimize tiles test", () => {
+
+            it("on valid keys", () => {
+                const rawTiles = [
+                    {
+                        "00": "https://ecn.t0.tiles.virtualearth.net/tiles/r00.jpeg?g=6782&mkt=en-US&shading=hill",
+                        "01": "https://ecn.t1.tiles.virtualearth.net/tiles/r01.jpeg?g=6782&mkt=en-US&shading=hill",
+                        "02": "https://ecn.t2.tiles.virtualearth.net/tiles/r02.jpeg?g=6782&mkt=en-US&shading=hill"
+                    },
+                    {
+                        "000": "https://ecn.t0.tiles.virtualearth.net/tiles/r000.jpeg?g=6782&mkt=en-US&shading=hill",
+                        "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?g=6782&mkt=en-US&shading=hill",
+                        "002": "https://ecn.t2.tiles.virtualearth.net/tiles/r002.jpeg?g=6782&mkt=en-US&shading=hill",
+                        "003": "https://ecn.t3.tiles.virtualearth.net/tiles/r003.jpeg?g=6782&mkt=en-US&shading=hill"
+                    }
+                ];
+
+                const expectedTiles = [
+                    ["00", "01", "02"],
+                    ["000", "001", "002", "003"]
+                ];
+
+                const result: string[][] = VisualClass.minimizeTiles(rawTiles);
+                expect(result.length).toEqual(expectedTiles.length);
+                for (let i = 0; i < result.length; i++) {
+                    expect(expectedTiles[i]).toEqual(result[i]);
+                }
+            });
+
+            it("on not valid keys", () => {
+                const notValidTiles = [null, undefined, []]
+                notValidTiles.forEach((notValidData) => {
+                    const result = VisualClass.minimizeTiles(notValidData);
+                    expect(result.length).toBe(0);
+                });
+            });
+
+        });
+
+        describe("extend tiles test", () => {
+            const tiles = [
+                ["00", "01", "02"],
+                ["000", "001", "002", "003"]
+            ];
+
+            const expectedResult = [
+                {
+                    "00": "https://ecn.t0.tiles.virtualearth.net/tiles/r00.jpeg?mkt=en-US&shading=hill",
+                    "01": "https://ecn.t0.tiles.virtualearth.net/tiles/r01.jpeg?mkt=en-US&shading=hill",
+                    "02": "https://ecn.t0.tiles.virtualearth.net/tiles/r02.jpeg?mkt=en-US&shading=hill"
+                },
+                {
+                    "000": "https://ecn.t1.tiles.virtualearth.net/tiles/r000.jpeg?mkt=en-US&shading=hill",
+                    "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?mkt=en-US&shading=hill",
+                    "002": "https://ecn.t1.tiles.virtualearth.net/tiles/r002.jpeg?mkt=en-US&shading=hill",
+                    "003": "https://ecn.t1.tiles.virtualearth.net/tiles/r003.jpeg?mkt=en-US&shading=hill"
+                }
+            ]
+
+            const culture: string = "en-US"
+
+            it("for not valid input", () => {
+                const tiles = [null, undefined, []];
+                tiles.forEach((tile) => {
+                    let deferred = $.Deferred();
+                    VisualClass.extendTiles(JSON.stringify(tile), culture, deferred);
+                    expect(deferred.state()).toBe("resolved");
+                    deferred.then((data) => {
+                        expect(data).toBeNull();
+                    });
+                });
+            });
+
+            it("for valid input", () => {
+                let deferred = $.Deferred();
+                VisualClass.extendTiles(JSON.stringify(tiles), culture, deferred);
+                $.when(deferred).done((data: TileMap[]) => {
+                    expect(data).not.toBeNull();
+                    for (let i = 0; data.length; i++) {
+                        const tile: TileMap = data[i];
+                        for (let key in tile) {
+                            tile[key] = tile[key].replace(/g=\w+&/g, '');
+                        }
+                        expect(data[i]).toBe(expectedResult[i]);
+                    }
+                })
+            });
         });
     });
 }

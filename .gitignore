@@ -7,4 +7,4 @@ typings
 .api
 *.log
 /coverage
-
+.vscode/settings.json

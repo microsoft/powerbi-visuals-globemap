@@ -42,7 +42,7 @@ module powerbi.extensibility.geocoder {
         return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, this.localStorageService);
     }
 
-    class GeocodingCache implements IGeocodingCache {
+    export class GeocodingCache implements IGeocodingCache {
         private geocodeCache: _.Dictionary<GeocodeCacheEntry>;
         private geocodeCacheCount: number;
         private maxCacheSize: number;
@@ -59,7 +59,10 @@ module powerbi.extensibility.geocoder {
             this.localStorageService = localStorageService;
         }
 
-        private getShortKey(key: string): string {
+        public static getShortKey(key: string): string {
+            if (!key || !key.length) {
+                return key;
+            }
             return key.match(/([^;]+)$/i)[0].replace(/\/$/g, '').trim();
         }
 
@@ -74,7 +77,7 @@ module powerbi.extensibility.geocoder {
                 return pair.coordinate;
             }
             // Check local storage cache
-            const shortKey: string = this.getShortKey(key);
+            const shortKey: string = GeocodingCache.getShortKey(key);
             const localStoragePromise: IPromise<string> = this.localStorageService.get(GeocodingCache.TILE_LOCATIONS);
             localStoragePromise.then((value) => {
                 const parsedValue = JSON.parse(value);
@@ -154,7 +157,7 @@ module powerbi.extensibility.geocoder {
 
         private registerInStorage(key: string, coordinate: IGeocodeCoordinate): void {
             const valuesObj = {};
-            const shortKey: string = this.getShortKey(key);
+            const shortKey: string = GeocodingCache.getShortKey(key);
             valuesObj[shortKey] = {
                 "lon": coordinate.longitude,
                 "lat": coordinate.latitude

@@ -573,7 +573,6 @@ module powerbi.extensibility.visual {
             this.initMercartorSphere();
             this.initTextures().then(
                 () => {
-                    console.log("initialized!!!");
                     this.earth = this.createEarth();
                     this.scene.add(<THREE.Mesh>this.earth);
                     this.readyToRender = true;
@@ -718,7 +717,7 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
-        private minimizeTiles(tileCacheArray): string[][] {
+        private static minimizeTiles(tileCacheArray: TileMap[]): string[][] {
             if (!tileCacheArray || !tileCacheArray.length) {
                 return [];
             }
@@ -738,17 +737,25 @@ module powerbi.extensibility.visual {
             return result;
         }
 
-        private extendTiles(tileCacheArray, deferred: JQueryDeferred<{}>): Promise<{}> {
-            if (!tileCacheArray || !tileCacheArray.length) {
-                return null;
+        private static extendTiles(tileCacheData: string, language: string, deferred: JQueryDeferred<{}>) {
+            let result = [];
+
+            if (!tileCacheData || !tileCacheData.length) {
+                deferred.resolve(result);
+                return;
+            }
+
+            let tileCacheArray: string[][] = JSON.parse(tileCacheData);
+            if (!Array.isArray(tileCacheArray) || !tileCacheArray.length) {
+                deferred.resolve(result);
+                return;
             }
 
             GlobeMap.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
-                    let urlTemplate = metadata.imageUrl.replace("{culture}", this.currentLanguage);
+                    let urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     const subdomains = metadata.imageUrlSubdomains;
 
-                    let result = [];
                     tileCacheArray.forEach((zoomArray, level) => {
                         let resultForCurrentZoom = {};
                         zoomArray.forEach((key: string) => {
@@ -762,19 +769,21 @@ module powerbi.extensibility.visual {
         }
 
         private loadFromBing(language: string, deferred: JQueryDeferred<{}>): JQueryPromise<void> {
+            let tileCacheValue = [];
             return GlobeMap.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
 
-                    let tileCacheValue = [];
                     let urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
                         let levelTiles = GlobeMap.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
                         tileCacheValue.push(levelTiles);
                     }
 
-                    const minimizedTileCacheData: string = JSON.stringify(this.minimizeTiles(tileCacheValue));
-                    this.localStorageService.set(`${GlobeMap.TILE_STORAGE_KEY}_${this.currentLanguage}`, minimizedTileCacheData);
+                    const minimizedTileCacheData: string = JSON.stringify(GlobeMap.minimizeTiles(tileCacheValue));
+                    this.localStorageService.set(`${GlobeMap.TILE_STORAGE_KEY}_${language}`, minimizedTileCacheData);
 
+                    deferred.resolve(tileCacheValue);
+                }).fail(() => {
                     deferred.resolve(tileCacheValue);
                 });
         }
@@ -783,10 +792,7 @@ module powerbi.extensibility.visual {
             let deferred = $.Deferred();
             let tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
 
-            tileCachePromise.then(data => {
-                const parsedData = JSON.parse(data);
-                this.extendTiles(parsedData, deferred);
-            })
+            tileCachePromise.then(data => GlobeMap.extendTiles(data, this.currentLanguage, deferred))
                 .catch(() => this.loadFromBing(language, deferred));
 
             return deferred;
@@ -797,7 +803,7 @@ module powerbi.extensibility.visual {
             let deferred = $.Deferred();
 
             this.getTilesData(this.currentLanguage).then((tiles: TileMap[]) => {
-                for (let level: number = GlobeMap.initialResolutionLevel; level <= tiles.length; ++level) {
+                for (let level: number = GlobeMap.initialResolutionLevel; level <= tiles.length && tiles.length; ++level) {
                     this.mapTextures.push(this.createTexture(level, tiles[level - GlobeMap.initialResolutionLevel]));
                 }
                 deferred.resolve("success");
