@@ -1,3 +1,8 @@
+## 2.5.2
+* UPD: using StorageService for localStorage logic
+* UPD: powerbi-visuals-tools 2.3.0 for StorageService usage
+* UPD: powerbi-visuals-utils-testutils 1.3.2 for StorageService mocks usage
+
 ## 2.5.1
 * FIX: shifting for camera position was repaired
 

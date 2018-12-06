@@ -98,6 +98,5 @@ module powerbi.extensibility.visual {
     export interface IGlobeMapObject3DWithToolTipData extends THREE.Object3D {
         toolTipData: IGlobeMapToolTipData;
     }
+
 }
-
-

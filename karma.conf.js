@@ -79,11 +79,11 @@ module.exports = (config) => {
         coverageReporter: {
             dir: coverageFolder,
             reporters: [{
-                    type: 'html'
-                },
-                {
-                    type: 'lcov'
-                }
+                type: 'html'
+            },
+            {
+                type: 'lcov'
+            }
             ]
         },
         remapIstanbulReporter: {
