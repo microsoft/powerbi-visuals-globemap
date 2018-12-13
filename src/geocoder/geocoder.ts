@@ -741,7 +741,10 @@ module powerbi.extensibility.geocoder {
 
         export function getCoordinates(key: string): IGeocodeCoordinate {
             if (key) {
-                return ensureCache().getCoordinates(key);
+                let coordinates: IGeocodeCoordinate = undefined;
+                ensureCache().getCoordinates(key).then((data: IGeocodeCoordinate) => coordinates = data);
+
+                return coordinates;
             }
         }
 

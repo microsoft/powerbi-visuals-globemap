@@ -803,7 +803,7 @@ module powerbi.extensibility.visual {
             let deferred = $.Deferred();
 
             this.getTilesData(this.currentLanguage).then((tiles: TileMap[]) => {
-                for (let level: number = GlobeMap.initialResolutionLevel; level <= tiles.length && tiles.length; ++level) {
+                for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
                     this.mapTextures.push(this.createTexture(level, tiles[level - GlobeMap.initialResolutionLevel]));
                 }
                 deferred.resolve("success");

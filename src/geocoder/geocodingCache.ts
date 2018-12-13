@@ -33,7 +33,7 @@ module powerbi.extensibility.geocoder {
     }
 
     export interface IGeocodingCache {
-        getCoordinates(key: string): IGeocodeCoordinate;
+        getCoordinates(key: string): JQueryPromise<{}>;
         registerCoordinates(key: string, coordinate: IGeocodeCoordinate): void;
         registerCoordinates(key: string, coordinate: IGeocodeBoundaryCoordinate): void;
     }
@@ -69,12 +69,15 @@ module powerbi.extensibility.geocoder {
         /**
         * Retrieves the coordinate for the key from the cache, returning undefined on a cache miss.
         */
-        public getCoordinates(key: string): IGeocodeCoordinate {
+        public getCoordinates(key: string): JQueryPromise<{}> {
+            let deferred = $.Deferred();
+            let result = undefined;
             // Check in-memory cache
             let pair: GeocodeCacheEntry = this.geocodeCache[key];
             if (pair) {
                 ++pair.hitCount;
-                return pair.coordinate;
+                result = pair.coordinate;
+                return deferred.resolve(result);
             }
             // Check local storage cache
             const shortKey: string = GeocodingCache.getShortKey(key);
@@ -82,7 +85,7 @@ module powerbi.extensibility.geocoder {
             localStoragePromise.then((value) => {
                 const parsedValue = JSON.parse(value);
                 if (!parsedValue) {
-                    return undefined;
+                    return deferred.resolve(result);
                 }
 
                 if (parsedValue[shortKey]) {
@@ -94,14 +97,15 @@ module powerbi.extensibility.geocoder {
                         }
                     } as GeocodeCacheEntry;
                     this.registerInMemory(key, pair.coordinate);
-                    return pair.coordinate;
+                    result = pair.coordinate;
+                    deferred.resolve(result);
                 }
-
-                return undefined;
             })
                 .catch(() => {
-                    return undefined;
+                    deferred.resolve(result);
                 });
+
+            return deferred;
         }
         /**
         * Registers the query and coordinate to the cache.
