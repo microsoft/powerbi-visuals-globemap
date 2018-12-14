@@ -717,20 +717,34 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
-        private static minimizeTiles(tileCacheArray: TileMap[]): string[][] {
+        private static minimizeTiles(tileCacheArray: TileMap[]): TileGapObject[] {
             if (!tileCacheArray || !tileCacheArray.length) {
                 return [];
             }
 
             let result = [];
-
             tileCacheArray.forEach(obj => {
-                let currentZoomTiles: string[] = [];
+                let rank: number = 0, lastKey: number = Number(Object.keys(obj)[0]);
+                let gap: number[] = [lastKey];
+                let gaps = [];
                 for (let key in obj) {
                     if (obj.hasOwnProperty(key)) {
-                        currentZoomTiles.push(key);
+                        rank = key.length;
+                        const convertedKey: number = Number(key);
+                        if (Math.abs(convertedKey - lastKey) > 1) {
+                            gap.push(lastKey);
+                            gaps.push(gap);
+                            gap = [convertedKey];
+                        }
+                        lastKey = convertedKey;
                     }
                 }
+                gap.push(lastKey);
+                gaps.push(gap);
+                let currentZoomTiles: TileGapObject = {
+                    gaps,
+                    rank
+                };
                 result.push(currentZoomTiles);
             });
 
@@ -745,7 +759,7 @@ module powerbi.extensibility.visual {
                 return;
             }
 
-            let tileCacheArray: string[][] = JSON.parse(tileCacheData);
+            let tileCacheArray: TileGapObject[] = JSON.parse(tileCacheData);
             if (!Array.isArray(tileCacheArray) || !tileCacheArray.length) {
                 deferred.resolve(result);
                 return;
@@ -756,10 +770,18 @@ module powerbi.extensibility.visual {
                     let urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     const subdomains = metadata.imageUrlSubdomains;
 
-                    tileCacheArray.forEach((zoomArray, level) => {
+                    tileCacheArray.forEach((zoomArray: TileGapObject, level) => {
+                        const rank: number = zoomArray.rank;
+                        const gaps = zoomArray.gaps;
                         let resultForCurrentZoom = {};
-                        zoomArray.forEach((key: string) => {
-                            resultForCurrentZoom[key] = urlTemplate.replace("{subdomain}", subdomains[level]).replace("{quadkey}", key);
+                        gaps.forEach((gap: number[]) => {
+                            for (let gapItem = _.first(gap); gapItem <= _.last(gap); gapItem++) {
+                                let stringGap: string = gapItem.toString();
+                                while (stringGap.length < rank) {
+                                    stringGap = `0${stringGap}`;
+                                }
+                                resultForCurrentZoom[stringGap] = urlTemplate.replace("{subdomain}", subdomains[level]).replace("{quadkey}", stringGap);
+                            }
                         });
                         result.push(resultForCurrentZoom);
                     });
