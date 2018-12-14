@@ -73,14 +73,14 @@ module powerbi.extensibility.geocoder {
             let deferred = $.Deferred();
             let result = undefined;
             // Check in-memory cache
-            let pair: GeocodeCacheEntry = this.geocodeCache[key];
+            const shortKey: string = GeocodingCache.getShortKey(key);
+            let pair: GeocodeCacheEntry = this.geocodeCache[shortKey];
             if (pair) {
                 ++pair.hitCount;
                 result = pair.coordinate;
                 return deferred.resolve(result);
             }
             // Check local storage cache
-            const shortKey: string = GeocodingCache.getShortKey(key);
             const localStoragePromise: IPromise<string> = this.localStorageService.get(GeocodingCache.TILE_LOCATIONS);
             localStoragePromise.then((value) => {
                 const parsedValue = JSON.parse(value);
@@ -88,17 +88,23 @@ module powerbi.extensibility.geocoder {
                     return deferred.resolve(result);
                 }
 
-                if (parsedValue[shortKey]) {
-                    const location = parsedValue[shortKey];
+                // Register all keys in memory
+                for (let parsedKey in parsedValue) {
+                    const location = parsedValue[parsedKey];
                     pair = {
                         coordinate: {
                             latitude: location.lat,
                             longitude: location.lon
                         }
                     } as GeocodeCacheEntry;
-                    this.registerInMemory(key, pair.coordinate);
-                    result = pair.coordinate;
-                    deferred.resolve(result);
+
+                    const shortParsedKey: string = GeocodingCache.getShortKey(parsedKey);
+                    this.registerInMemory(shortParsedKey, pair.coordinate);
+
+                    if (parsedKey === shortKey) {
+                        result = pair.coordinate;
+                        deferred.resolve(result);
+                    }
                 }
             })
                 .catch(() => {
