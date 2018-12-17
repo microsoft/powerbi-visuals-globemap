@@ -120,33 +120,38 @@ module powerbi.extensibility.geocoder {
             return this.geocodeCore("geocodePoint", new GeocodePointQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, entities), options);
         }
 
-        public tryGeocodeImmediate(query: string, category?: string): IGeocodeCoordinate {
+        public tryGeocodeImmediate(query: string, category?: string): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate> {
             return GeocodeCacheManager.getCoordinates(new GeocodeQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), query, category).key);
         }
 
-        public tryGeocodeBoundaryImmediate(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData: number = 3): IGeocodeBoundaryCoordinate {
+        public tryGeocodeBoundaryImmediate(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData: number = 3): IPromise<IGeocodeBoundaryCoordinate> | JQueryDeferred<IGeocodeBoundaryCoordinate> {
             return GeocodeCacheManager.getCoordinates(new GeocodeBoundaryQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, category, levelOfDetail, maxGeoData).key);
         }
 
         private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): JQueryDeferred<IGeocodeCoordinate> {
-            let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(geocodeQuery.getKey());
             let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
+            GeocodeCacheManager.getCoordinates(geocodeQuery.getKey())
+                .then((result: IGeocodeCoordinate) => {
+                    if (result) {
+                        deferred.resolve(result);
+                    } else {
+                        let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
 
-            if (result) {
-                deferred.resolve(result);
-            } else {
-                let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
+                        GeocodeQueueManager.enqueue(queueName, item);
 
-                GeocodeQueueManager.enqueue(queueName, item);
-
-                if (options && options.timeout) {
-                    options.timeout.finally(() => {
-                        if (item.deferred.state() === JQueryPromiseState[JQueryPromiseState.pending]) {
-                            item.deferred.reject();
+                        if (options && options.timeout) {
+                            options.timeout.finally(() => {
+                                if (item.deferred.state() === JQueryPromiseState[JQueryPromiseState.pending]) {
+                                    item.deferred.reject();
+                                }
+                            });
                         }
-                    });
-                }
-            }
+                    }
+                })
+                .fail(() => {
+                    deferred.reject();
+                });
+
             return deferred;
         }
     }
@@ -667,18 +672,7 @@ module powerbi.extensibility.geocoder {
             this.scheduleDequeue();
         }
 
-        private makeRequest(entry: GeocodeQueueEntry): void {
-            if (entry.item.query["query"] === "") {
-                this.cancel(entry);
-                return;
-            }
-
-            let result: IGeocodeCoordinate = GeocodeCacheManager.getCoordinates(entry.item.query.getKey());
-            if (result) {
-                this.complete(entry, { coordinates: result });
-                return;
-            }
-
+        private makeJsonpAjaxQuery(entry: GeocodeQueueEntry): void {
             let guidSequence = () => {
                 let cryptoObj = window.crypto || window["msCrypto"]; // For IE
 
@@ -726,6 +720,24 @@ module powerbi.extensibility.geocoder {
                 jsonpCallback: `window.${this.callbackObjectName}.${callbackGuid}`
             });
         }
+
+        private makeRequest(entry: GeocodeQueueEntry): void {
+            if (entry.item.query["query"] === "") {
+                this.cancel(entry);
+                return;
+            }
+
+            GeocodeCacheManager.getCoordinates(entry.item.query.getKey())
+                .then((result: IGeocodeCoordinate) => {
+                    if (result) {
+                        this.complete(entry, { coordinates: result });
+                        return;
+                    } else {
+                        this.makeJsonpAjaxQuery(entry);
+                    }
+                })
+                .fail(() => this.makeJsonpAjaxQuery(entry));
+        }
     }
 
     namespace GeocodeCacheManager {
@@ -739,9 +751,14 @@ module powerbi.extensibility.geocoder {
             return geocodingCache;
         }
 
-        export function getCoordinates(key: string): IGeocodeCoordinate {
+        export function getCoordinates(key: string): JQueryDeferred<IGeocodeCoordinate> {
+            let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
             if (key) {
-                return ensureCache().getCoordinates(key);
+                ensureCache().getCoordinates(key)
+                    .then((data: IGeocodeCoordinate) => deferred.resolve(data))
+                    .fail(() => deferred.reject());
+
+                return deferred;
             }
         }
 
