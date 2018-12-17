@@ -217,7 +217,7 @@ module powerbi.extensibility.visual.test {
                 ];
 
                 const result: ITileGapObject[] = VisualClass.minimizeTiles(rawTiles);
-                debugger;
+
                 expect(result.length).toEqual(expectedTiles.length);
                 for (let i = 0; i < result.length; i++) {
                     expect(expectedTiles[i].rank).toEqual(result[i].rank);
