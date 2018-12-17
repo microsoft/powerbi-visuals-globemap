@@ -40,7 +40,7 @@ module powerbi.extensibility.visual.test {
 
     import getShortKey = powerbi.extensibility.geocoder.GeocodingCache.getShortKey;
     import TileMap = powerbi.extensibility.visual.TileMap;
-    import TileGapObject = powerbi.extensibility.visual.GlobeMap1447669447625.TileGapObject;
+    import ITileGapObject = powerbi.extensibility.visual.GlobeMap1447669447625.ITileGapObject;
 
     describe("GlobeMap", () => {
         let visualBuilder: GlobeMapBuilder,
@@ -211,12 +211,12 @@ module powerbi.extensibility.visual.test {
                     }
                 ];
 
-                const expectedTiles: TileGapObject[] = [
+                const expectedTiles: ITileGapObject[] = [
                     { gaps: [[0, 2]], rank: 2 },
                     { gaps: [[0, 3]], rank: 3 }
                 ];
 
-                const result: TileGapObject[] = VisualClass.minimizeTiles(rawTiles);
+                const result: ITileGapObject[] = VisualClass.minimizeTiles(rawTiles);
                 debugger;
                 expect(result.length).toEqual(expectedTiles.length);
                 for (let i = 0; i < result.length; i++) {
@@ -236,7 +236,7 @@ module powerbi.extensibility.visual.test {
         });
 
         describe("extend tiles test", () => {
-            const tiles: TileGapObject[] = [
+            const tiles: ITileGapObject[] = [
                 { gaps: [[0, 2]], rank: 2 },
                 { gaps: [[0, 3]], rank: 3 }
             ];

@@ -99,7 +99,7 @@ module powerbi.extensibility.visual {
         toolTipData: IGlobeMapToolTipData;
     }
 
-    export interface TileGapObject {
+    export interface ITileGapObject {
         gaps: number[][];
         rank: number;
     }

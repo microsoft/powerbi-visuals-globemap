@@ -165,9 +165,10 @@ module powerbi.extensibility.geocoder {
             ++this.geocodeCacheCount;
         }
 
-        private registerInStorage(key: string, coordinate: IGeocodeCoordinate): void {
+        private registerInStorage(key: string, coordinate: IGeocodeCoordinate): JQueryPromise<{}> {
             const valuesObj = {};
             const shortKey: string = GeocodingCache.getShortKey(key);
+            let deferred = $.Deferred();
             valuesObj[shortKey] = {
                 "lon": coordinate.longitude,
                 "lat": coordinate.latitude
@@ -178,9 +179,12 @@ module powerbi.extensibility.geocoder {
                 const mergedObject = location ? _.extend(locations, valuesObj) : valuesObj;
                 valueObjectToString = JSON.stringify(mergedObject);
                 this.localStorageService.set(GeocodingCache.TILE_LOCATIONS, valueObjectToString);
+                deferred.resolve();
             }).catch(() => {
-                this.localStorageService.set(GeocodingCache.TILE_LOCATIONS, valueObjectToString);
+                this.localStorageService.set(GeocodingCache.TILE_LOCATIONS, valueObjectToString).then(() => deferred.resolve("success")).catch(() => deferred.reject());
             });
+
+            return deferred;
         }
     }
 }

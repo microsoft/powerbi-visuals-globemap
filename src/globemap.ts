@@ -717,7 +717,7 @@ module powerbi.extensibility.visual {
             this.animateCamera(this.camera.position);
         }
 
-        private static minimizeTiles(tileCacheArray: TileMap[]): TileGapObject[] {
+        private static minimizeTiles(tileCacheArray: TileMap[]): ITileGapObject[] {
             if (!tileCacheArray || !tileCacheArray.length) {
                 return [];
             }
@@ -741,7 +741,7 @@ module powerbi.extensibility.visual {
                 }
                 gap.push(lastKey);
                 gaps.push(gap);
-                let currentZoomTiles: TileGapObject = {
+                let currentZoomTiles: ITileGapObject = {
                     gaps,
                     rank
                 };
@@ -759,7 +759,7 @@ module powerbi.extensibility.visual {
                 return;
             }
 
-            let tileCacheArray: TileGapObject[] = JSON.parse(tileCacheData);
+            let tileCacheArray: ITileGapObject[] = JSON.parse(tileCacheData);
             if (!Array.isArray(tileCacheArray) || !tileCacheArray.length) {
                 deferred.resolve(result);
                 return;
@@ -770,7 +770,7 @@ module powerbi.extensibility.visual {
                     let urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     const subdomains = metadata.imageUrlSubdomains;
 
-                    tileCacheArray.forEach((zoomArray: TileGapObject, level) => {
+                    tileCacheArray.forEach((zoomArray: ITileGapObject, level) => {
                         const rank: number = zoomArray.rank;
                         const gaps = zoomArray.gaps;
                         let resultForCurrentZoom = {};
