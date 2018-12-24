@@ -27,6 +27,11 @@
 import powerbi from "powerbi-visuals-api";
 import * as _ from "lodash";
 
+import * as THREE from "three";
+import "./lib/OrbitControls";
+import "../bower_components/webgl-heatmap/webgl-heatmap";
+import * as $ from "jquery";
+
 import IPromise = powerbi.IPromise;
 import DataView = powerbi.DataView;
 import PrimitiveValue = powerbi.PrimitiveValue;
@@ -41,16 +46,21 @@ import DataViewObjectPropertyIdentifier = powerbi.DataViewObjectPropertyIdentifi
 import EnumerateVisualObjectInstancesOptions = powerbi.EnumerateVisualObjectInstancesOptions;
 import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 
+import ISelectionId = powerbi.visuals.ISelectionId;
+
 import IVisual = powerbi.extensibility.IVisual;
-import IVisualHost = powerbi.extensibility.IVisualHost;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import IColorPalette = powerbi.extensibility.IColorPalette;
-import ISelectionId = powerbi.extensibility.ISelectionId;
+import TooltipHideOptions = powerbi.extensibility.TooltipHideOptions;
+import TooltipShowOptions = powerbi.extensibility.TooltipShowOptions;
+import ITooltipService = powerbi.extensibility.ITooltipService;
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 
 import { GlobeMapSettings } from "./settings";
+import { VisualLayout } from "./visualLayout";
 import { GlobeMapCategoricalColumns, GlobeMapColumns } from "./columns";
 import {
     GlobeMapData,
@@ -60,9 +70,9 @@ import {
     BingResourceMetadata,
     BingMetadata,
     IGlobeMapValueTypeDescriptor,
-    IGlobeMapObject3DWithToolTipData
+    IGlobeMapObject3DWithToolTipData,
+    ICanvasCoordinate
 } from "./dataInterfaces";
-
 
 class GlobeMapHeatMapClass {
     constructor(properties: {}) { }
@@ -601,9 +611,9 @@ export class GlobeMap implements IVisual {
 
         this.colors = options.host.colorPalette;
 
-        if (window["THREE"]) {
-            this.setup();
-        }
+        // if (window["THREE"]) {
+        this.setup();
+        // }
     }
 
     private setup(): void {
@@ -1134,7 +1144,7 @@ export class GlobeMap implements IVisual {
     }
 
     private getToolTipDataForSeries(toolTipData, dataPointToolTip): {} {
-        const result: { height } = jQuery.extend(true, {
+        const result: { height } = $.extend(true, {
             series: { displayName: dataPointToolTip.displayName, value: dataPointToolTip.value }
         }, toolTipData);
         result.height.value = dataPointToolTip.dataPointValue;

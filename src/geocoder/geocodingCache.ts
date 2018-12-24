@@ -24,6 +24,8 @@
  *  THE SOFTWARE.
  */
 import powerbi from "powerbi-visuals-api";
+import * as _ from "lodash";
+import * as $ from "jquery";
 
 import IPromise = powerbi.IPromise;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
@@ -41,7 +43,7 @@ export interface IGeocodingCache {
 }
 
 export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number): IGeocodingCache {
-    return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, this.localStorageService);
+    return new GeocodingCache(maxCacheSize, maxCacheSizeOverflow, window["localStorageService"]);
 }
 
 export class GeocodingCache implements IGeocodingCache {

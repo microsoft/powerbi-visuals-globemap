@@ -26,6 +26,7 @@
 
 import powerbi from "powerbi-visuals-api";
 
+import DataView = powerbi.DataView;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ValueTypeDescriptor = powerbi.ValueTypeDescriptor;
 

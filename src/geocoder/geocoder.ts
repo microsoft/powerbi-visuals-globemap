@@ -25,6 +25,7 @@
  */
 import powerbi from "powerbi-visuals-api";
 import * as _ from "lodash";
+import * as $ from "jquery";
 
 import IPromise = powerbi.IPromise;
 import PrimitiveValue = powerbi.PrimitiveValue;
@@ -68,7 +69,7 @@ export enum JQueryPromiseState {
 
 export function createGeocoder(localStorageService: ILocalVisualStorageService
 ): IGeocoder {
-    this.localStorageService = localStorageService;
+    window["localStorageService"] = localStorageService;
     return new DefaultGeocoder();
 }
 
