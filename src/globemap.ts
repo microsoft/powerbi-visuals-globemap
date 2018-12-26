@@ -23,9 +23,11 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+import "./../style/globemap.less";
 
 import powerbi from "powerbi-visuals-api";
 import * as _ from "lodash";
+import "@babel/polyfill";
 
 import * as THREE from "three";
 import "./lib/OrbitControls";
@@ -765,7 +767,7 @@ export class GlobeMap implements IVisual {
         this.animateCamera(this.camera.position);
     }
 
-    private static minimizeTiles(tileCacheArray: TileMap[]): ITileGapObject[] {
+    public static minimizeTiles(tileCacheArray: TileMap[]): ITileGapObject[] {
         if (!tileCacheArray || !tileCacheArray.length) {
             return [];
         }
@@ -799,7 +801,7 @@ export class GlobeMap implements IVisual {
         return result;
     }
 
-    private static extendTiles(tileCacheData: string, language: string, deferred: JQueryDeferred<{}>) {
+    public static extendTiles(tileCacheData: string, language: string, deferred: JQueryDeferred<{}>) {
         let result = [];
 
         if (!tileCacheData || !tileCacheData.length) {

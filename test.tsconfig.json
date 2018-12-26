@@ -11,14 +11,14 @@
     "moduleResolution": "node",
     "declaration": true,
     "lib": [
-        "es2015",
-        "dom"
+      "es2015",
+      "dom"
     ]
   },
   "files": [
     "./test/visualTest.ts"
   ],
   "include": [
-      "src/*.ts"
+    "src/*.ts"
   ]
 }
