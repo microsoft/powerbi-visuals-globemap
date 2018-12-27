@@ -1074,7 +1074,14 @@ export class GlobeMap implements IVisual {
             const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
             if (data) {
                 this.data = data;
-                this.renderMagic();
+
+                this.getCoordinates()
+                    .then((coordinates) => {
+                        this.render(coordinates);
+                        this.saveData();
+                    });
+
+                //this.renderMagic();
             }
         }
     }
@@ -1085,6 +1092,19 @@ export class GlobeMap implements IVisual {
         if (this.barsGroup) {
             this.scene.remove(this.barsGroup);
         }
+    }
+
+    private saveData() {
+        saveToMemory();
+        saveToStorage();
+    }
+
+    private getCoordinates(): IPromise<{}> {
+
+    }
+
+    private render(coordinates): void {
+
     }
 
     private renderMagic(): void {

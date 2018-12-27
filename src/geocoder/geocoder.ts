@@ -32,8 +32,9 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 
 import { UrlUtils } from "../UrlUtils/UrlUtils";
-import { GeocodeOptions, IGeocodeBoundaryCoordinate, IGeocodeCoordinate, IGeocoder, IGeocodeResource } from "./geocoderInterfaces";
-import { IGeocodingCache, createGeocodingCache } from "./geocodingCache";
+import { GeocodeOptions, IGeocodeBoundaryCoordinate, IGeocodeCoordinate, IGeocoder, IGeocodeResource, ILocationCoordinateRecord } from "./geocoderInterfaces";
+import { IGeocodingCache } from "./geocodingCache";
+import { GeocodeCacheManager, } from "./GeocodeCacheManager";
 
 export const CategoryTypes = {
     Address: "Address",
@@ -744,39 +745,6 @@ export class GeocodeQueue {
                 }
             })
             .fail(() => this.makeJsonpAjaxQuery(entry));
-    }
-}
-
-namespace GeocodeCacheManager {
-    let geocodingCache: IGeocodingCache;
-
-    function ensureCache(): IGeocodingCache {
-        if (!geocodingCache) {
-            geocodingCache = createGeocodingCache(Settings.MaxCacheSize, Settings.MaxCacheSizeOverflow);
-        }
-
-        return geocodingCache;
-    }
-
-    export function getCoordinates(key: string): JQueryDeferred<IGeocodeCoordinate> {
-        let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
-        if (key) {
-            ensureCache().getCoordinates(key)
-                .then((data: IGeocodeCoordinate) => deferred.resolve(data))
-                .fail(() => deferred.reject());
-
-            return deferred;
-        }
-    }
-
-    export function registerCoordinates(key: string, coordinates: IGeocodeCoordinate | IGeocodeBoundaryCoordinate): void {
-        if (key) {
-            return ensureCache().registerCoordinates(key, coordinates);
-        }
-    }
-
-    export function reset(cache: IGeocodingCache) {
-        geocodingCache = cache;
     }
 }
 

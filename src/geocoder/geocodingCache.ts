@@ -29,7 +29,7 @@ import * as $ from "jquery";
 
 import IPromise = powerbi.IPromise;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
-import { IGeocodeCoordinate, IGeocodeBoundaryCoordinate, } from "./geocoderInterfaces";
+import { IGeocodeCoordinate, IGeocodeBoundaryCoordinate, ILocationCoordinateRecord } from "./geocoderInterfaces";
 
 interface GeocodeCacheEntry {
     coordinate: IGeocodeCoordinate;
@@ -40,6 +40,8 @@ export interface IGeocodingCache {
     getCoordinates(key: string): JQueryDeferred<{}>;
     registerCoordinates(key: string, coordinate: IGeocodeCoordinate): void;
     registerCoordinates(key: string, coordinate: IGeocodeBoundaryCoordinate): void;
+    registerInMemory(ILocationCoordinateRecord): void;
+    getCoordinatesFromMemory(key: string): IGeocodeCoordinate;
 }
 
 export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number): IGeocodingCache {
@@ -122,10 +124,57 @@ export class GeocodingCache implements IGeocodingCache {
     */
     public registerCoordinates(key: string, coordinate: IGeocodeCoordinate): void {
         this.registerInMemory(key, coordinate);
-        this.registerInStorage(key, coordinate);
     }
 
-    private registerInMemory(key: string, coordinate: IGeocodeCoordinate): void {
+    public saveToStorage(locationItems: ILocationCoordinateRecord[]): IPromise<{}> {
+
+        const locationItemsObject = {};
+        const deferred = $.Deferred();
+
+        locationItems.forEach((locationItem: ILocationCoordinateRecord) => {
+            const shortKey: string = GeocodingCache.getShortKey(locationItem.key);
+            locationItemsObject[shortKey] = {
+                "lon": locationItem.coordinate.longitude,
+                "lat": locationItem.coordinate.latitude
+            };
+        });
+
+        let valueObjectToString: string = JSON.stringify(locationItemsObject);
+
+        this.localStorageService.get(GeocodingCache.TILE_LOCATIONS).then((data) => {
+            const locationsFromStorage = JSON.parse(data);
+            const mergedObject = location ? _.extend(locationsFromStorage, valueObjectToString) : valueObjectToString;
+
+            valueObjectToString = JSON.stringify(mergedObject);
+            this.localStorageService.set(GeocodingCache.TILE_LOCATIONS, valueObjectToString);
+            deferred.resolve();
+        }).catch(() => {
+            this.localStorageService.set(GeocodingCache.TILE_LOCATIONS, valueObjectToString)
+                .then(() => deferred.resolve("success"))
+                .catch(() => deferred.reject());
+        });
+
+        return deferred;
+    }
+
+    public getCoordinatesFromStorage(): IPromise<{}> {
+
+    }
+
+    public getCoordinatesFromMemory(key: string): IGeocodeCoordinate {
+        let result = undefined;
+        // Check in-memory cache
+        const shortKey: string = GeocodingCache.getShortKey(key);
+        let pair: GeocodeCacheEntry = this.geocodeCache[shortKey];
+        if (pair) {
+            ++pair.hitCount;
+            result = pair.coordinate;
+        }
+
+        return result;
+    }
+
+    public registerInMemory(locationRecord: ILocationCoordinateRecord): void {
         let geocodeCache: _.Dictionary<GeocodeCacheEntry> = this.geocodeCache;
         let maxCacheSize: number = this.maxCacheSize;
         let maxCacheCount: number = maxCacheSize + this.maxCacheSizeOverflow;
@@ -165,29 +214,7 @@ export class GeocodingCache implements IGeocodingCache {
             this.geocodeCacheCount = maxCacheSize;
         }
 
-        geocodeCache[key] = { coordinate: coordinate, hitCount: 1 };
+        geocodeCache[locationRecord.key] = { coordinate: locationRecord.coordinate, hitCount: 1 };
         ++this.geocodeCacheCount;
-    }
-
-    private registerInStorage(key: string, coordinate: IGeocodeCoordinate): JQueryDeferred<{}> {
-        const valuesObj = {};
-        const shortKey: string = GeocodingCache.getShortKey(key);
-        let deferred = $.Deferred();
-        valuesObj[shortKey] = {
-            "lon": coordinate.longitude,
-            "lat": coordinate.latitude
-        };
-        let valueObjectToString: string = JSON.stringify(valuesObj);
-        this.localStorageService.get(GeocodingCache.TILE_LOCATIONS).then((data) => {
-            const locations = JSON.parse(data);
-            const mergedObject = location ? _.extend(locations, valuesObj) : valuesObj;
-            valueObjectToString = JSON.stringify(mergedObject);
-            this.localStorageService.set(GeocodingCache.TILE_LOCATIONS, valueObjectToString);
-            deferred.resolve();
-        }).catch(() => {
-            this.localStorageService.set(GeocodingCache.TILE_LOCATIONS, valueObjectToString).then(() => deferred.resolve("success")).catch(() => deferred.reject());
-        });
-
-        return deferred;
     }
 }

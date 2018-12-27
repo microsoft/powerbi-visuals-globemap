@@ -33,6 +33,11 @@ export interface IGeocodeBoundaryCoordinate extends IGeocodeCoordinate {
     locations?: IGeocodeBoundaryPolygon[]; // one location can have multiple boundary polygons
 }
 
+export interface ILocationCoordinateRecord {
+    key: string;
+    coordinate: IGeocodeCoordinate | IGeocodeBoundaryCoordinate;
+}
+
 export interface IGeocodeResource extends IGeocodeCoordinate {
     addressLine: string;
     locality: string;
