@@ -50,14 +50,15 @@ export namespace GeocodeCacheManager {
     }
 
     export function saveToMemory(locationItems: ILocationCoordinateRecord[]): void {
-        if (!locationItems || !locationItems.length)
+        if (!locationItems || !locationItems.length) {
             return;
+        }
 
         const cacheInstance: IGeocodingCache = ensureCache();
         locationItems.forEach((locationItem: ILocationCoordinateRecord) => {
             const key: string = locationItem.key;
             if (key) {
-                const coordinatesFromCache: IGeocodeCoordinate = cacheInstance.getCoordinatesFromMemory(key);
+                const coordinatesFromCache: IGeocodeCoordinate = cacheInstance.getCoordinateFromMemory(key);
                 if (!coordinatesFromCache) {
                     cacheInstance.registerInMemory(locationItem);
                 }
@@ -66,11 +67,23 @@ export namespace GeocodeCacheManager {
     }
 
     export function saveToStorage(locationItems: ILocationCoordinateRecord[]): IPromise<{}> {
+        let deferred = $.Deferred();
+        const cacheInstance: IGeocodingCache = ensureCache();
+        if (!locationItems || !locationItems.length) {
+            return deferred.reject();
+        }
 
+        return cacheInstance.saveToStorage(locationItems);
     }
 
-    export function getCoordinatesFromStorage(): IPromise<{}> {
+    export function getCoordinatesFromStorage(keys: string[]): IPromise<{}> {
+        let deferred = $.Deferred();
+        const cacheInstance: IGeocodingCache = ensureCache();
+        if (!keys || !keys.length) {
+            return deferred.reject();
+        }
 
+        return cacheInstance.getCoordinatesFromStorage(keys);
     }
 
     export function reset(cache: IGeocodingCache) {

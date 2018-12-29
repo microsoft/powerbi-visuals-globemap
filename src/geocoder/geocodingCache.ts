@@ -41,7 +41,9 @@ export interface IGeocodingCache {
     registerCoordinates(key: string, coordinate: IGeocodeCoordinate): void;
     registerCoordinates(key: string, coordinate: IGeocodeBoundaryCoordinate): void;
     registerInMemory(ILocationCoordinateRecord): void;
-    getCoordinatesFromMemory(key: string): IGeocodeCoordinate;
+    getCoordinateFromMemory(key: string): IGeocodeCoordinate;
+    saveToStorage(locationItems: ILocationCoordinateRecord[]): IPromise<{}>;
+    getCoordinatesFromStorage(keys: string[]): IPromise<{}>;
 }
 
 export function createGeocodingCache(maxCacheSize: number, maxCacheSizeOverflow: number): IGeocodingCache {
@@ -157,11 +159,41 @@ export class GeocodingCache implements IGeocodingCache {
         return deferred;
     }
 
-    public getCoordinatesFromStorage(): IPromise<{}> {
+    public getCoordinatesFromStorage(keys: string[]): IPromise<{}> {
+        const deferred = $.Deferred();
+        let result: ILocationCoordinateRecord[] = [];
 
+        this.localStorageService.get(GeocodingCache.TILE_LOCATIONS).then((data) => {
+            const parsedValue = JSON.parse(data);
+            if (!parsedValue) {
+                return deferred.reject();
+            }
+
+            for (let key in keys) {
+                const shortKey: string = GeocodingCache.getShortKey(key);
+                if (parsedValue.hasOwnProperty(key)) {
+                    const location = parsedValue[shortKey];
+                    const locationItem: ILocationCoordinateRecord = {
+                        key: key,
+                        coordinate: {
+                            latitude: location.lat,
+                            longitude: location.lon
+                        }
+                    }
+                    result.push(locationItem);
+                }
+            }
+
+            deferred.resolve(result);
+        })
+            .catch(() => {
+                deferred.reject()
+            });
+
+        return deferred;
     }
 
-    public getCoordinatesFromMemory(key: string): IGeocodeCoordinate {
+    public getCoordinateFromMemory(key: string): IGeocodeCoordinate {
         let result = undefined;
         // Check in-memory cache
         const shortKey: string = GeocodingCache.getShortKey(key);

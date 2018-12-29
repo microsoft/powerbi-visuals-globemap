@@ -14,14 +14,16 @@ export interface IRect {
     height: number;
 }
 
+export interface IGeocoderOptions {
+    query: string;
+    category?: string;
+    options?: GeocodeOptions;
+}
+
 export interface IGeocoder {
-    geocode(query: string, category?: string, options?: GeocodeOptions): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate>;
+    geocode(IGeocoderOptions): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate>;
     geocodeBoundary(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData?: number, options?: GeocodeOptions): IPromise<IGeocodeBoundaryCoordinate> | JQueryDeferred<IGeocodeCoordinate>;
     geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): IPromise<IGeocodeCoordinate | IGeocodeResource> | JQueryDeferred<IGeocodeCoordinate>;
-
-    /** returns data immediately if it is locally available (e.g. in cache), null if not in cache */
-    tryGeocodeImmediate(query: string, category?: string): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate>;
-    tryGeocodeBoundaryImmediate(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData?: number): IPromise<IGeocodeBoundaryCoordinate> | JQueryDeferred<IGeocodeBoundaryCoordinate>;
 }
 
 export interface IGeocodeCoordinate {

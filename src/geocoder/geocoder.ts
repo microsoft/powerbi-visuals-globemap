@@ -32,7 +32,7 @@ import PrimitiveValue = powerbi.PrimitiveValue;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 
 import { UrlUtils } from "../UrlUtils/UrlUtils";
-import { GeocodeOptions, IGeocodeBoundaryCoordinate, IGeocodeCoordinate, IGeocoder, IGeocodeResource, ILocationCoordinateRecord } from "./geocoderInterfaces";
+import { GeocodeOptions, IGeocodeBoundaryCoordinate, IGeocodeCoordinate, IGeocoder, IGeocodeResource, IGeocoderOptions } from "./geocoderInterfaces";
 import { IGeocodingCache } from "./geocodingCache";
 import { GeocodeCacheManager, } from "./GeocodeCacheManager";
 
@@ -116,8 +116,8 @@ export abstract class BingMapsGeocoder implements IGeocoder {
     protected abstract bingGeocodingUrl(): string;
     protected abstract bingSpatialDataUrl(): string;
 
-    public geocode(query: string, category: string = '', options?: GeocodeOptions): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate> {
-        return this.geocodeCore("geocode", new GeocodeQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), query, category), options);
+    public geocode(geocodeParams: IGeocoderOptions): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate> {
+        return this.geocodeCore("geocode", new GeocodeQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), geocodeParams.query, geocodeParams.category), geocodeParams.options);
     }
 
     public geocodeBoundary(latitude: number, longitude: number, category: string = '', levelOfDetail: number = 2, maxGeoData: number = 3, options?: GeocodeOptions): IPromise<IGeocodeBoundaryCoordinate> | JQueryDeferred<IGeocodeCoordinate> {
@@ -128,16 +128,9 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         return this.geocodeCore("geocodePoint", new GeocodePointQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, entities), options);
     }
 
-    public tryGeocodeImmediate(query: string, category?: string): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate> {
-        return GeocodeCacheManager.getCoordinates(new GeocodeQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), query, category).key);
-    }
-
-    public tryGeocodeBoundaryImmediate(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData: number = 3): IPromise<IGeocodeBoundaryCoordinate> | JQueryDeferred<IGeocodeBoundaryCoordinate> {
-        return GeocodeCacheManager.getCoordinates(new GeocodeBoundaryQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, category, levelOfDetail, maxGeoData).key);
-    }
-
     private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): JQueryDeferred<IGeocodeCoordinate> {
         let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
+        
         GeocodeCacheManager.getCoordinates(geocodeQuery.getKey())
             .then((result: IGeocodeCoordinate) => {
                 if (result) {
