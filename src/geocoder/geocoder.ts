@@ -31,10 +31,29 @@ import IPromise = powerbi.IPromise;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 
+import {
+    IGeocoder,
+    IGeocodeResource,
+    IGeocoderOptions,
+    IGeocodeQuery,
+    IGeocodeQueueItem,
+    IGeocodeResult,
+    IGeocodeBoundaryCoordinate,
+    IGeocodeCoordinate,
+    GeocodeOptions
+} from "./geocoderInterfaces";
+import {
+    BingAddress,
+    BingGeoboundary,
+    BingLocation,
+    BingGeocodeResponse,
+    BingGeoboundaryResponse,
+    BingGeoboundaryPrimitive
+} from "./bingInterfaces";
+
 import { UrlUtils } from "../UrlUtils/UrlUtils";
-import { GeocodeOptions, IGeocodeBoundaryCoordinate, IGeocodeCoordinate, IGeocoder, IGeocodeResource, IGeocoderOptions } from "./geocoderInterfaces";
 import { IGeocodingCache } from "./geocodingCache";
-import { GeocodeCacheManager, } from "./GeocodeCacheManager";
+import { GeocodeCacheManager } from "./GeocodeCacheManager";
 
 export const CategoryTypes = {
     Address: "Address",
@@ -74,43 +93,6 @@ export function createGeocoder(localStorageService: ILocalVisualStorageService
     return new DefaultGeocoder();
 }
 
-// what we care about in the Bing geocoding and geospatial responses
-export interface BingGeocodeResponse {
-    resourceSets: { resources: BingLocation[] }[];
-}
-
-export interface BingLocation {
-    name?: string;
-    entityType?: string;
-    address?: BingAddress;
-    point?: { coordinates?: number[] };
-}
-
-export interface BingAddress {
-    addressLine?: string;
-    adminDistrict?: string;
-    adminDistrict2?: string;
-    countryRegion?: string;
-    countryRegionIso2?: string;
-    formattedAddress?: string;
-    locality?: string;
-    postalCode?: string;
-    neighborhood?: string;
-    landmark?: string;
-}
-
-export interface BingGeoboundaryResponse {
-    d?: { results?: BingGeoboundary[] };
-}
-
-export interface BingGeoboundary {
-    Primitives?: BingGeoboundaryPrimitive[];
-}
-
-export interface BingGeoboundaryPrimitive {
-    Shape: string;
-}
-
 export abstract class BingMapsGeocoder implements IGeocoder {
 
     protected abstract bingGeocodingUrl(): string;
@@ -130,28 +112,18 @@ export abstract class BingMapsGeocoder implements IGeocoder {
 
     private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): JQueryDeferred<IGeocodeCoordinate> {
         let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
-        
-        GeocodeCacheManager.getCoordinates(geocodeQuery.getKey())
-            .then((result: IGeocodeCoordinate) => {
-                if (result) {
-                    deferred.resolve(result);
-                } else {
-                    let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
+        let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
 
-                    GeocodeQueueManager.enqueue(queueName, item);
+        // todo: for only not existing in LS and Cache -> make jsonp request with bing data
+        GeocodeQueueManager.enqueue(queueName, item);
 
-                    if (options && options.timeout) {
-                        options.timeout.finally(() => {
-                            if (item.deferred.state() === JQueryPromiseState[JQueryPromiseState.pending]) {
-                                item.deferred.reject();
-                            }
-                        });
-                    }
+        if (options && options.timeout) {
+            options.timeout.finally(() => {
+                if (item.deferred.state() === JQueryPromiseState[JQueryPromiseState.pending]) {
+                    item.deferred.reject();
                 }
-            })
-            .fail(() => {
-                deferred.reject();
             });
+        }
 
         return deferred;
     }
@@ -209,27 +181,6 @@ export const BingEntities = {
     Neighborhood: "Neighborhood",
     Address: "Address",
 };
-
-export interface ILocation {
-    latitude: number;
-    longitude: number;
-}
-
-export interface IGeocodeResult {
-    error?: Error;
-    coordinates?: IGeocodeCoordinate | IGeocodeBoundaryCoordinate;
-}
-
-export interface IGeocodeQuery {
-    getKey(): string;
-    getUrl(): string;
-    getResult(data: {}): IGeocodeResult;
-}
-
-export interface IGeocodeQueueItem {
-    query: IGeocodeQuery;
-    deferred: JQueryDeferred<{}>;
-}
 
 // Static variables for caching, maps, etc.
 let categoryToBingEntity: { [key: string]: string; };
@@ -664,7 +615,6 @@ export class GeocodeQueue {
                     entry.item.deferred.reject(result && result.error || new Error('cancelled'));
                 }
                 else {
-                    GeocodeCacheManager.registerCoordinates(entry.item.query.getKey(), result.coordinates);
                     entry.item.deferred.resolve(result.coordinates);
                 }
             }
@@ -728,16 +678,7 @@ export class GeocodeQueue {
             return;
         }
 
-        GeocodeCacheManager.getCoordinates(entry.item.query.getKey())
-            .then((result: IGeocodeCoordinate) => {
-                if (result) {
-                    this.complete(entry, { coordinates: result });
-                    return;
-                } else {
-                    this.makeJsonpAjaxQuery(entry);
-                }
-            })
-            .fail(() => this.makeJsonpAjaxQuery(entry));
+        this.makeJsonpAjaxQuery(entry);
     }
 }
 

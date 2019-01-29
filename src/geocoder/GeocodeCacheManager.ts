@@ -1,5 +1,8 @@
+import powerbi from "powerbi-visuals-api";
+import IPromise = powerbi.IPromise;
+
 import { IGeocodingCache, createGeocodingCache } from "./geocodingCache";
-import { IGeocodeBoundaryCoordinate, IGeocodeCoordinate, ILocationCoordinateRecord } from "./geocoderInterfaces";
+import { IGeocodeCoordinate, ILocationCoordinateRecord, ILocationDictionary } from "./geocoderInterfaces";
 import { Settings } from "./geocoder";
 
 export namespace GeocodeCacheManager {
@@ -13,36 +16,17 @@ export namespace GeocodeCacheManager {
         return geocodingCache;
     }
 
-    export function getCoordinates(key: string): JQueryDeferred<IGeocodeCoordinate> {
-        let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
-        if (key) {
-            ensureCache().getCoordinates(key)
-                .then((data: IGeocodeCoordinate) => deferred.resolve(data))
-                .fail(() => deferred.reject());
-
-            return deferred;
-        }
-    }
-
-    export function registerCoordinates(key: string, coordinates: IGeocodeCoordinate | IGeocodeBoundaryCoordinate): void {
-        if (key) {
-            return ensureCache().registerCoordinates(key, coordinates);
-        }
-    }
-
-    export function getCoordinatesFromMemory(keys: string[]): ILocationCoordinateRecord[] {
-        if (!keys || !keys.length)
-            return undefined;
-
+    export function getCoordinatesFromMemory(keys?: string[]): ILocationDictionary {
         const cacheInstance: IGeocodingCache = ensureCache();
-        let locationCoordinates: ILocationCoordinateRecord[] = [];
+        if (!keys || !keys.length) {
+            return cacheInstance.getAllCoordinatesFromMemory();
+        }
+
+        let locationCoordinates: ILocationDictionary = {};
         keys.forEach((key: string) => {
-            const coordinatesFromCache: IGeocodeCoordinate = cacheInstance.getCoordinatesFromMemory(key);
+            const coordinatesFromCache: IGeocodeCoordinate = cacheInstance.getCoordinateFromMemory(key);
             if (coordinatesFromCache) {
-                locationCoordinates.push({
-                    key,
-                    coordinate: coordinatesFromCache
-                });
+                locationCoordinates[key] = coordinatesFromCache;
             }
         });
 
@@ -60,7 +44,7 @@ export namespace GeocodeCacheManager {
             if (key) {
                 const coordinatesFromCache: IGeocodeCoordinate = cacheInstance.getCoordinateFromMemory(key);
                 if (!coordinatesFromCache) {
-                    cacheInstance.registerInMemory(locationItem);
+                    cacheInstance.saveToMemory(locationItem);
                 }
             }
         });
@@ -76,12 +60,9 @@ export namespace GeocodeCacheManager {
         return cacheInstance.saveToStorage(locationItems);
     }
 
-    export function getCoordinatesFromStorage(keys: string[]): IPromise<{}> {
+    export function getCoordinatesFromStorage(keys?: string[]): IPromise<{}> {
         let deferred = $.Deferred();
         const cacheInstance: IGeocodingCache = ensureCache();
-        if (!keys || !keys.length) {
-            return deferred.reject();
-        }
 
         return cacheInstance.getCoordinatesFromStorage(keys);
     }

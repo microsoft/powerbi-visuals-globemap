@@ -75,6 +75,7 @@ import {
     IGlobeMapObject3DWithToolTipData,
     ICanvasCoordinate
 } from "./dataInterfaces";
+import { GeocodeCacheManager } from "./geocoder/GeocodeCacheManager";
 
 class GlobeMapHeatMapClass {
     constructor(properties: {}) { }
@@ -88,8 +89,8 @@ class GlobeMapHeatMapClass {
 let WebGLHeatmap = <typeof GlobeMapHeatMapClass>window["createWebGLHeatmap"];
 
 // powerbi.extensibility.geocoder
-import { ILocation, createGeocoder, Settings } from "./geocoder/geocoder";
-import { IGeocoder, IGeocodeCoordinate } from "./geocoder/geocoderInterfaces";
+import { createGeocoder, Settings } from "./geocoder/geocoder";
+import { IGeocoder, ILocationDictionary, IGeocodeCoordinate, ILocationCoordinateRecord } from "./geocoder/geocoderInterfaces";
 
 // powerbi.extensibility.utils.dataview
 import { converterHelper as ch } from "powerbi-visuals-utils-dataviewutils";
@@ -102,6 +103,7 @@ import { ColorHelper } from "powerbi-visuals-utils-colorutils";
 import { valueFormatter as vf } from "powerbi-visuals-utils-formattingutils";
 import IValueFormatter = vf.IValueFormatter;
 import valueFormatter = vf.valueFormatter;
+import { trimWhitespace } from "powerbi-visuals-utils-formattingutils/lib/stringExtensions";
 
 interface ExtendedPromise<T> extends IPromise<T> {
     always(value: {}): void;
@@ -215,6 +217,7 @@ export class MercartorSphere extends THREE.Geometry {
 
 export class GlobeMap implements IVisual {
     private localStorageService: ILocalVisualStorageService;
+    private geocoder: IGeocoder;
     public static MercartorSphere: MercartorSphere;
     private GlobeSettings = {
         autoRotate: false,
@@ -268,7 +271,9 @@ export class GlobeMap implements IVisual {
     public barsGroup: THREE.Object3D;
     private readyToRender: boolean;
     private deferredRenderTimerId: number;
-    private globeMapLocationCache: { [i: string]: ILocation };
+    private globeMapLocationStorage: ILocationDictionary;
+    private globeMapLocationMemory: ILocationDictionary;
+    private placesToBeLoaded: { [i: string]: boolean };
     private locationsToLoad: number = 0;
     private locationsLoaded: number = 0;
     private initialLocationsLength: number = 0;
@@ -462,7 +467,7 @@ export class GlobeMap implements IVisual {
                 let toolTipDataLocationName: string;
                 let toolTipDataLongName: string;
                 let toolTipDataLatName: string;
-                let location: ILocation;
+                let location: IGeocodeCoordinate;
                 let locationValue: string;
                 if (typeof (locations[i]) === "string") {
                     place = `${locations[i]}`.toLowerCase();
@@ -595,6 +600,7 @@ export class GlobeMap implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageService;
+        this.geocoder = createGeocoder(this.localStorageService);
         this.root = $("<div>").appendTo(options.element)
             .attr("drag-resize-disabled", "true")
             .css({
@@ -607,15 +613,17 @@ export class GlobeMap implements IVisual {
         this.layout = new VisualLayout();
         this.readyToRender = false;
 
-        if (!this.globeMapLocationCache) {
-            this.globeMapLocationCache = {};
+        if (!this.globeMapLocationMemory) {
+            this.globeMapLocationMemory = await GeocodeCacheManager.getCoordinatesFromMemory();
+        }
+
+        if (!this.globeMapLocationStorage) {
+            this.globeMapLocationStorage = await GeocodeCacheManager.getCoordinatesFromStorage();
         }
 
         this.colors = options.host.colorPalette;
 
-        // if (window["THREE"]) {
         this.setup();
-        // }
     }
 
     private setup(): void {
@@ -1075,15 +1083,63 @@ export class GlobeMap implements IVisual {
             if (data) {
                 this.data = data;
 
-                this.getCoordinates()
-                    .then((coordinates) => {
-                        this.render(coordinates);
-                        this.saveData();
-                    });
+                let coordinates: ILocationDictionary = await this.getCoordinates();
+                this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
+                    d.location = coordinates[d.placeKey] || d.location;
+                });
 
-                //this.renderMagic();
+                this.render();
+                this.saveData(coordinates);
             }
         }
+    }
+
+    private getPlacesToBeLoaded(): string[] {
+        let result: string[] = [];
+
+        for (let keysToBeLoaded in this.placesToBeLoaded) {
+            if (this.placesToBeLoaded[keysToBeLoaded]) {
+                result.push(keysToBeLoaded);
+            }
+        }
+        return result;
+    }
+
+    private async getCoordinates(): IPromise<{}> {
+        this.placesToBeLoaded = {};
+        let locationRecords: ILocationDictionary = {};
+        this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
+            this.placesToBeLoaded[d.placeKey] = true;
+        });
+
+        // get from memory
+        let needToBeLoaded: string[] = this.getPlacesToBeLoaded();
+        needToBeLoaded.forEach((key: string) => {
+            if (this.globeMapLocationMemory[key] && this.globeMapLocationMemory[key].latitude !== null && this.globeMapLocationMemory[key].longitude !== null) {
+                this.placesToBeLoaded[key] = false;
+                locationRecords[key] = this.globeMapLocationMemory[key];
+            }
+        });
+
+        //get from Storage
+        needToBeLoaded = this.getPlacesToBeLoaded();
+        needToBeLoaded.forEach((key: string) => {
+            if (this.globeMapLocationStorage[key] && this.globeMapLocationStorage[key].latitude !== null && this.globeMapLocationStorage[key].longitude !== null) {
+                this.placesToBeLoaded[key] = false;
+                locationRecords[key] = this.globeMapLocationStorage[key];
+            }
+        });
+
+        //get from bing
+        needToBeLoaded = this.getPlacesToBeLoaded();
+        // for of
+        // locationRecords{} <-  await getFromBing();
+
+        let promise = new Promise((resolve) => {
+
+        });
+
+        promise.resolve(locationRecords);
     }
 
     public cleanHeatAndBar(): void {
@@ -1094,27 +1150,31 @@ export class GlobeMap implements IVisual {
         }
     }
 
-    private saveData() {
-        saveToMemory();
-        saveToStorage();
+    private saveData(locationRecords) {
+        let toBeSavedToMemory = [];
+        let toBeSavedToStorage = [];
+
+        for (let placeKey in this.placesToBeLoaded) {
+            const locationItem: ILocationCoordinateRecord = {
+                key: placeKey, coordinate: locationRecords[placeKey]
+            };
+            if (!this.globeMapLocationMemory[placeKey]) {
+                toBeSavedToMemory.push(locationItem);
+            }
+            if (!this.globeMapLocationStorage[placeKey]) {
+                toBeSavedToStorage.push(locationItem);
+            }
+        }
+        GeocodeCacheManager.saveToMemory(toBeSavedToMemory);
+        GeocodeCacheManager.saveToStorage(toBeSavedToStorage);
     }
 
-    private getCoordinates(): IPromise<{}> {
 
-    }
-
-    private render(coordinates): void {
-
-    }
-
-    private renderMagic(): void {
+    private render(): void {
         if (!this.data) {
             return;
         }
-        this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d)); // all coordinates (latitude/longitude) will be gained here
-        this.data.dataPoints.forEach((d) => {
-            return d.location = this.globeMapLocationCache[d.placeKey] || d.location;
-        });
+
         if (!this.readyToRender) {
             this.defferedRender();
             return;
@@ -1173,42 +1233,12 @@ export class GlobeMap implements IVisual {
         return result;
     }
 
-    private geocodeRenderDatum(renderDatum: GlobeMapDataPoint) {
-        // zero valued locations should be updated
-        if ((renderDatum.location && renderDatum.location.longitude !== 0 && renderDatum.location.latitude !== 0) || this.globeMapLocationCache[renderDatum.placeKey]) {
-            return;
-        }
-
-        const location: ILocation = { latitude: null, longitude: null };
-        let geocoder: IGeocoder;
-        this.globeMapLocationCache[renderDatum.placeKey] = location; // store empty object so we don't send AJAX request again
-        this.locationsToLoad++;
-
-        geocoder = createGeocoder(this.localStorageService);
-        if (geocoder) {
-            (geocoder.geocode(
-                renderDatum.place,
-                renderDatum.locationType) as ExtendedPromise<IGeocodeCoordinate>).always((l: ILocation) => {
-                    // we use always because we want to cache unknown values.
-                    // No point asking bing again and again when it tells us it doesn't know about a location
-                    if (l) {
-                        location.latitude = l.latitude;
-                        location.longitude = l.longitude;
-                    }
-
-                    this.locationsLoaded++;
-
-                    this.defferedRender();
-                });
-        }
-    }
-
     private defferedRender() {
         if (!this.deferredRenderTimerId) {
             // tslint:disable-next-line
             this.deferredRenderTimerId = <any>setTimeout(() => {
                 this.deferredRenderTimerId = null;
-                this.renderMagic();
+                this.render();
             }, 500);
         }
     }

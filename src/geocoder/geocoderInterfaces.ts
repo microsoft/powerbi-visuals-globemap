@@ -31,6 +31,10 @@ export interface IGeocodeCoordinate {
     longitude: number;
 }
 
+export interface ILocationDictionary {
+    [i: string]: IGeocodeCoordinate;
+}
+
 export interface IGeocodeBoundaryCoordinate extends IGeocodeCoordinate {
     locations?: IGeocodeBoundaryPolygon[]; // one location can have multiple boundary polygons
 }
@@ -38,6 +42,22 @@ export interface IGeocodeBoundaryCoordinate extends IGeocodeCoordinate {
 export interface ILocationCoordinateRecord {
     key: string;
     coordinate: IGeocodeCoordinate | IGeocodeBoundaryCoordinate;
+}
+
+export interface IGeocodeResult {
+    error?: Error;
+    coordinates?: IGeocodeCoordinate | IGeocodeBoundaryCoordinate;
+}
+
+export interface IGeocodeQuery {
+    getKey(): string;
+    getUrl(): string;
+    getResult(data: {}): IGeocodeResult;
+}
+
+export interface IGeocodeQueueItem {
+    query: IGeocodeQuery;
+    deferred: JQueryDeferred<{}>;
 }
 
 export interface IGeocodeResource extends IGeocodeCoordinate {

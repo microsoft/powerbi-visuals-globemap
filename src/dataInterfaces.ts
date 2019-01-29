@@ -33,8 +33,8 @@ import ValueTypeDescriptor = powerbi.ValueTypeDescriptor;
 import { interactivitySelectionService } from "powerbi-visuals-utils-interactivityutils";
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 
-import { ILocation } from "./geocoder/geocoder";
 import { GlobeMapSettings } from "./settings";
+import { IGeocodeCoordinate } from "./geocoder/geocoderInterfaces";
 
 export interface GlobeMapData {
     dataView: DataView;
@@ -44,7 +44,7 @@ export interface GlobeMapData {
 }
 
 export interface GlobeMapDataPoint {
-    location: ILocation;
+    location: IGeocodeCoordinate;
     place: string;
     locationType: string;
     placeKey: string;
