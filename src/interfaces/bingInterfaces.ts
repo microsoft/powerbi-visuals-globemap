@@ -34,3 +34,20 @@ export interface BingGeoboundary {
 export interface BingGeoboundaryPrimitive {
     Shape: string;
 }
+
+export interface BingMetadata {
+    resourceSets: ResourceSet[];
+    statusCode: string;
+    statusDescription: string;
+}
+
+export interface ResourceSet {
+    resources: BingResourceMetadata[];
+}
+
+export interface BingResourceMetadata {
+    imageHeight: number;
+    imageWidth: number;
+    imageUrl: string;
+    imageUrlSubdomains: string[];
+}

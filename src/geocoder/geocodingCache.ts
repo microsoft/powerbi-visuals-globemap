@@ -27,7 +27,7 @@ import powerbi from "powerbi-visuals-api";
 import * as _ from "lodash";
 
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
-import { IGeocodeCoordinate, ILocationCoordinateRecord, ILocationDictionary } from "./geocoderInterfaces";
+import { IGeocodeCoordinate, ILocationCoordinateRecord, ILocationDictionary } from "./interfaces/geocoderInterfaces";
 
 interface GeocodeCacheEntry {
     coordinate: IGeocodeCoordinate;

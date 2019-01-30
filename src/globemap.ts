@@ -68,14 +68,18 @@ import {
     GlobeMapData,
     GlobeMapDataPoint,
     GlobeMapSeriesDataPoint,
-    ITileGapObject, TileMap,
-    BingResourceMetadata,
-    BingMetadata,
+    ITileGapObject,
+    TileMap,
     IGlobeMapValueTypeDescriptor,
     IGlobeMapObject3DWithToolTipData,
     ICanvasCoordinate
-} from "./dataInterfaces";
-import { GeocodeCacheManager } from "./geocoder/GeocodeCacheManager";
+} from "./interfaces/dataInterfaces";
+import {
+    BingResourceMetadata,
+    BingMetadata
+} from "./interfaces/bingInterfaces";
+import { CacheManager } from "./cache/CacheManager";
+import { MercartorSphere } from "./map/MercartorSphere";
 
 class GlobeMapHeatMapClass {
     constructor(properties: {}) { }
@@ -90,7 +94,7 @@ let WebGLHeatmap = <typeof GlobeMapHeatMapClass>window["createWebGLHeatmap"];
 
 // powerbi.extensibility.geocoder
 import { createGeocoder, Settings } from "./geocoder/geocoder";
-import { IGeocoder, ILocationDictionary, IGeocodeCoordinate, ILocationCoordinateRecord } from "./geocoder/geocoderInterfaces";
+import { IGeocoder, ILocationDictionary, IGeocodeCoordinate, ILocationCoordinateRecord } from "./geocoder/interfaces/geocoderInterfaces";
 
 // powerbi.extensibility.utils.dataview
 import { converterHelper as ch } from "powerbi-visuals-utils-dataviewutils";
@@ -103,116 +107,10 @@ import { ColorHelper } from "powerbi-visuals-utils-colorutils";
 import { valueFormatter as vf } from "powerbi-visuals-utils-formattingutils";
 import IValueFormatter = vf.IValueFormatter;
 import valueFormatter = vf.valueFormatter;
-import { trimWhitespace } from "powerbi-visuals-utils-formattingutils/lib/stringExtensions";
+import { ICacheManager } from "./cache/interfaces/ICacheManager";
 
 interface ExtendedPromise<T> extends IPromise<T> {
     always(value: {}): void;
-}
-
-export class MercartorSphere extends THREE.Geometry {
-    radius: number;
-    widthSegments: number;
-    heightSegments: number;
-    t: number;
-    vertices: THREE.Vector3[];
-    prototype: {};
-    constructor(radius: number, widthSegments: number, heightSegments: number) {
-        super();
-        this.radius = radius;
-        this.widthSegments = widthSegments;
-        this.heightSegments = heightSegments;
-
-        this.t = 0;
-
-        let x: number;
-        let y: number;
-        const vertices = [];
-        const uvs = [];
-
-        function interplolate(a, b, t) {
-            return (1 - t) * a + t * b;
-        }
-
-        // interpolates between sphere and plane
-        function interpolateVertex(u: number, v: number, t: number) {
-            const maxLng: number = Math.PI * 2;
-            const maxLat: number = Math.PI;
-
-            const sphereX: number = - this.radius * Math.cos(u * maxLng) * Math.sin(v * maxLat);
-            const sphereY: number = - this.radius * Math.cos(v * maxLat);
-            const sphereZ: number = this.radius * Math.sin(u * maxLng) * Math.sin(v * maxLat);
-
-            const planeX: number = u * this.radius * 2 - this.radius;
-            const planeY: number = v * this.radius * 2 - this.radius;
-            const planeZ: number = 0;
-
-            const x1: number = interplolate(sphereX, planeX, t);
-            const y1: number = interplolate(sphereY, planeY, t);
-            const z: number = interplolate(sphereZ, planeZ, t);
-
-            return new THREE.Vector3(x1, y1, z);
-        }
-
-        // http://mathworld.wolfram.com/MercatorProjection.html
-        // Mercator projection goes form +85.05 to -85.05 degrees
-        function interpolateUV(u: number, v: number, t: number) {
-            const lat: number = (v - 0.5) * 89.99 * 2 / 180 * Math.PI; // turn from 0-1 into lat in radians
-            const sin: number = Math.sin(lat);
-            const normalizedV: number = 0.5 + 0.25 * Math.log((1 + sin) / (1 - sin)) / Math.PI;
-            return new THREE.Vector2(u, normalizedV); // interplolate(normalizedV1, v, t))
-        }
-
-        for (y = 0; y <= heightSegments; y++) {
-
-            const verticesRow: number[] = [];
-            const uvsRow: number[] = [];
-
-            for (x = 0; x <= widthSegments; x++) {
-
-                const u: number = x / widthSegments;
-                const v: number = y / heightSegments;
-
-                this.vertices.push(interpolateVertex.call(this, u, v, this.t));
-                uvsRow.push(interpolateUV.call(this, u, v, this.t));
-                verticesRow.push(this.vertices.length - 1);
-            }
-
-            vertices.push(verticesRow);
-            uvs.push(uvsRow);
-
-        }
-
-        for (y = 0; y < this.heightSegments; y++) {
-
-            for (x = 0; x < this.widthSegments; x++) {
-
-                const v1: number = vertices[y][x + 1];
-                const v2: number = vertices[y][x];
-                const v3: number = vertices[y + 1][x];
-                const v4: number = vertices[y + 1][x + 1];
-
-                const n1: THREE.Vector3 = this.vertices[v1].clone().normalize();
-                const n2: THREE.Vector3 = this.vertices[v2].clone().normalize();
-                const n3: THREE.Vector3 = this.vertices[v3].clone().normalize();
-                const n4: THREE.Vector3 = this.vertices[v4].clone().normalize();
-
-                const uv1: THREE.Vector2 = uvs[y][x + 1];
-                const uv2: THREE.Vector2 = uvs[y][x];
-                const uv3: THREE.Vector2 = uvs[y + 1][x];
-                const uv4: THREE.Vector2 = uvs[y + 1][x + 1];
-
-                this.faces.push(new THREE.Face3(v1, v2, v3, [n1, n2, n3]));
-                this.faces.push(new THREE.Face3(v1, v3, v4, [n1, n3, n4]));
-
-                this.faceVertexUvs[0].push([uv1.clone(), uv2.clone(), uv3.clone()]);
-                this.faceVertexUvs[0].push([uv1.clone(), uv3.clone(), uv4.clone()]);
-            }
-        }
-
-        this.computeFaceNormals();
-        this.computeVertexNormals();
-        this.computeBoundingSphere();
-    }
 }
 
 export class GlobeMap implements IVisual {
@@ -271,6 +169,7 @@ export class GlobeMap implements IVisual {
     public barsGroup: THREE.Object3D;
     private readyToRender: boolean;
     private deferredRenderTimerId: number;
+    private cacheManager: ICacheManager;
     private globeMapLocationStorage: ILocationDictionary;
     private globeMapLocationMemory: ILocationDictionary;
     private placesToBeLoaded: { [i: string]: boolean };
@@ -612,14 +511,7 @@ export class GlobeMap implements IVisual {
 
         this.layout = new VisualLayout();
         this.readyToRender = false;
-        this.globeMapLocationMemory = GeocodeCacheManager.getCoordinatesFromMemory();
-
-        GeocodeCacheManager.getCoordinatesFromStorage()
-            .then((coordinates) => {
-                this.globeMapLocationStorage = coordinates;
-            });
-        // this.globeMapLocationStorage = await GeocodeCacheManager.getCoordinatesFromStorage(); ???
-
+        this.cacheManager = new CacheManager();
         this.colors = options.host.colorPalette;
 
         this.setup();
@@ -1070,7 +962,7 @@ export class GlobeMap implements IVisual {
         }
     }
 
-    public async update(options: VisualUpdateOptions): Promise<{}> {
+    public update(options: VisualUpdateOptions): Promise<{}> {
         if (options.dataViews === undefined || options.dataViews === null) {
             return;
         }
@@ -1096,61 +988,16 @@ export class GlobeMap implements IVisual {
             if (data) {
                 this.data = data;
 
-                let coordinates: ILocationDictionary = await this.getCoordinates();
-                this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
-                    d.location = coordinates[d.placeKey] || d.location;
+                this.cacheManager.loadCoordinates(data).then((coordinates: ILocationDictionary) => {
+                    this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
+                        d.location = coordinates[d.placeKey] || d.location;
+                    });
+
+                    this.render();
+                    this.cacheManager.saveCoordinates(coordinates);
                 });
-
-                this.saveData(coordinates);
-                this.render();
             }
         }
-    }
-
-    private getPlacesToBeLoaded(): string[] {
-        let result: string[] = [];
-
-        for (let keysToBeLoaded in this.placesToBeLoaded) {
-            if (this.placesToBeLoaded[keysToBeLoaded]) {
-                result.push(keysToBeLoaded);
-            }
-        }
-        return result;
-    }
-
-    private async getCoordinates(): Promise<{}> {
-        this.placesToBeLoaded = {};
-        let locationRecords: ILocationDictionary = {};
-        this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
-            this.placesToBeLoaded[d.placeKey] = true;
-        });
-
-        // get from memory
-        let needToBeLoaded: string[] = this.getPlacesToBeLoaded();
-        needToBeLoaded.forEach((key: string) => {
-            if (this.globeMapLocationMemory[key] && this.globeMapLocationMemory[key].latitude !== null && this.globeMapLocationMemory[key].longitude !== null) {
-                this.placesToBeLoaded[key] = false;
-                locationRecords[key] = this.globeMapLocationMemory[key];
-            }
-        });
-
-        //get from Storage
-        needToBeLoaded = this.getPlacesToBeLoaded();
-        needToBeLoaded.forEach((key: string) => {
-            if (this.globeMapLocationStorage[key] && this.globeMapLocationStorage[key].latitude !== null && this.globeMapLocationStorage[key].longitude !== null) {
-                this.placesToBeLoaded[key] = false;
-                locationRecords[key] = this.globeMapLocationStorage[key];
-            }
-        });
-
-        //get from bing
-        needToBeLoaded = this.getPlacesToBeLoaded();
-
-        return new Promise((resolve, reject) => {
-            // for of
-            // locationRecords{} <-  await getFromBing();
-            resolve(locationRecords);
-        });
     }
 
     public cleanHeatAndBar(): void {
@@ -1160,28 +1007,6 @@ export class GlobeMap implements IVisual {
             this.scene.remove(this.barsGroup);
         }
     }
-
-    private saveData(locationRecords) {
-        let toBeSavedToMemory = [];
-        let toBeSavedToStorage = [];
-
-        for (let placeKey in this.placesToBeLoaded) {
-            const locationItem: ILocationCoordinateRecord = {
-                key: placeKey, coordinate: locationRecords[placeKey]
-            };
-            if (!this.globeMapLocationMemory[placeKey]) {
-                this.globeMapLocationMemory[placeKey] = locationItem.coordinate;
-                toBeSavedToMemory.push(locationItem);
-            }
-            if (!this.globeMapLocationStorage[placeKey]) {
-                this.globeMapLocationStorage[placeKey] = locationItem.coordinate;
-                toBeSavedToStorage.push(locationItem);
-            }
-        }
-        GeocodeCacheManager.saveToMemory(toBeSavedToMemory);
-        GeocodeCacheManager.saveToStorage(toBeSavedToStorage);
-    }
-
 
     private render(): void {
         if (!this.data) {

@@ -33,8 +33,8 @@ import ValueTypeDescriptor = powerbi.ValueTypeDescriptor;
 import { interactivitySelectionService } from "powerbi-visuals-utils-interactivityutils";
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 
-import { GlobeMapSettings } from "./settings";
-import { IGeocodeCoordinate } from "./geocoder/geocoderInterfaces";
+import { GlobeMapSettings } from "../settings";
+import { IGeocodeCoordinate } from "../geocoder/interfaces/geocoderInterfaces";
 
 export interface GlobeMapData {
     dataView: DataView;
@@ -59,23 +59,6 @@ export interface GlobeMapSeriesDataPoint extends SelectableDataPoint {
     label: string;
     color: string;
     category?: string;
-}
-
-export interface BingMetadata {
-    resourceSets: ResourceSet[];
-    statusCode: string;
-    statusDescription: string;
-}
-
-export interface ResourceSet {
-    resources: BingResourceMetadata[];
-}
-
-export interface BingResourceMetadata {
-    imageHeight: number;
-    imageWidth: number;
-    imageUrl: string;
-    imageUrlSubdomains: string[];
 }
 
 export interface TileMap {

@@ -41,7 +41,7 @@ import {
     IGeocodeBoundaryCoordinate,
     IGeocodeCoordinate,
     GeocodeOptions
-} from "./geocoderInterfaces";
+} from "./interfaces/geocoderInterfaces";
 import {
     BingAddress,
     BingGeoboundary,
@@ -49,7 +49,7 @@ import {
     BingGeocodeResponse,
     BingGeoboundaryResponse,
     BingGeoboundaryPrimitive
-} from "./bingInterfaces";
+} from "../interfaces/bingInterfaces";
 
 import { UrlUtils } from "../UrlUtils/UrlUtils";
 import { IGeocodingCache } from "./geocodingCache";

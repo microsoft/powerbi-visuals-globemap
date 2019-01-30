@@ -1,7 +1,7 @@
 import powerbi from "powerbi-visuals-api";
 
 import { IGeocodingCache, createGeocodingCache } from "./geocodingCache";
-import { IGeocodeCoordinate, ILocationCoordinateRecord, ILocationDictionary } from "./geocoderInterfaces";
+import { IGeocodeCoordinate, ILocationCoordinateRecord, ILocationDictionary } from "./interfaces/geocoderInterfaces";
 import { Settings } from "./geocoder";
 
 export namespace GeocodeCacheManager {
