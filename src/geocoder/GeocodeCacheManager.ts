@@ -1,5 +1,4 @@
 import powerbi from "powerbi-visuals-api";
-import IPromise = powerbi.IPromise;
 
 import { IGeocodingCache, createGeocodingCache } from "./geocodingCache";
 import { IGeocodeCoordinate, ILocationCoordinateRecord, ILocationDictionary } from "./geocoderInterfaces";
@@ -50,21 +49,34 @@ export namespace GeocodeCacheManager {
         });
     }
 
-    export function saveToStorage(locationItems: ILocationCoordinateRecord[]): IPromise<{}> {
-        let deferred = $.Deferred();
+    export async function saveToStorage(locationItems: ILocationCoordinateRecord[]): Promise<string> {
         const cacheInstance: IGeocodingCache = ensureCache();
-        if (!locationItems || !locationItems.length) {
-            return deferred.reject();
-        }
 
-        return cacheInstance.saveToStorage(locationItems);
+        return new Promise<string>((resolve, reject) => {
+            if (!locationItems || !locationItems.length) {
+                reject();
+            }
+            cacheInstance.saveToStorage(locationItems)
+                .then((result) => {
+                    resolve(result);
+                })
+                .catch(() => {
+                    reject();
+                });
+        });
     }
 
-    export function getCoordinatesFromStorage(keys?: string[]): IPromise<{}> {
-        let deferred = $.Deferred();
+    export async function getCoordinatesFromStorage(keys?: string[]): Promise<ILocationDictionary> {
         const cacheInstance: IGeocodingCache = ensureCache();
-
-        return cacheInstance.getCoordinatesFromStorage(keys);
+        return new Promise<ILocationDictionary>((resolve, reject) => {
+            cacheInstance.getCoordinatesFromStorage(keys)
+                .then((coordinates) => {
+                    resolve(coordinates);
+                })
+                .catch(() => {
+                    reject();
+                });
+        });
     }
 
     export function reset(cache: IGeocodingCache) {

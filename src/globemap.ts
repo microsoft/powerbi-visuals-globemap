@@ -612,14 +612,13 @@ export class GlobeMap implements IVisual {
 
         this.layout = new VisualLayout();
         this.readyToRender = false;
+        this.globeMapLocationMemory = GeocodeCacheManager.getCoordinatesFromMemory();
 
-        if (!this.globeMapLocationMemory) {
-            this.globeMapLocationMemory = await GeocodeCacheManager.getCoordinatesFromMemory();
-        }
-
-        if (!this.globeMapLocationStorage) {
-            this.globeMapLocationStorage = await GeocodeCacheManager.getCoordinatesFromStorage();
-        }
+        GeocodeCacheManager.getCoordinatesFromStorage()
+            .then((coordinates) => {
+                this.globeMapLocationStorage = coordinates;
+            });
+        // this.globeMapLocationStorage = await GeocodeCacheManager.getCoordinatesFromStorage(); ???
 
         this.colors = options.host.colorPalette;
 
@@ -809,87 +808,101 @@ export class GlobeMap implements IVisual {
         return result;
     }
 
-    public static extendTiles(tileCacheData: string, language: string, deferred: JQueryDeferred<{}>) {
+    public static extendTiles(tileCacheData: string, language: string): Promise<{}> {
         let result = [];
 
-        if (!tileCacheData || !tileCacheData.length) {
-            deferred.resolve(result);
-            return;
-        }
-
-        let tileCacheArray: ITileGapObject[] = JSON.parse(tileCacheData);
-        if (!Array.isArray(tileCacheArray) || !tileCacheArray.length) {
-            deferred.resolve(result);
-            return;
-        }
-
-        GlobeMap.getBingMapsServerMetadata()
-            .then((metadata: BingResourceMetadata) => {
-                let urlTemplate = metadata.imageUrl.replace("{culture}", language);
-                const subdomains = metadata.imageUrlSubdomains;
-
-                tileCacheArray.forEach((zoomArray: ITileGapObject, level) => {
-                    const rank: number = zoomArray.rank;
-                    const gaps = zoomArray.gaps;
-                    let resultForCurrentZoom = {};
-                    gaps.forEach((gap: number[]) => {
-                        for (let gapItem = _.first(gap); gapItem <= _.last(gap); gapItem++) {
-                            let stringGap: string = gapItem.toString();
-                            while (stringGap.length < rank) {
-                                stringGap = `0${stringGap}`;
-                            }
-                            resultForCurrentZoom[stringGap] = urlTemplate.replace("{subdomain}", subdomains[level]).replace("{quadkey}", stringGap);
-                        }
-                    });
-                    result.push(resultForCurrentZoom);
-                });
-
-                deferred.resolve(result);
-            });
-    }
-
-    private loadFromBing(language: string, deferred: JQueryDeferred<{}>): JQueryPromise<void> {
-        let tileCacheValue = [];
-        return GlobeMap.getBingMapsServerMetadata()
-            .then((metadata: BingResourceMetadata) => {
-
-                let urlTemplate = metadata.imageUrl.replace("{culture}", language);
-                for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                    let levelTiles = GlobeMap.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
-                    tileCacheValue.push(levelTiles);
-                }
-
-                const minimizedTileCacheData: string = JSON.stringify(GlobeMap.minimizeTiles(tileCacheValue));
-                this.localStorageService.set(`${GlobeMap.TILE_STORAGE_KEY}_${language}`, minimizedTileCacheData);
-
-                deferred.resolve(tileCacheValue);
-            }).fail(() => {
-                deferred.resolve(tileCacheValue);
-            });
-    }
-
-    private getTilesData(language: string): JQueryPromise<{}> {
-        let deferred = $.Deferred();
-        let tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
-
-        tileCachePromise.then(data => GlobeMap.extendTiles(data, this.currentLanguage, deferred))
-            .catch(() => this.loadFromBing(language, deferred));
-
-        return deferred;
-    }
-
-    private initTextures(): JQueryPromise<{}> {
-        this.mapTextures = [];
-        let deferred = $.Deferred();
-
-        this.getTilesData(this.currentLanguage).then((tiles: TileMap[]) => {
-            for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                this.mapTextures.push(this.createTexture(level, tiles[level - GlobeMap.initialResolutionLevel]));
+        return new Promise<{}>((resolve, reject) => {
+            if (!tileCacheData || !tileCacheData.length) {
+                resolve(result);
             }
-            deferred.resolve("success");
-        });
 
-        return deferred;
+            let tileCacheArray: ITileGapObject[] = JSON.parse(tileCacheData);
+            if (!Array.isArray(tileCacheArray) || !tileCacheArray.length) {
+                resolve(result);
+            }
+
+            GlobeMap.getBingMapsServerMetadata()
+                .then((metadata: BingResourceMetadata) => {
+                    let urlTemplate = metadata.imageUrl.replace("{culture}", language);
+                    const subdomains = metadata.imageUrlSubdomains;
+
+                    tileCacheArray.forEach((zoomArray: ITileGapObject, level) => {
+                        const rank: number = zoomArray.rank;
+                        const gaps = zoomArray.gaps;
+                        let resultForCurrentZoom = {};
+                        gaps.forEach((gap: number[]) => {
+                            for (let gapItem = _.first(gap); gapItem <= _.last(gap); gapItem++) {
+                                let stringGap: string = gapItem.toString();
+                                while (stringGap.length < rank) {
+                                    stringGap = `0${stringGap}`;
+                                }
+                                resultForCurrentZoom[stringGap] = urlTemplate.replace("{subdomain}", subdomains[level]).replace("{quadkey}", stringGap);
+                            }
+                        });
+                        result.push(resultForCurrentZoom);
+                    });
+
+                    resolve(result);
+                })
+                .fail(() => {
+                    reject();
+                });
+        });
+    }
+
+    private loadFromBing(language: string): Promise<{}> {
+        let tileCacheValue = [];
+        return new Promise<{}>((resolve, reject) => {
+            GlobeMap.getBingMapsServerMetadata()
+                .then((metadata: BingResourceMetadata) => {
+
+                    let urlTemplate = metadata.imageUrl.replace("{culture}", language);
+                    for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
+                        let levelTiles = GlobeMap.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
+                        tileCacheValue.push(levelTiles);
+                    }
+
+                    const minimizedTileCacheData: string = JSON.stringify(GlobeMap.minimizeTiles(tileCacheValue));
+                    this.localStorageService.set(`${GlobeMap.TILE_STORAGE_KEY}_${language}`, minimizedTileCacheData);
+
+                    resolve(tileCacheValue);
+                }).fail(() => {
+                    resolve(tileCacheValue);
+                });
+        });
+    }
+
+    private getTilesData(language: string): Promise<{}> {
+        return new Promise<{}>((resolve, reject) => {
+            let tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
+
+            tileCachePromise.then(data => {
+                GlobeMap.extendTiles(data, this.currentLanguage)
+                    .then((tilesData) => resolve(tilesData))
+                    .catch(() => reject())
+            })
+                .catch(() => {
+                    this.loadFromBing(language)
+                        .then((bingData) => resolve(bingData))
+                        .catch(() => reject())
+                });
+        });
+    }
+
+    private initTextures(): Promise<string> {
+        this.mapTextures = [];
+        return new Promise<string>((resolve, reject) => {
+            this.getTilesData(this.currentLanguage)
+                .then((tiles: TileMap[]) => {
+                    for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
+                        this.mapTextures.push(this.createTexture(level, tiles[level - GlobeMap.initialResolutionLevel]));
+                    }
+                    resolve("success");
+                })
+                .catch(() => {
+                    reject();
+                });
+        });
     }
 
 
@@ -1057,7 +1070,7 @@ export class GlobeMap implements IVisual {
         }
     }
 
-    public update(options: VisualUpdateOptions): void {
+    public async update(options: VisualUpdateOptions): Promise<{}> {
         if (options.dataViews === undefined || options.dataViews === null) {
             return;
         }
@@ -1088,8 +1101,8 @@ export class GlobeMap implements IVisual {
                     d.location = coordinates[d.placeKey] || d.location;
                 });
 
-                this.render();
                 this.saveData(coordinates);
+                this.render();
             }
         }
     }
@@ -1105,7 +1118,7 @@ export class GlobeMap implements IVisual {
         return result;
     }
 
-    private async getCoordinates(): IPromise<{}> {
+    private async getCoordinates(): Promise<{}> {
         this.placesToBeLoaded = {};
         let locationRecords: ILocationDictionary = {};
         this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
@@ -1132,14 +1145,12 @@ export class GlobeMap implements IVisual {
 
         //get from bing
         needToBeLoaded = this.getPlacesToBeLoaded();
-        // for of
-        // locationRecords{} <-  await getFromBing();
 
-        let promise = new Promise((resolve) => {
-
+        return new Promise((resolve, reject) => {
+            // for of
+            // locationRecords{} <-  await getFromBing();
+            resolve(locationRecords);
         });
-
-        promise.resolve(locationRecords);
     }
 
     public cleanHeatAndBar(): void {
@@ -1159,9 +1170,11 @@ export class GlobeMap implements IVisual {
                 key: placeKey, coordinate: locationRecords[placeKey]
             };
             if (!this.globeMapLocationMemory[placeKey]) {
+                this.globeMapLocationMemory[placeKey] = locationItem.coordinate;
                 toBeSavedToMemory.push(locationItem);
             }
             if (!this.globeMapLocationStorage[placeKey]) {
+                this.globeMapLocationStorage[placeKey] = locationItem.coordinate;
                 toBeSavedToStorage.push(locationItem);
             }
         }
