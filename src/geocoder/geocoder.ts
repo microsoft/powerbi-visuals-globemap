@@ -29,7 +29,6 @@ import * as $ from "jquery";
 
 import IPromise = powerbi.IPromise;
 import PrimitiveValue = powerbi.PrimitiveValue;
-import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 
 import {
     IGeocoder,
@@ -52,8 +51,7 @@ import {
 } from "../interfaces/bingInterfaces";
 
 import { UrlUtils } from "../UrlUtils/UrlUtils";
-import { IGeocodingCache } from "./geocodingCache";
-import { GeocodeCacheManager } from "./GeocodeCacheManager";
+import { BingSettings } from "../settings";
 
 export const CategoryTypes = {
     Address: "Address",
@@ -68,28 +66,13 @@ export const CategoryTypes = {
     StateOrProvince: "StateOrProvince"
 };
 
-export const Settings = {
-    /** Maximum Bing requests at once. The Bing have limit how many request at once you can do per socket. */
-    MaxBingRequest: 6,
-
-    /** Maximum cache size of cached geocode data. */
-    MaxCacheSize: 3000,
-
-    /** Maximum cache overflow of cached geocode data to kick the cache reducing. */
-    MaxCacheSizeOverflow: 100,
-    // Add your Bing key here
-    BingKey: "YzyBFJgUrMNy4UEJWNpt~3ia-8PWaplOLtxqAWUD9dQ~As3csOrjB7b4KJ7cY6vkaSZsJT4FsKjE0rvTYJPZx-xaFSvB5IV0u3-KJnM0zNon"
-};
-
 export enum JQueryPromiseState {
     pending,
     resolved,
     rejected,
 }
 
-export function createGeocoder(localStorageService: ILocalVisualStorageService
-): IGeocoder {
-    window["localStorageService"] = localStorageService;
+export function createGeocoder(): IGeocoder {
     return new DefaultGeocoder();
 }
 
@@ -98,19 +81,22 @@ export abstract class BingMapsGeocoder implements IGeocoder {
     protected abstract bingGeocodingUrl(): string;
     protected abstract bingSpatialDataUrl(): string;
 
-    public geocode(geocodeParams: IGeocoderOptions): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate> {
+    public geocode(geocodeParams: IGeocoderOptions): Promise<IGeocodeCoordinate> {
         return this.geocodeCore("geocode", new GeocodeQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), geocodeParams.query, geocodeParams.category), geocodeParams.options);
     }
 
-    public geocodeBoundary(latitude: number, longitude: number, category: string = '', levelOfDetail: number = 2, maxGeoData: number = 3, options?: GeocodeOptions): IPromise<IGeocodeBoundaryCoordinate> | JQueryDeferred<IGeocodeCoordinate> {
+    public geocodeBoundary(latitude: number, longitude: number, category: string = '', levelOfDetail: number = 2, maxGeoData: number = 3, options?: GeocodeOptions): Promise<IGeocodeBoundaryCoordinate | IGeocodeCoordinate> {
         return this.geocodeCore("geocodeBoundary", new GeocodeBoundaryQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, category, levelOfDetail, maxGeoData), options);
     }
 
-    public geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): IPromise<IGeocodeCoordinate | IGeocodeResource> | JQueryDeferred<IGeocodeCoordinate> {
+    public geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): Promise<IGeocodeCoordinate | IGeocodeResource> {
         return this.geocodeCore("geocodePoint", new GeocodePointQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, entities), options);
     }
 
-    private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): JQueryDeferred<IGeocodeCoordinate> {
+    private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): Promise<IGeocodeCoordinate> {
+        return new Promise<IGeocodeCoordinate>(() => {
+
+        });
         let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
         let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
 
@@ -229,7 +215,7 @@ export class GeocodeQuery extends GeocodeQueryBase implements IGeocodeQuery {
 
     public getUrl(): string {
         let parameters: _.Dictionary<string> = {
-            key: Settings.BingKey,
+            key: BingSettings.BingKey,
         };
 
         let entityType: string = this.getBingEntity();
@@ -356,7 +342,7 @@ export class GeocodePointQuery extends GeocodeQueryBase implements IGeocodeQuery
         url += [this.latitude, this.longitude].join();
 
         let parameters: _.Dictionary<string> = {
-            key: Settings.BingKey,
+            key: BingSettings.BingKey,
             include: 'ciso2'
         };
 
@@ -424,7 +410,7 @@ export class GeocodeBoundaryQuery extends GeocodeQueryBase implements IGeocodeQu
 
     public getUrl(): string {
         let parameters: _.Dictionary<string> = {
-            key: Settings.BingKey,
+            key: BingSettings.BingKey,
             $format: "json",
         };
 
@@ -573,7 +559,7 @@ export class GeocodeQueue {
 
         try {
             this.inDequeue = true;
-            while (this.entries.length !== 0 && this.activeEntries.length < Settings.MaxBingRequest) {
+            while (this.entries.length !== 0 && this.activeEntries.length < BingSettings.MaxBingRequest) {
                 let entry = this.entries.shift();
                 if (!entry.isCompleted) {
                     this.makeRequest(entry);
@@ -681,13 +667,3 @@ export class GeocodeQueue {
         this.makeJsonpAjaxQuery(entry);
     }
 }
-
-export function resetStaticGeocoderState(cache?: IGeocodingCache): void {
-    if (cache !== undefined) {
-        GeocodeCacheManager.reset(cache);
-    }
-    GeocodeQueueManager.reset();
-    categoryToBingEntity = null;
-}
-
-resetStaticGeocoderState();

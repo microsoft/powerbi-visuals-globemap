@@ -21,9 +21,9 @@ export interface IGeocoderOptions {
 }
 
 export interface IGeocoder {
-    geocode(IGeocoderOptions): IPromise<IGeocodeCoordinate> | JQueryDeferred<IGeocodeCoordinate>;
-    geocodeBoundary(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData?: number, options?: GeocodeOptions): IPromise<IGeocodeBoundaryCoordinate> | JQueryDeferred<IGeocodeCoordinate>;
-    geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): IPromise<IGeocodeCoordinate | IGeocodeResource> | JQueryDeferred<IGeocodeCoordinate>;
+    geocode(IGeocoderOptions): Promise<IGeocodeCoordinate>;
+    geocodeBoundary(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData?: number, options?: GeocodeOptions): Promise<IGeocodeBoundaryCoordinate | IGeocodeCoordinate>;
+    geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): Promise<IGeocodeCoordinate | IGeocodeResource>;
 }
 
 export interface IGeocodeCoordinate {
@@ -58,6 +58,7 @@ export interface IGeocodeQuery {
 export interface IGeocodeQueueItem {
     query: IGeocodeQuery;
     deferred: JQueryDeferred<{}>;
+    promise: Promise<{}>;
 }
 
 export interface IGeocodeResource extends IGeocodeCoordinate {

@@ -80,6 +80,7 @@ import {
 } from "./interfaces/bingInterfaces";
 import { CacheManager } from "./cache/CacheManager";
 import { MercartorSphere } from "./map/MercartorSphere";
+import { BingSettings } from "./settings";
 
 class GlobeMapHeatMapClass {
     constructor(properties: {}) { }
@@ -93,7 +94,7 @@ class GlobeMapHeatMapClass {
 let WebGLHeatmap = <typeof GlobeMapHeatMapClass>window["createWebGLHeatmap"];
 
 // powerbi.extensibility.geocoder
-import { createGeocoder, Settings } from "./geocoder/geocoder";
+import { createGeocoder } from "./geocoder/geocoder";
 import { IGeocoder, ILocationDictionary, IGeocodeCoordinate, ILocationCoordinateRecord } from "./geocoder/interfaces/geocoderInterfaces";
 
 // powerbi.extensibility.utils.dataview
@@ -511,7 +512,7 @@ export class GlobeMap implements IVisual {
 
         this.layout = new VisualLayout();
         this.readyToRender = false;
-        this.cacheManager = new CacheManager();
+        this.cacheManager = new CacheManager(this.localStorageService);
         this.colors = options.host.colorPalette;
 
         this.setup();
@@ -540,7 +541,7 @@ export class GlobeMap implements IVisual {
     private static tileSize: number = 256;
     private static initialResolutionLevel: number = 2;
     private static maxResolutionLevel: number = 5;
-    private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&uriScheme=https&key=${Settings.BingKey}`;
+    private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&uriScheme=https&key=${BingSettings.BingKey}`;
     private static reserveBindMapsMetadata: BingResourceMetadata = {
         imageUrl: "https://{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=0&mkt={culture}",
         imageUrlSubdomains: [

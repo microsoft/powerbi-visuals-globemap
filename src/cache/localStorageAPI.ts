@@ -12,9 +12,9 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
     private static TILE_LOCATIONS = "GLOBEMAP_TILE_LOCATIONS";
     private localStorageService: ILocalVisualStorageService;
 
-    constructor() {
+    constructor(localStorageService: ILocalVisualStorageService) {
         super();
-        this.localStorageService = window["localStorageService"];
+        this.localStorageService = localStorageService;
     }
 
     public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
@@ -57,9 +57,7 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
     }
 
     public async saveCoordinates(coordinates: ILocationDictionary): Promise<string> {
-
         const locationItemsObject: {} = {};
-
         for (let key in coordinates) {
             const shortKey: string = getShortKey(key);
             locationItemsObject[shortKey] = {

@@ -1,3 +1,6 @@
+import powerbi from "powerbi-visuals-api";
+import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
+
 import { ILocationDictionary } from "../geocoder/interfaces/geocoderInterfaces";
 import { GlobeMapData, GlobeMapDataPoint } from "../interfaces/dataInterfaces";
 
@@ -5,7 +8,7 @@ import { MemoryCache } from "./memory";
 import { LocalStorageCache } from "./localStorageAPI";
 import { BingCache } from "./bing";
 import { ICacheManager } from "./interfaces/ICacheManager";
-
+import { CacheSettings } from "./../settings";
 
 export class CacheManager {
 
@@ -16,9 +19,9 @@ export class CacheManager {
     private needToBeLoaded: { [i: string]: boolean };
     private localStorageCoordinates: ILocationDictionary;
 
-    constructor() {
-        this.memoryCache = new MemoryCache();
-        this.localStorageCache = new LocalStorageCache();
+    constructor(localStorageService: ILocalVisualStorageService) {
+        this.memoryCache = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
+        this.localStorageCache = new LocalStorageCache(localStorageService);
         this.bingCache = new BingCache()
     }
 
@@ -53,7 +56,7 @@ export class CacheManager {
 
         notLoadedCoordinates = this.getPlacesToBeLoaded();
         if (!notLoadedCoordinates.length) {
-            return new Promise<ILocationDictionary>((resolve, result) => { resolve(memoryCoords) });
+            return new Promise<ILocationDictionary>(resolve => resolve(memoryCoords));
         }
 
         let localStorageCoords: ILocationDictionary = {};
@@ -76,7 +79,7 @@ export class CacheManager {
         notLoadedCoordinates = this.getPlacesToBeLoaded();
         if (!notLoadedCoordinates.length) {
             locationRecords = Object.assign({}, memoryCoords, localStorageCoords);
-            return new Promise<ILocationDictionary>((resolve, result) => { resolve(locationRecords) });
+            return new Promise<ILocationDictionary>(resolve => resolve(locationRecords));
         }
 
         // go to the bing!
@@ -87,7 +90,7 @@ export class CacheManager {
         try {
             await this.memoryCache.saveCoordinates(coordinates);
             await this.localStorageCache.saveCoordinates(coordinates);
-            return new Promise<string>((resolve, reject) => resolve("success"));
+            return new Promise<string>(resolve => resolve("success"));
         }
         catch (error) {
             return new Promise<string>((resolve, reject) => reject());

@@ -29,8 +29,10 @@ export class MemoryCache extends BaseCache implements ICacheManager {
             }
             let locations: ILocationDictionary = {};
             for (let key in this.geocodeCache) {
-                this.geocodeCache[key].hitCount++;
-                locations[key] = this.geocodeCache[key].coordinate;
+                if (this.geocodeCache[key]) {
+                    this.geocodeCache[key].hitCount++;
+                    locations[key] = this.geocodeCache[key].coordinate;
+                }
             }
 
             resolve(locations);

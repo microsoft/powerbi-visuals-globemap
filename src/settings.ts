@@ -29,6 +29,22 @@
 import { dataViewObjectsParser } from "powerbi-visuals-utils-dataviewutils";
 import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
 
+export const CacheSettings = {
+    /** Maximum cache size of cached geocode data. */
+    MaxCacheSize: 3000,
+
+    /** Maximum cache overflow of cached geocode data to kick the cache reducing. */
+    MaxCacheSizeOverflow: 100,
+};
+
+export const BingSettings = {
+    /** Maximum Bing requests at once. The Bing have limit how many request at once you can do per socket. */
+    MaxBingRequest: 6,
+
+    // Add your Bing key here
+    BingKey: "YzyBFJgUrMNy4UEJWNpt~3ia-8PWaplOLtxqAWUD9dQ~As3csOrjB7b4KJ7cY6vkaSZsJT4FsKjE0rvTYJPZx-xaFSvB5IV0u3-KJnM0zNon"
+};
+
 export class GlobeMapSettings extends DataViewObjectsParser {
     public dataPoint: DataPointSettings = new DataPointSettings();
 }
