@@ -500,7 +500,12 @@ export class GlobeMap implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageService;
-        this.geocoder = createGeocoder(this.localStorageService);
+        this.geocoder = createGeocoder();
+
+        // let divElement = document.createElement("div");
+        // divElement.setAttribute("drag-resize-disabled", "true");
+        // divElement.style.position = "absolute";
+        // this.root = options.element.appendChild(divElement); 
         this.root = $("<div>").appendTo(options.element)
             .attr("drag-resize-disabled", "true")
             .css({
@@ -798,8 +803,6 @@ export class GlobeMap implements IVisual {
         });
     }
 
-
-
     private static getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> {
         return $.ajax(GlobeMap.metadataUrl)
             .then((data: BingMetadata) => {
@@ -989,7 +992,8 @@ export class GlobeMap implements IVisual {
             if (data) {
                 this.data = data;
 
-                this.cacheManager.loadCoordinates(data).then((coordinates: ILocationDictionary) => {
+                const locationsNeedToBeLoaded: string[] = data.dataPoints.map((d: GlobeMapDataPoint) => d.placeKey);
+                this.cacheManager.loadCoordinates(locationsNeedToBeLoaded).then((coordinates: ILocationDictionary) => {
                     this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
                         d.location = coordinates[d.placeKey] || d.location;
                     });

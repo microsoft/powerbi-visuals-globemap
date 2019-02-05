@@ -1,6 +1,7 @@
 ﻿import powerbi from "powerbi-visuals-api";
 
 import IPromise = powerbi.IPromise;
+import RejectablePromise = powerbi.RejectablePromise;
 /** Defines geocoding services. */
 export interface GeocodeOptions {
     /** promise that should abort the request when resolved */
@@ -58,7 +59,7 @@ export interface IGeocodeQuery {
 export interface IGeocodeQueueItem {
     query: IGeocodeQuery;
     deferred: JQueryDeferred<{}>;
-    promise: Promise<{}>;
+    promise: RejectablePromise<{}>;
 }
 
 export interface IGeocodeResource extends IGeocodeCoordinate {

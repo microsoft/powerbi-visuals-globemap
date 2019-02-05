@@ -543,7 +543,7 @@ export class GeocodeQueue {
         let entry: GeocodeQueueEntry = { item: item };
         this.entries.push(entry);
 
-        item.deferred.always(() => {
+        item.promise.finally(() => {
             this.cancel(entry);
         });
 
@@ -596,12 +596,12 @@ export class GeocodeQueue {
         if (!entry.isCompleted) {
             entry.isCompleted = true;
 
-            if (entry.item.deferred.state() === JQueryPromiseState[JQueryPromiseState.pending]) {
+            if (entry.item.promise.pending()) {
                 if (!result || !result.coordinates) {
-                    entry.item.deferred.reject(result && result.error || new Error('cancelled'));
+                    entry.item.promise.reject(result && result.error || new Error('cancelled'));
                 }
                 else {
-                    entry.item.deferred.resolve(result.coordinates);
+                    entry.item.promise.resolve(result.coordinates); /// !!! logic
                 }
             }
         }
