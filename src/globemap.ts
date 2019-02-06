@@ -72,7 +72,8 @@ import {
     TileMap,
     IGlobeMapValueTypeDescriptor,
     IGlobeMapObject3DWithToolTipData,
-    ICanvasCoordinate
+    ICanvasCoordinate,
+    ILocationKeyDictionary
 } from "./interfaces/dataInterfaces";
 import {
     BingResourceMetadata,
@@ -93,9 +94,7 @@ class GlobeMapHeatMapClass {
 }
 let WebGLHeatmap = <typeof GlobeMapHeatMapClass>window["createWebGLHeatmap"];
 
-// powerbi.extensibility.geocoder
-import { createGeocoder } from "./geocoder/geocoder";
-import { IGeocoder, ILocationDictionary, IGeocodeCoordinate, ILocationCoordinateRecord } from "./geocoder/interfaces/geocoderInterfaces";
+import { ILocationDictionary, IGeocodeCoordinate } from "./geocoder/interfaces/geocoderInterfaces";
 
 // powerbi.extensibility.utils.dataview
 import { converterHelper as ch } from "powerbi-visuals-utils-dataviewutils";
@@ -116,7 +115,6 @@ interface ExtendedPromise<T> extends IPromise<T> {
 
 export class GlobeMap implements IVisual {
     private localStorageService: ILocalVisualStorageService;
-    private geocoder: IGeocoder;
     public static MercartorSphere: MercartorSphere;
     private GlobeSettings = {
         autoRotate: false,
@@ -500,7 +498,6 @@ export class GlobeMap implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageService;
-        this.geocoder = createGeocoder();
 
         // let divElement = document.createElement("div");
         // divElement.setAttribute("drag-resize-disabled", "true");
@@ -803,7 +800,7 @@ export class GlobeMap implements IVisual {
         });
     }
 
-    private static getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> {
+    private static getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> { //fetch
         return $.ajax(GlobeMap.metadataUrl)
             .then((data: BingMetadata) => {
                 if (data.resourceSets.length) {
@@ -992,10 +989,12 @@ export class GlobeMap implements IVisual {
             if (data) {
                 this.data = data;
 
-                const locationsNeedToBeLoaded: string[] = data.dataPoints.map((d: GlobeMapDataPoint) => d.placeKey);
+                const locationsNeedToBeLoaded: ILocationKeyDictionary = {};
+                data.dataPoints.forEach((d: GlobeMapDataPoint) => locationsNeedToBeLoaded[d.placeKey] = { place: d.place, locationType: d.locationType });
+                debugger;
                 this.cacheManager.loadCoordinates(locationsNeedToBeLoaded).then((coordinates: ILocationDictionary) => {
                     this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
-                        d.location = coordinates[d.placeKey] || d.location;
+                        d.location = coordinates[d.place] || d.location;
                     });
 
                     this.render();
@@ -1069,7 +1068,7 @@ export class GlobeMap implements IVisual {
     }
 
     private getToolTipDataForSeries(toolTipData, dataPointToolTip): {} {
-        const result: { height } = $.extend(true, {
+        const result: { height } = Object.assign({}, {
             series: { displayName: dataPointToolTip.displayName, value: dataPointToolTip.value }
         }, toolTipData);
         result.height.value = dataPointToolTip.dataPointValue;

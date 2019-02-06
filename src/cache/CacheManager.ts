@@ -7,6 +7,7 @@ import { LocalStorageCache } from "./localStorageAPI";
 import { BingCache } from "./bing";
 import { ICacheManager } from "./interfaces/ICacheManager";
 import { CacheSettings } from "./../settings";
+import { ILocationKeyDictionary } from "../interfaces/dataInterfaces";
 
 export class CacheManager implements ICacheManager {
 
@@ -21,9 +22,11 @@ export class CacheManager implements ICacheManager {
         this.bingCache = new BingCache()
     }
 
-    public async loadCoordinates(locations: string[]): Promise<ILocationDictionary> {
+    public async loadCoordinates(locationsDictionary: ILocationKeyDictionary): Promise<ILocationDictionary> {
         let result: ILocationDictionary = {};
         let locationsInMemory = [];
+
+        let locations: string[] = Object.keys(locationsDictionary);
 
         // load from memory
         let coordsInMemory: ILocationDictionary = await this.memoryCache.loadCoordinates(locations); // {"London": {"lat": 54, "lon": 34"}, "Moscow": {"lat": 64, "lon": 54"}
@@ -36,7 +39,7 @@ export class CacheManager implements ICacheManager {
         }
 
         // Load from localStorage
-        if (!this.coordsInLocalStorage.length) {
+        if (!this.coordsInLocalStorage) {
             this.coordsInLocalStorage = await this.localStorageCache.loadCoordinates(locations);
             let locationsInLocalStorage = Object.keys(this.coordsInLocalStorage);
             locations = locations.filter(loc => !locationsInLocalStorage.includes(loc));
@@ -48,7 +51,9 @@ export class CacheManager implements ICacheManager {
         }
 
         // load from Bing
-        let coordsInBing = await this.bingCache.loadCoordinates(locations);
+        locationsDictionary = locations
+            .reduce((obj, key) => ({ ...obj, [key]: locationsDictionary[key] }), {});
+        let coordsInBing = await this.bingCache.loadCoordinates(locationsDictionary);
         result = Object.assign({}, locationsInMemory, this.coordsInLocalStorage, coordsInBing);
 
         return new Promise<ILocationDictionary>(resolve => resolve(result));

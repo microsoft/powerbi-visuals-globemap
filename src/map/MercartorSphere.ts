@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 export class MercartorSphere extends THREE.Geometry {
     radius: number;
     widthSegments: number;

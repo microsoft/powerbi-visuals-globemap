@@ -26,6 +26,7 @@
 import powerbi from "powerbi-visuals-api";
 import * as _ from "lodash";
 import * as $ from "jquery";
+import * as fetchJsonp from "fetch-jsonp";
 
 import IPromise = powerbi.IPromise;
 import PrimitiveValue = powerbi.PrimitiveValue;
@@ -52,6 +53,7 @@ import {
 
 import { UrlUtils } from "../UrlUtils/UrlUtils";
 import { BingSettings } from "../settings";
+import { resolve } from "dns";
 
 export const CategoryTypes = {
     Address: "Address",
@@ -94,24 +96,38 @@ export abstract class BingMapsGeocoder implements IGeocoder {
     }
 
     private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): Promise<IGeocodeCoordinate> {
-        return new Promise<IGeocodeCoordinate>(() => {
+        return new Promise<IGeocodeCoordinate>((resolve, reject) => {
+            const url = "https://dev.virtualearth.net/REST/v1/Locations?key=YzyBFJgUrMNy4UEJWNpt~3ia-8PWaplOLtxqAWUD9dQ~As3csOrjB7b4KJ7cY6vkaSZsJT4FsKjE0rvTYJPZx-xaFSvB5IV0u3-KJnM0zNon&q=albuquerque, new mexico&c=ru-RU&maxRes=20";
+            const callback = (data) => {
+                debugger;
+                resolve(data);
+            };
+            fetchJsonp(url, {
+                jsonpCallback: "callback"
+            })
+                .then((response) => {
+                    debugger;
+                    console.log(response);
+                })
+                .catch(() => {
+                    debugger;
+                });
 
         });
-        let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
-        let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
+        // let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
+        // let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
 
-        // todo: for only not existing in LS and Cache -> make jsonp request with bing data
-        GeocodeQueueManager.enqueue(queueName, item);
+        // GeocodeQueueManager.enqueue(queueName, item);
 
-        if (options && options.timeout) {
-            options.timeout.finally(() => {
-                if (item.deferred.state() === JQueryPromiseState[JQueryPromiseState.pending]) {
-                    item.deferred.reject();
-                }
-            });
-        }
+        // if (options && options.timeout) {
+        //     options.timeout.finally(() => {
+        //         if (item.promise.pending()) {
+        //             item.promise.reject();
+        //         }
+        //     });
+        // }
 
-        return deferred;
+        // return item.promise;
     }
 }
 
@@ -561,7 +577,7 @@ export class GeocodeQueue {
             this.inDequeue = true;
             while (this.entries.length !== 0 && this.activeEntries.length < BingSettings.MaxBingRequest) {
                 let entry = this.entries.shift();
-                if (!entry.isCompleted) {
+                if (!entry.isCompleted) {  // !!!! Why?
                     this.makeRequest(entry);
                 }
             }
@@ -601,7 +617,7 @@ export class GeocodeQueue {
                     entry.item.promise.reject(result && result.error || new Error('cancelled'));
                 }
                 else {
-                    entry.item.promise.resolve(result.coordinates); /// !!! logic
+                    //entry.item.promise.resolve(result.coordinates); /// !!! logic
                 }
             }
         }
@@ -647,6 +663,8 @@ export class GeocodeQueue {
         }
 
         this.activeEntries.push(entry);
+
+        //fetchJsop !
 
         entry.request = $.ajax({
             url: url,

@@ -37,8 +37,8 @@ import { GlobeMapData as GlobeMapDataViewBuilder } from "./visualData";
 import { GlobeMap as VisualClass } from "../src/globemap";
 import { GlobeMapColumns } from "../src/columns";
 
-import { TileMap, ITileGapObject } from "../src/dataInterfaces";
-import { GeocodingCache } from "../src/geocoder/geocodingCache";
+import { TileMap, ITileGapObject } from "../src/interfaces/dataInterfaces";
+import { getShortKey } from "../src/cache/utils/utils";
 
 describe("GlobeMap", () => {
     let visualBuilder: GlobeMapBuilder,
@@ -171,7 +171,7 @@ describe("LocalStorage and related methods test: ", () => {
             ];
 
             for (let i = 0; i < rawKeys.length; i++) {
-                const shortKey: string = GeocodingCache.getShortKey(rawKeys[i]);
+                const shortKey: string = getShortKey(rawKeys[i]);
                 expect(shortKey).toEqual(expectedResult[i]);
             }
         });
@@ -185,7 +185,7 @@ describe("LocalStorage and related methods test: ", () => {
             ];
             const expectedResult: string[] = rawKeys;
             for (let i = 0; i < rawKeys.length; i++) {
-                const shortKey: string = GeocodingCache.getShortKey(rawKeys[i]);
+                const shortKey: string = getShortKey(rawKeys[i]);
                 expect(shortKey).toEqual(expectedResult[i]);
             }
         });
@@ -255,31 +255,31 @@ describe("LocalStorage and related methods test: ", () => {
 
         const culture: string = "en-US";
 
-        it("for not valid input", () => {
-            const tiles = [null, undefined, []];
-            tiles.forEach((tile) => {
-                let deferred = $.Deferred();
-                VisualClass.extendTiles(JSON.stringify(tile), culture, deferred);
-                expect(deferred.state()).toBe("resolved");
-                deferred.then((data) => {
-                    expect(data).toBeNull();
-                });
-            });
-        });
+        // it("for not valid input", () => {
+        //     const tiles = [null, undefined, []];
+        //     tiles.forEach((tile) => {
+        //         let deferred = $.Deferred();
+        //         VisualClass.extendTiles(JSON.stringify(tile), culture, deferred);
+        //         expect(deferred.state()).toBe("resolved");
+        //         deferred.then((data) => {
+        //             expect(data).toBeNull();
+        //         });
+        //     });
+        // });
 
-        it("for valid input", () => {
-            let deferred = $.Deferred();
-            VisualClass.extendTiles(JSON.stringify(tiles), culture, deferred);
-            $.when(deferred).done((data: TileMap[]) => {
-                expect(data).not.toBeNull();
-                for (let i = 0; data.length; i++) {
-                    const tile: TileMap = data[i];
-                    for (let key in tile) {
-                        tile[key] = tile[key].replace(/g=\w+&/g, '');
-                    }
-                    expect(data[i]).toBe(expectedResult[i]);
-                }
-            });
-        });
+        // it("for valid input", () => {
+        //     let deferred = $.Deferred();
+        //     VisualClass.extendTiles(JSON.stringify(tiles), culture, deferred);
+        //     $.when(deferred).done((data: TileMap[]) => {
+        //         expect(data).not.toBeNull();
+        //         for (let i = 0; data.length; i++) {
+        //             const tile: TileMap = data[i];
+        //             for (let key in tile) {
+        //                 tile[key] = tile[key].replace(/g=\w+&/g, '');
+        //             }
+        //             expect(data[i]).toBe(expectedResult[i]);
+        //         }
+        //     });
+        // });
     });
 });

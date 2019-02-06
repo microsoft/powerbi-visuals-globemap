@@ -3,7 +3,7 @@
     "allowJs": false,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
-    "module": "es2016",
+    "module": "esnext",
     "target": "ES2016",
     "sourceMap": true,
     "outDir": "./.tmp/build/",
