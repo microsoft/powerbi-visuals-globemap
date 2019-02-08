@@ -53,7 +53,6 @@ import {
 
 import { UrlUtils } from "../UrlUtils/UrlUtils";
 import { BingSettings } from "../settings";
-import { resolve } from "dns";
 
 export const CategoryTypes = {
     Address: "Address",
@@ -83,6 +82,57 @@ export abstract class BingMapsGeocoder implements IGeocoder {
     protected abstract bingGeocodingUrl(): string;
     protected abstract bingSpatialDataUrl(): string;
 
+    private contentType: string;
+    private inputType: string;
+    private coreKey: string;
+    private key: string;
+
+    constructor() {
+        this.contentType = "application/xml";
+        this.inputType = "xml";
+        this.coreKey = "Agc-qH1P_amkhHFyqOlKpuPw4IH2P0A5DyuSqy6XL00aFYAaulS3xg_m5ZPcv3Cc";
+        this.key = "YzyBFJgUrMNy4UEJWNpt~3ia-8PWaplOLtxqAWUD9dQ~As3csOrjB7b4KJ7cY6vkaSZsJT4FsKjE0rvTYJPZx-xaFSvB5IV0u3-KJnM0zNon";
+    }
+
+    private xmlInput = `<?xml version="1.0" encoding="utf-8"?>  
+    <GeocodeFeed xmlns="http://schemas.microsoft.com/search/local/2010/5/geocode" Version="2.0">  
+      <GeocodeEntity Id="001" xmlns="http://schemas.microsoft.com/search/local/2010/5/geocode">  
+        <GeocodeRequest Culture="en-US" IncludeNeighborhood="1">  
+          <Address AddressLine="1 Microsoft Way" AdminDistrict="WA" Locality="Redmond" PostalCode="98052" />  
+        </GeocodeRequest>  
+      </GeocodeEntity>  
+      <GeocodeEntity Id="002" xmlns="http://schemas.microsoft.com/search/local/2010/5/geocode">  
+        <GeocodeRequest IncludeNeighborhood="1" MaxResults="2" Query="Kings Road">  
+          <ConfidenceFilter MinimumConfidence="Medium"/>  
+        </GeocodeRequest>  
+      </GeocodeEntity>  
+      <GeocodeEntity Id="003" xmlns="http://schemas.microsoft.com/search/local/2010/5/geocode">  
+        <GeocodeRequest Culture="en-US" Query="Seattle Space Needle" IncludeNeighborhood="1" IncludeQueryParse="true" MaxResults="5" >  
+        </GeocodeRequest>  
+      </GeocodeEntity>  
+      <GeocodeEntity Id="004" xmlns="http://schemas.microsoft.com/search/local/2010/5/geocode">  
+        <GeocodeRequest Culture="en-US" Query="">  
+          <Address AddressLine="" AdminDistrict="" />  
+        </GeocodeRequest>  
+      </GeocodeEntity>  
+      <GeocodeEntity Id="005" xmlns="http://schemas.microsoft.com/search/local/2010/5/geocode">  
+        <ReverseGeocodeRequest Culture="en-US" IncludeNeighborhood="1" MaxResults="5" IncludeEntityTypes="Neighborhood">  
+          <Location Longitude="-122.11871" Latitude="47.673099"/>  
+          <ConfidenceFilter MinimumConfidence="High"/>  
+        </ReverseGeocodeRequest>  
+      </GeocodeEntity>  
+      <GeocodeEntity Id="006" xmlns="http://schemas.microsoft.com/search/local/2010/5/geocode" >  
+        <ReverseGeocodeRequest Culture="en-ca">  
+          <Location Longitude="-113.403092450204" Latitude="53.4802172766598"/>  
+        </ReverseGeocodeRequest>  
+      </GeocodeEntity>  
+      <GeocodeEntity Id="007"  xmlns="http://schemas.microsoft.com/search/local/2010/5/geocode" >  
+        <ReverseGeocodeRequest IncludeNeighborhood="1" MaxResults="5" IncludeEntityTypes="Neighborhood,PopulatedPlace">  
+          <Location Longitude="-122.12934" Latitude="47.64054"/>  
+        </ReverseGeocodeRequest>  
+      </GeocodeEntity>  
+    </GeocodeFeed>`;
+
     public geocode(geocodeParams: IGeocoderOptions): Promise<IGeocodeCoordinate> {
         return this.geocodeCore("geocode", new GeocodeQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), geocodeParams.query, geocodeParams.category), geocodeParams.options);
     }
@@ -95,23 +145,174 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         return this.geocodeCore("geocodePoint", new GeocodePointQuery(this.bingGeocodingUrl(), this.bingSpatialDataUrl(), latitude, longitude, entities), options);
     }
 
-    private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): Promise<IGeocodeCoordinate> {
-        return new Promise<IGeocodeCoordinate>((resolve, reject) => {
-            const url = "https://dev.virtualearth.net/REST/v1/Locations?key=YzyBFJgUrMNy4UEJWNpt~3ia-8PWaplOLtxqAWUD9dQ~As3csOrjB7b4KJ7cY6vkaSZsJT4FsKjE0rvTYJPZx-xaFSvB5IV0u3-KJnM0zNon&q=albuquerque, new mexico&c=ru-RU&maxRes=20";
-            const callback = (data) => {
-                debugger;
-                resolve(data);
-            };
-            fetchJsonp(url, {
-                jsonpCallback: "callback"
+    private async createJob(xmlInput): Promise<Response> {
+        const queryString = `input=${this.inputType}&key=${this.key}`;
+        const url = `https://spatial.virtualearth.net/REST/v1/dataflows/geocode?${queryString}`;
+
+
+        // output - json as default; xml
+        return fetch(url,
+            {
+                headers: {
+                    'Accept': this.contentType,
+                    'Content-Type': this.contentType
+                },
+                method: "POST",
+                body: xmlInput
             })
-                .then((response) => {
-                    debugger;
-                    console.log(response);
-                })
-                .catch(() => {
-                    debugger;
-                });
+
+    }
+
+    private async monitorJobStatus(jobID): Promise<Response> {
+        const queryString = `output=json&key=${this.key}`;
+        const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${jobID}?${queryString}`;
+
+
+        // output - json as default; xml
+        return fetch(url,
+            {
+                mode: 'no-cors',
+                headers: new Headers([
+                    //     ['Access-Control-Allow-Origin', '*'],
+                    //     ['Access-Control-Allow-Headers', 'Content-Type'],
+                    //     ['access-control-allow-methods', 'GET'],
+                    ['content-type', "application/json; charset=UTF-8"],
+                    //     ['content-location', `https://spatial.virtualearth.net/REST/v1/dataflows/Geocode/${jobID}`]
+                ]),
+                method: "GET"
+            })
+
+    }
+
+    private async getJobResult(jobID): Promise<Response> {
+        const queryString = `key=${this.key}`;
+        const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${jobID}/output/succeeded/?${queryString}`;
+
+
+        // output - json as default; xml
+        return fetch(url,
+            {
+                mode: 'no-cors',
+                headers: new Headers([
+                    // ['Access-Control-Allow-Origin', '*'],
+                    // ['Access-Control-Allow-Headers', 'Content-Type'],
+                    // ['access-control-allow-methods', 'GET'],
+                    ['Accept', "application/xml"],
+                ]),
+                method: "GET"
+            })
+    }
+
+    private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): Promise<IGeocodeCoordinate> {
+        debugger;
+
+        let job = "32b70f685d334adfb1c438fb29f1f16c";
+
+        this.monitorJobStatus("32b70f685d334adfb1c438fb29f1f16c")
+            .then(data => data.json())
+            .then((data) => {
+                console.log(data)
+            })
+            .catch(err => console.log(err));
+
+        // this.getJobResult("32b70f685d334adfb1c438fb29f1f16c")
+        //     .then(data => data.json())
+        //     .then((data) => {
+        //         console.log(data)
+        //     })
+        //     .catch(err => console.log(err));
+
+        // this.createJob(this.xmlInput)
+        //     .then(function (response) {
+        //         console.log(response);
+        //         const STATUS_CREATED = 201;
+        //         if (!response.ok || response.status != STATUS_CREATED) {
+
+        //             return Promise.reject("creation error");
+        //         }
+        //         // get ID from readable stream
+        //         response.json()
+        //             .then((body) => {
+        //                 const jobID = body.resourceSets[0].resources[0].id;
+        //                 console.log(jobID);
+
+        //                 //get the job status
+        //                 this.monitorJobStatus(jobID)
+        //                     .then(response => response.text()
+        //                         .then((data) => {
+        //                             console.log(data);
+        //                             // get the status - then get the job result
+        //                             //get the job result
+        //                             this.getJobResult(jobID)
+        //                                 .then(response => response.text()
+        //                                     .then((data) => {
+        //                                         console.log(data)
+        //                                     })
+        //                                     .catch(error => console.log(error)))
+        //                                 .catch(error => console.log('monitoring job failed : ' + error.message));
+        //                         })
+        //                         .catch(error => console.log(error)))
+        //                     .catch(error => console.log('monitoring job failed : ' + error.message));
+        //             })
+        //             .catch(err => console.log(err));
+
+        //     })
+        //     .catch(function (response) { console.log(response) })
+
+        //const jobID = "d3c903ab83d84f05a2158b084a761545";
+
+        return new Promise<IGeocodeCoordinate>((resolve, reject) => {
+            //     //const url = "https://dev.virtualearth.net/REST/v1/Locations?key=YzyBFJgUrMNy4UEJWNpt~3ia-8PWaplOLtxqAWUD9dQ~As3csOrjB7b4KJ7cY6vkaSZsJT4FsKjE0rvTYJPZx-xaFSvB5IV0u3-KJnM0zNon&q=albuquerque, new mexico&c=ru-RU&maxRes=20";
+            const queryString = `key=${this.key}`;
+            const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${job}?${queryString}`;
+            //     const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${jobID}/output/succeeded/?${queryString}`;
+
+            let guidSequence = () => {
+                let cryptoObj = window.crypto || window["msCrypto"]; // For IE
+
+                return cryptoObj.getRandomValues(new Uint32Array(1))[0].toString(16).substring(0, 4);
+            };
+
+            const callbackGuid: string = `GeocodeCallback${guidSequence()}${guidSequence()}${guidSequence()}`;
+
+            // This is super dirty hack to bypass faked window object in order to use jsonp
+            // We use jsonp because sandboxed iframe does not have an origin. This fact breaks regular AJAX queries.
+            const callbackObjectName = "powerbi";
+            window[callbackObjectName][callbackGuid] = (data) => {
+                debugger;
+
+                delete window[callbackObjectName][callbackGuid];
+            };
+
+
+            // fetchJsonp(url, {
+            //     jsonpCallback: `window.${callbackObjectName}.${callbackGuid}`,
+
+            // })
+            //     .then((response) => {
+            //         debugger;
+            //         console.log(response);
+            //     })
+            //     .catch((error) => {
+            //         console.log(error);
+            //         debugger;
+            //     });
+
+            // $.ajax({
+            //     url: url,
+            //     dataType: 'xml',
+            //     crossDomain: true,
+            //     jsonp: "jsonp",
+            //     jsonpCallback: `window.${callbackObjectName}.${callbackGuid}`
+            // })
+            //     .then((response) => {
+            //         debugger;
+            //         console.log(response);
+            //     })
+            //     .fail((error) => {
+            //         console.log(error);
+            //         debugger;
+            //     });
 
         });
         // let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
