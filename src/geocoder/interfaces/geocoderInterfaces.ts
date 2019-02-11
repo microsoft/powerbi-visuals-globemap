@@ -25,6 +25,7 @@ export interface IGeocoder {
     geocode(IGeocoderOptions): Promise<IGeocodeCoordinate>;
     geocodeBoundary(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData?: number, options?: GeocodeOptions): Promise<IGeocodeBoundaryCoordinate | IGeocodeCoordinate>;
     geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): Promise<IGeocodeCoordinate | IGeocodeResource>;
+    geocodeByDataFlow(queries: string[]): Promise<ILocationDictionary>
 }
 
 export interface IGeocodeCoordinate {

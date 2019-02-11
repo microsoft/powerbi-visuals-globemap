@@ -4,7 +4,6 @@ import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageSer
 
 import { ICacheManager } from "./interfaces/ICacheManager";
 import { BaseCache } from "./base";
-import { getShortKey } from "./utils/utils";
 import { ILocationDictionary } from "../geocoder/interfaces/geocoderInterfaces";
 
 export class LocalStorageCache extends BaseCache implements ICacheManager {
@@ -24,34 +23,37 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
             this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS).then((data) => {
                 const parsedValue = JSON.parse(data);
                 if (!parsedValue) {
-                    reject();
+                    reject("Storage can not be parsed");
                 }
 
                 if (!keys || !keys.length) {
                     for (let key in parsedValue) {
                         if (parsedValue.hasOwnProperty(key)) {
                             const location = parsedValue[key];
+                            if (location) {
+                                result[key] = {
+                                    latitude: location.lat,
+                                    longitude: location.lon
+                                };
+                            }
+                        }
+                    }
+                } else {
+                    keys.forEach((key: string) => {
+                        const location = parsedValue[key];
+                        if (location) {
                             result[key] = {
                                 latitude: location.lat,
                                 longitude: location.lon
                             };
                         }
-                    }
-                } else {
-                    for (let key in keys) {
-                        const shortKey: string = getShortKey(key);
-                        const location = parsedValue[shortKey];
-                        result[key] = {
-                            latitude: location.lat,
-                            longitude: location.lon
-                        };
-                    }
+                    });
                 }
 
                 resolve(result);
             })
                 .catch(() => {
-                    reject();
+                    reject("No locations in storage");
                 });
         });
     }
@@ -59,8 +61,7 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
     public async saveCoordinates(coordinates: ILocationDictionary): Promise<string> {
         const locationItemsObject: {} = {};
         for (let key in coordinates) {
-            const shortKey: string = getShortKey(key);
-            locationItemsObject[shortKey] = {
+            locationItemsObject[key] = {
                 "lon": coordinates[key].longitude,
                 "lat": coordinates[key].latitude
             };

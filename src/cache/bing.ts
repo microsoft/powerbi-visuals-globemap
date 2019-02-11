@@ -13,29 +13,13 @@ export class BingCache extends BaseCache implements ICacheManager {
         this.geocoder = createGeocoder();
     }
 
-    public async loadCoordinates(keyDictionary: ILocationKeyDictionary): Promise<ILocationDictionary> {
-        const keys: string[] = Object.keys(keyDictionary);
+    public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
+        //const keys: string[] = Object.keys(keyDictionary);
         if (!keys || !keys.length) {
             return new Promise<ILocationDictionary>((resolve, reject) => reject());
         }
 
-        let result: ILocationDictionary = {};
-
-        // there can be some not existing location keys for each we will receive the rejected Promise - so, we won't use Promises.all()
-        // our goal is to receive existing location's coordinates
-        for (const key of keys) {
-            let coordinate: IGeocodeCoordinate;
-            try {
-                coordinate = await this.loadCoordinateFromBing(keyDictionary[key].place, keyDictionary[key].locationType);
-            }
-            catch (error) {
-                continue;
-            }
-
-            result[key] = coordinate;
-        }
-
-        return new Promise<ILocationDictionary>((resolve) => resolve(result));
+        return this.geocoder.geocodeByDataFlow(keys);
     }
 
     // rewrite details

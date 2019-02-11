@@ -990,7 +990,7 @@ export class GlobeMap implements IVisual {
                 this.data = data;
 
                 const locationsNeedToBeLoaded: ILocationKeyDictionary = {};
-                data.dataPoints.forEach((d: GlobeMapDataPoint) => locationsNeedToBeLoaded[d.placeKey] = { place: d.place, locationType: d.locationType });
+                data.dataPoints.forEach((d: GlobeMapDataPoint) => locationsNeedToBeLoaded[d.place] = { place: d.place, locationType: d.locationType });
                 debugger;
                 this.cacheManager.loadCoordinates(locationsNeedToBeLoaded).then((coordinates: ILocationDictionary) => {
                     this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {

@@ -1,4 +1,5 @@
 import powerbi from "powerbi-visuals-api";
+import * as _ from "lodash";
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 
 import { ILocationDictionary } from "../geocoder/interfaces/geocoderInterfaces";
@@ -20,9 +21,12 @@ export class CacheManager implements ICacheManager {
         this.memoryCache = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
         this.localStorageCache = new LocalStorageCache(localStorageService);
         this.bingCache = new BingCache()
+
+        this.coordsInLocalStorage = {};
     }
 
     public async loadCoordinates(locationsDictionary: ILocationKeyDictionary): Promise<ILocationDictionary> {
+        debugger;
         let result: ILocationDictionary = {};
         let locationsInMemory = [];
 
@@ -39,8 +43,15 @@ export class CacheManager implements ICacheManager {
         }
 
         // Load from localStorage
-        if (!this.coordsInLocalStorage) {
-            this.coordsInLocalStorage = await this.localStorageCache.loadCoordinates(locations);
+        if (_.isEmpty(this.coordsInLocalStorage)) {
+            try {
+                this.coordsInLocalStorage = await this.localStorageCache.loadCoordinates(locations);
+            }
+            catch (error) { console.log(error) }
+        }
+
+        debugger;
+        if (this.coordsInLocalStorage) {
             let locationsInLocalStorage = Object.keys(this.coordsInLocalStorage);
             locations = locations.filter(loc => !locationsInLocalStorage.includes(loc));
 
@@ -53,7 +64,7 @@ export class CacheManager implements ICacheManager {
         // load from Bing
         locationsDictionary = locations
             .reduce((obj, key) => ({ ...obj, [key]: locationsDictionary[key] }), {});
-        let coordsInBing = await this.bingCache.loadCoordinates(locationsDictionary);
+        let coordsInBing = await this.bingCache.loadCoordinates(locations);
         result = Object.assign({}, locationsInMemory, this.coordsInLocalStorage, coordsInBing);
 
         return new Promise<ILocationDictionary>(resolve => resolve(result));
