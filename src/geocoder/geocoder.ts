@@ -26,7 +26,7 @@
 import powerbi from "powerbi-visuals-api";
 import * as _ from "lodash";
 import * as $ from "jquery";
-import * as fetchJsonp from "fetch-jsonp";
+import * as fetchJsonp from "fetch-jsonp-es6";
 
 import IPromise = powerbi.IPromise;
 import PrimitiveValue = powerbi.PrimitiveValue;
@@ -86,6 +86,8 @@ export abstract class BingMapsGeocoder implements IGeocoder {
     private inputType: string;
     private coreKey: string;
     private key: string;
+
+    private static jsonpCallbackObjectName = "powerbi";
 
     constructor() {
         this.contentType = "application/xml";
@@ -149,7 +151,6 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         const queryString = `input=${this.inputType}&key=${this.key}`;
         const url = `https://spatial.virtualearth.net/REST/v1/dataflows/geocode?${queryString}`;
 
-
         // output - json as default; xml
         return fetch(url,
             {
@@ -160,67 +161,137 @@ export abstract class BingMapsGeocoder implements IGeocoder {
                 method: "POST",
                 body: xmlInput
             })
-
     }
 
-    private async monitorJobStatus(jobID): Promise<Response> {
+    private async monitorJobStatusFetch(jobID: string): Promise<Response> {
         const queryString = `output=json&key=${this.key}`;
         const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${jobID}?${queryString}`;
-
 
         // output - json as default; xml
         return fetch(url,
             {
                 mode: 'no-cors',
                 headers: new Headers([
-                    //     ['Access-Control-Allow-Origin', '*'],
-                    //     ['Access-Control-Allow-Headers', 'Content-Type'],
-                    //     ['access-control-allow-methods', 'GET'],
+                        ['Access-Control-Allow-Origin', '*'],
+                        ['Access-Control-Allow-Headers', 'Content-Type'],
+                        ['access-control-allow-methods', 'GET'],
                     ['content-type', "application/json; charset=UTF-8"],
-                    //     ['content-location', `https://spatial.virtualearth.net/REST/v1/dataflows/Geocode/${jobID}`]
                 ]),
                 method: "GET"
             })
-
     }
 
     private async getJobResult(jobID): Promise<Response> {
         const queryString = `key=${this.key}`;
         const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${jobID}/output/succeeded/?${queryString}`;
 
-
         // output - json as default; xml
         return fetch(url,
-            {
-                mode: 'no-cors',
+            {   mode: 'cors',
                 headers: new Headers([
-                    // ['Access-Control-Allow-Origin', '*'],
-                    // ['Access-Control-Allow-Headers', 'Content-Type'],
-                    // ['access-control-allow-methods', 'GET'],
-                    ['Accept', "application/xml"],
+                    ['Access-Control-Allow-Origin', '*'],
+                    ['Access-Control-Allow-Headers', 'Content-Type'],
+                    ['access-control-allow-methods', 'GET'],
+                    ['Accept', "application/json, text/*"]
                 ]),
                 method: "GET"
             })
+    }
+
+    private async getJobResultJsonp(jobID): Promise<Response> {
+        const queryString = `key=${this.key}`;
+        const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${jobID}/output/succeeded/?${queryString}`;
+
+        const callbackGuid: string = BingMapsGeocoder.generateCallbackGuid();
+
+        // This is super dirty hack to bypass faked window object in order to use jsonp
+        // We use jsonp because sandboxed iframe does not have an origin. This fact breaks regular AJAX queries.
+        window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid] = (data) => {
+            delete window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid];
+        };
+
+        // output - json as default; xml
+        return $.ajax({
+                url: url,
+                dataType: 'xml',
+                crossDomain: true,
+                jsonp: "jsonp",
+                jsonpCallback: `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`
+            }).promise()
+    }
+
+    private async monitorJobStatusJsonp(jobID: string): Promise<Response> {
+        const queryString = `key=${this.key}`;
+        const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${jobID}?${queryString}`;
+        
+        const callbackGuid: string = BingMapsGeocoder.generateCallbackGuid();
+
+        // This is super dirty hack to bypass faked window object in order to use jsonp
+        // We use jsonp because sandboxed iframe does not have an origin. This fact breaks regular AJAX queries.
+        window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid] = (data) => {
+            delete window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid];
+        };
+
+        return $.ajax({
+                url: url,
+                dataType: 'json',
+                crossDomain: true,
+                jsonp: "jsonp",
+                jsonpCallback: `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`
+            }).promise()
+    }
+
+    private static generateCallbackGuid(): string{
+        let cryptoObj = window.crypto || window["msCrypto"]; // For IE
+        const guidSequence: number =  cryptoObj.getRandomValues(new Uint32Array(1))[0].toString(16).substring(0, 4);
+        
+        return `GeocodeCallback${guidSequence}${guidSequence}${guidSequence}`;
+    }
+
+    private parseXml(xmlDocument: XMLDocument) {
+        let entities = xmlDocument.getElementsByTagName("GeocodeEntity");
+        for (let i = 0; i < entities.length; i++){
+            const currentEntity = entities[i];
+            let entityStatus: string = currentEntity.getElementsByTagName("StatusCode")[0].childNodes[0].nodeValue;
+            if (entityStatus == "Success") {
+                // get coordinates for current location entity
+                //a.attributes["MaxResults"]
+            }
+        }
     }
 
     private geocodeCore(queueName: string, geocodeQuery: IGeocodeQuery, options?: GeocodeOptions): Promise<IGeocodeCoordinate> {
         debugger;
 
         let job = "32b70f685d334adfb1c438fb29f1f16c";
+        this.monitorJobStatusJsonp(job)
+            .then((response: any) => {
+                if(response.statusCode == 200) {
+                    let taskStatus = response.resourceSets[0].resources[0].status;
+                    if (taskStatus == "Completed") {
+                        // get the job result in xml
+                        this.getJobResultJsonp(job)
+                            .then((response: any) => {
+                                // response is xml  document
+                                debugger;
 
-        this.monitorJobStatus("32b70f685d334adfb1c438fb29f1f16c")
-            .then(data => data.json())
-            .then((data) => {
-                console.log(data)
+                            })
+                            .catch(err => console.log(err))
+                    }
+                    else {
+                    // if pending  - wait for 3000
+                    }
+                }
+
+                debugger;
+                console.log(response);
             })
-            .catch(err => console.log(err));
+            .catch(err => {
+                debugger;
+                console.log(err)
+            });
 
-        // this.getJobResult("32b70f685d334adfb1c438fb29f1f16c")
-        //     .then(data => data.json())
-        //     .then((data) => {
-        //         console.log(data)
-        //     })
-        //     .catch(err => console.log(err));
+        return Promise.resolve(null);
 
         // this.createJob(this.xmlInput)
         //     .then(function (response) {
@@ -257,79 +328,8 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         //             .catch(err => console.log(err));
 
         //     })
-        //     .catch(function (response) { console.log(response) })
-
-        //const jobID = "d3c903ab83d84f05a2158b084a761545";
-
-        return new Promise<IGeocodeCoordinate>((resolve, reject) => {
-            //     //const url = "https://dev.virtualearth.net/REST/v1/Locations?key=YzyBFJgUrMNy4UEJWNpt~3ia-8PWaplOLtxqAWUD9dQ~As3csOrjB7b4KJ7cY6vkaSZsJT4FsKjE0rvTYJPZx-xaFSvB5IV0u3-KJnM0zNon&q=albuquerque, new mexico&c=ru-RU&maxRes=20";
-            const queryString = `key=${this.key}`;
-            const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${job}?${queryString}`;
-            //     const url = `https://spatial.virtualearth.net/REST/v1/Dataflows/Geocode/${jobID}/output/succeeded/?${queryString}`;
-
-            let guidSequence = () => {
-                let cryptoObj = window.crypto || window["msCrypto"]; // For IE
-
-                return cryptoObj.getRandomValues(new Uint32Array(1))[0].toString(16).substring(0, 4);
-            };
-
-            const callbackGuid: string = `GeocodeCallback${guidSequence()}${guidSequence()}${guidSequence()}`;
-
-            // This is super dirty hack to bypass faked window object in order to use jsonp
-            // We use jsonp because sandboxed iframe does not have an origin. This fact breaks regular AJAX queries.
-            const callbackObjectName = "powerbi";
-            window[callbackObjectName][callbackGuid] = (data) => {
-                debugger;
-
-                delete window[callbackObjectName][callbackGuid];
-            };
-
-
-            // fetchJsonp(url, {
-            //     jsonpCallback: `window.${callbackObjectName}.${callbackGuid}`,
-
-            // })
-            //     .then((response) => {
-            //         debugger;
-            //         console.log(response);
-            //     })
-            //     .catch((error) => {
-            //         console.log(error);
-            //         debugger;
-            //     });
-
-            // $.ajax({
-            //     url: url,
-            //     dataType: 'xml',
-            //     crossDomain: true,
-            //     jsonp: "jsonp",
-            //     jsonpCallback: `window.${callbackObjectName}.${callbackGuid}`
-            // })
-            //     .then((response) => {
-            //         debugger;
-            //         console.log(response);
-            //     })
-            //     .fail((error) => {
-            //         console.log(error);
-            //         debugger;
-            //     });
-
-        });
-        // let deferred: JQueryDeferred<IGeocodeCoordinate> = $.Deferred();
-        // let item: IGeocodeQueueItem = { query: geocodeQuery, deferred: deferred };
-
-        // GeocodeQueueManager.enqueue(queueName, item);
-
-        // if (options && options.timeout) {
-        //     options.timeout.finally(() => {
-        //         if (item.promise.pending()) {
-        //             item.promise.reject();
-        //         }
-        //     });
-        // }
-
-        // return item.promise;
-    }
+        //     .catch(function (response) { console.log(response) })      
+   }
 }
 
 export class DefaultGeocoder extends BingMapsGeocoder {
