@@ -67,21 +67,20 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
             };
         }
 
-        let valueObjectToString: string = JSON.stringify(locationItemsObject);
-
         return new Promise<string>((resolve, reject) => {
             this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS).then((data) => {
                 const locationsFromStorage = JSON.parse(data);
-                const mergedObject = location ? _.extend(locationsFromStorage, valueObjectToString) : valueObjectToString;
+                const mergedObject = locationsFromStorage ? _.extend(locationsFromStorage, locationItemsObject) : locationItemsObject;
 
-                valueObjectToString = JSON.stringify(mergedObject);
+                const valueObjectToString = JSON.stringify(mergedObject);
                 this.localStorageService.set(LocalStorageCache.TILE_LOCATIONS, valueObjectToString)
                     .then(() => resolve("success"))
-                    .catch(() => reject());
+                    .catch(() => reject("Storage service save error"));
             }).catch(() => {
+                const valueObjectToString = JSON.stringify(locationItemsObject);
                 this.localStorageService.set(LocalStorageCache.TILE_LOCATIONS, valueObjectToString)
                     .then(() => resolve("success"))
-                    .catch(() => reject());
+                    .catch(() => reject("Storage service save error"));
             });
         });
     }

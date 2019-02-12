@@ -5,7 +5,7 @@ import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageSer
 import { ILocationDictionary } from "../geocoder/interfaces/geocoderInterfaces";
 import { MemoryCache } from "./memory";
 import { LocalStorageCache } from "./localStorageAPI";
-import { BingCache } from "./bing";
+import { Bing } from "./bing";
 import { ICacheManager } from "./interfaces/ICacheManager";
 import { CacheSettings } from "./../settings";
 import { ILocationKeyDictionary } from "../interfaces/dataInterfaces";
@@ -14,22 +14,25 @@ export class CacheManager implements ICacheManager {
 
     private memoryCache: ICacheManager;
     private localStorageCache: ICacheManager;
-    private bingCache: ICacheManager;
+    private bing: ICacheManager;
     private coordsInLocalStorage: ILocationDictionary;
 
     constructor(localStorageService: ILocalVisualStorageService) {
         this.memoryCache = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
         this.localStorageCache = new LocalStorageCache(localStorageService);
-        this.bingCache = new BingCache()
+        this.bing = new Bing()
 
         this.coordsInLocalStorage = {};
     }
 
     public async loadCoordinates(locationsDictionary: ILocationKeyDictionary): Promise<ILocationDictionary> {
-        debugger;
         let result: ILocationDictionary = {};
-        let locationsInMemory = [];
 
+        if (_.isEmpty(locationsDictionary)) {
+            return new Promise<ILocationDictionary>(resolve => resolve(result));
+        }
+
+        let locationsInMemory = [];
         let locations: string[] = Object.keys(locationsDictionary);
 
         // load from memory
@@ -50,7 +53,6 @@ export class CacheManager implements ICacheManager {
             catch (error) { console.log(error) }
         }
 
-        debugger;
         if (this.coordsInLocalStorage) {
             let locationsInLocalStorage = Object.keys(this.coordsInLocalStorage);
             locations = locations.filter(loc => !locationsInLocalStorage.includes(loc));
@@ -64,7 +66,7 @@ export class CacheManager implements ICacheManager {
         // load from Bing
         locationsDictionary = locations
             .reduce((obj, key) => ({ ...obj, [key]: locationsDictionary[key] }), {});
-        let coordsInBing = await this.bingCache.loadCoordinates(locations);
+        let coordsInBing = await this.bing.loadCoordinates(locations);
         result = Object.assign({}, locationsInMemory, this.coordsInLocalStorage, coordsInBing);
 
         return new Promise<ILocationDictionary>(resolve => resolve(result));

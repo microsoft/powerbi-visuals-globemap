@@ -38,7 +38,6 @@ import { GlobeMap as VisualClass } from "../src/globemap";
 import { GlobeMapColumns } from "../src/columns";
 
 import { TileMap, ITileGapObject } from "../src/interfaces/dataInterfaces";
-import { getShortKey } from "../src/cache/utils/utils";
 
 describe("GlobeMap", () => {
     let visualBuilder: GlobeMapBuilder,
@@ -157,41 +156,6 @@ describe("Capabilities tests", () => {
 });
 
 describe("LocalStorage and related methods test: ", () => {
-    describe("short key test", () => {
-        it("on valid keys", () => {
-            const rawKeys: string[] = [
-                "g:https://dev.virtualearth.net/rest/v1/locations; s:https://platform.bing.com/geo/spatial/v1/public/geodata;tulsa, oklahoma/",
-                "g:https://dev.virtualearth.net/rest/v1/locations; s:https://platform.bing.com/geo/spatial/v1/public/geodata;aurora, colorado/",
-                "g:https://dev.virtualearth.net/rest/v1/locations; s:https://platform.bing.com/geo/spatial/v1/public/geodata;chicago, illinois/"
-            ];
-            const expectedResult: string[] = [
-                "tulsa, oklahoma",
-                "aurora, colorado",
-                "chicago, illinois"
-            ];
-
-            for (let i = 0; i < rawKeys.length; i++) {
-                const shortKey: string = getShortKey(rawKeys[i]);
-                expect(shortKey).toEqual(expectedResult[i]);
-            }
-        });
-
-        it("on not valid keys", () => {
-            const rawKeys: string[] = [
-                "",
-                null,
-                undefined,
-                "hello"
-            ];
-            const expectedResult: string[] = rawKeys;
-            for (let i = 0; i < rawKeys.length; i++) {
-                const shortKey: string = getShortKey(rawKeys[i]);
-                expect(shortKey).toEqual(expectedResult[i]);
-            }
-        });
-
-    });
-
     describe("minimize tiles test", () => {
 
         it("on valid keys", () => {
@@ -255,31 +219,29 @@ describe("LocalStorage and related methods test: ", () => {
 
         const culture: string = "en-US";
 
-        // it("for not valid input", () => {
-        //     const tiles = [null, undefined, []];
-        //     tiles.forEach((tile) => {
-        //         let deferred = $.Deferred();
-        //         VisualClass.extendTiles(JSON.stringify(tile), culture, deferred);
-        //         expect(deferred.state()).toBe("resolved");
-        //         deferred.then((data) => {
-        //             expect(data).toBeNull();
-        //         });
-        //     });
-        // });
+        it("for not valid input", () => {
+            const expectedResult = [];
+            const tiles = [null, undefined, []];
+            tiles.forEach((tile) => {
+                VisualClass.extendTiles(JSON.stringify(tile), culture)
+                    .then((data: TileMap[]) => {
+                        expect(data.length).toBe(expectedResult.length);
+                    });
+            });
+        });
 
-        // it("for valid input", () => {
-        //     let deferred = $.Deferred();
-        //     VisualClass.extendTiles(JSON.stringify(tiles), culture, deferred);
-        //     $.when(deferred).done((data: TileMap[]) => {
-        //         expect(data).not.toBeNull();
-        //         for (let i = 0; data.length; i++) {
-        //             const tile: TileMap = data[i];
-        //             for (let key in tile) {
-        //                 tile[key] = tile[key].replace(/g=\w+&/g, '');
-        //             }
-        //             expect(data[i]).toBe(expectedResult[i]);
-        //         }
-        //     });
-        // });
+        it("for valid input", () => {
+            VisualClass.extendTiles(JSON.stringify(tiles), culture)
+                .then((data: TileMap[]) => {
+                    expect(data).not.toBeNull();
+                    for (let i = 0; data.length; i++) {
+                        const tile: TileMap = data[i];
+                        for (let key in tile) {
+                            tile[key] = tile[key].replace(/g=\w+&/g, '');
+                        }
+                        expect(data[i]).toBe(expectedResult[i]);
+                    }
+                });
+        });
     });
 });

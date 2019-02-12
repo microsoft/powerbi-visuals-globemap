@@ -25,7 +25,7 @@ export class MemoryCache extends BaseCache implements ICacheManager {
     public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
         return new Promise<ILocationDictionary>((resolve, reject) => {
             if (!keys || !keys.length) {
-                reject();
+                reject("No locations to be loaded");
             }
             let locations: ILocationDictionary = {};
             for (let key in this.geocodeCache) {
@@ -42,7 +42,7 @@ export class MemoryCache extends BaseCache implements ICacheManager {
     public async saveCoordinates(coordinates: ILocationDictionary): Promise<string> {
         return new Promise<string>((resolve, reject) => {
             if (!coordinates) {
-                reject();
+                reject("No locations to be saved");
             }
 
             for (let key in coordinates) {

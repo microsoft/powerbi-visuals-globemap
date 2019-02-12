@@ -1,7 +1,7 @@
 ﻿import powerbi from "powerbi-visuals-api";
 
 import IPromise = powerbi.IPromise;
-import RejectablePromise = powerbi.RejectablePromise;
+
 /** Defines geocoding services. */
 export interface GeocodeOptions {
     /** promise that should abort the request when resolved */
@@ -22,10 +22,7 @@ export interface IGeocoderOptions {
 }
 
 export interface IGeocoder {
-    geocode(IGeocoderOptions): Promise<IGeocodeCoordinate>;
-    geocodeBoundary(latitude: number, longitude: number, category: string, levelOfDetail?: number, maxGeoData?: number, options?: GeocodeOptions): Promise<IGeocodeBoundaryCoordinate | IGeocodeCoordinate>;
-    geocodePoint(latitude: number, longitude: number, entities: string[], options?: GeocodeOptions): Promise<IGeocodeCoordinate | IGeocodeResource>;
-    geocodeByDataFlow(queries: string[]): Promise<ILocationDictionary>
+    geocodeByDataFlow(queries: string[]): Promise<ILocationDictionary>;
 }
 
 export interface IGeocodeCoordinate {
@@ -60,7 +57,6 @@ export interface IGeocodeQuery {
 export interface IGeocodeQueueItem {
     query: IGeocodeQuery;
     deferred: JQueryDeferred<{}>;
-    promise: RejectablePromise<{}>;
 }
 
 export interface IGeocodeResource extends IGeocodeCoordinate {

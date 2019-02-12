@@ -36,6 +36,7 @@ import * as $ from "jquery";
 
 import IPromise = powerbi.IPromise;
 import DataView = powerbi.DataView;
+import VisualEventType = powerbi.VisualEventType;
 import PrimitiveValue = powerbi.PrimitiveValue;
 import DataViewValueColumn = powerbi.DataViewValueColumn;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
@@ -376,11 +377,11 @@ export class GlobeMap implements IVisual {
                     toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
                     locationValue = `${locations[i]}`;
                 } else {
-                    place = `${categorical.X.values[i]} ${categorical.Y.values[i]}`;
-                    placeKey = categorical.X.values[i] + " " + categorical.Y.values[i];
                     location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
                         ? { longitude: <number>categorical.X.values[i] || 0, latitude: <number>categorical.Y.values[i] || 0 }
                         : undefined;
+                    place = location ? `${categorical.X.values[i]} ${categorical.Y.values[i]}` : undefined;
+                    placeKey = location ? categorical.X.values[i] + " " + categorical.Y.values[i] : undefined;
                     toolTipDataLongName = categorical.X && categorical.X.source && categorical.X.source.displayName;
                     toolTipDataLatName = categorical.Y && categorical.Y.source && categorical.Y.source.displayName;
                     locationValue = "";
@@ -498,11 +499,6 @@ export class GlobeMap implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageService;
-
-        // let divElement = document.createElement("div");
-        // divElement.setAttribute("drag-resize-disabled", "true");
-        // divElement.style.position = "absolute";
-        // this.root = options.element.appendChild(divElement); 
         this.root = $("<div>").appendTo(options.element)
             .attr("drag-resize-disabled", "true")
             .css({
@@ -510,6 +506,7 @@ export class GlobeMap implements IVisual {
             });
 
         this.visualHost = options.host;
+        this.visualHost.telemetry.trace(VisualEventType.Trace, 'bing load coordinates');
         this.tooltipService = this.visualHost.tooltipService;
 
         this.layout = new VisualLayout();
@@ -740,7 +737,7 @@ export class GlobeMap implements IVisual {
                     resolve(result);
                 })
                 .fail(() => {
-                    reject();
+                    reject("Bing Map service metadata loading error");
                 });
         });
     }
@@ -774,12 +771,12 @@ export class GlobeMap implements IVisual {
             tileCachePromise.then(data => {
                 GlobeMap.extendTiles(data, this.currentLanguage)
                     .then((tilesData) => resolve(tilesData))
-                    .catch(() => reject())
+                    .catch(() => reject("Tiles loading from Storage error"))
             })
                 .catch(() => {
                     this.loadFromBing(language)
                         .then((bingData) => resolve(bingData))
-                        .catch(() => reject())
+                        .catch(() => reject("Tiles loading from Bing error"))
                 });
         });
     }
@@ -795,7 +792,7 @@ export class GlobeMap implements IVisual {
                     resolve("success");
                 })
                 .catch(() => {
-                    reject();
+                    reject("Get tiles error");
                 });
         });
     }
@@ -990,8 +987,12 @@ export class GlobeMap implements IVisual {
                 this.data = data;
 
                 const locationsNeedToBeLoaded: ILocationKeyDictionary = {};
-                data.dataPoints.forEach((d: GlobeMapDataPoint) => locationsNeedToBeLoaded[d.place] = { place: d.place, locationType: d.locationType });
-                debugger;
+                data.dataPoints.forEach((d: GlobeMapDataPoint) => {
+                    if (!d.location && d.place)
+                        locationsNeedToBeLoaded[d.place] = {
+                            place: d.place, locationType: d.locationType
+                        }
+                });
                 this.cacheManager.loadCoordinates(locationsNeedToBeLoaded).then((coordinates: ILocationDictionary) => {
                     this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
                         d.location = coordinates[d.place] || d.location;
