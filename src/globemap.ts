@@ -170,9 +170,6 @@ export class GlobeMap implements IVisual {
     private readyToRender: boolean;
     private deferredRenderTimerId: number;
     private cacheManager: ICacheManager;
-    private globeMapLocationStorage: ILocationDictionary;
-    private globeMapLocationMemory: ILocationDictionary;
-    private placesToBeLoaded: { [i: string]: boolean };
     private locationsToLoad: number = 0;
     private locationsLoaded: number = 0;
     private initialLocationsLength: number = 0;
