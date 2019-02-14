@@ -3,6 +3,15 @@ export interface BingGeocodeResponse {
     resourceSets: { resources: BingLocation[] }[];
 }
 
+export interface BingJobStatusResponse {
+    resourceSets: { resources: BingJobStatus[] }[];
+    statusCode: number;
+}
+
+export interface BingJobStatus {
+    status: string
+};
+
 export interface BingLocation {
     name?: string;
     entityType?: string;

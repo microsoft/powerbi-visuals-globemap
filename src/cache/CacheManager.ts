@@ -20,7 +20,7 @@ export class CacheManager implements ICacheManager {
     constructor(localStorageService: ILocalVisualStorageService) {
         this.memoryCache = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
         this.localStorageCache = new LocalStorageCache(localStorageService);
-        this.bing = new Bing()
+        this.bing = new Bing();
 
         this.coordsInLocalStorage = {};
     }
@@ -50,7 +50,7 @@ export class CacheManager implements ICacheManager {
             try {
                 this.coordsInLocalStorage = await this.localStorageCache.loadCoordinates(locations);
             }
-            catch (error) { console.log(error) }
+            catch (error) { console.log(error); }
         }
 
         if (this.coordsInLocalStorage) {
@@ -76,4 +76,4 @@ export class CacheManager implements ICacheManager {
         await this.memoryCache.saveCoordinates(coordinates);
         return this.localStorageCache.saveCoordinates(coordinates);
     }
-} 
+}

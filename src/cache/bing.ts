@@ -14,7 +14,7 @@ export class Bing extends BaseCache implements ICacheManager {
     }
 
     public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
-        //const keys: string[] = Object.keys(keyDictionary);
+        // const keys: string[] = Object.keys(keyDictionary);
         if (!keys || !keys.length) {
             return new Promise<ILocationDictionary>((resolve, reject) => reject("Empty location keys"));
         }

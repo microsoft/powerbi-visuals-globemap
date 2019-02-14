@@ -36,7 +36,8 @@ import {
     BingLocation,
     BingGeocodeResponse,
     BingGeoboundaryResponse,
-    BingGeoboundaryPrimitive
+    BingGeoboundaryPrimitive,
+    BingJobStatusResponse
 } from "../interfaces/bingInterfaces";
 
 import { BingSettings } from "../settings";
@@ -76,7 +77,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         COMPLETED: "Completed",
         ABORTED: "Aborted",
         PENDING: "Pending"
-    }
+    };
 
     constructor() {
         this.contentType = "application/xml";
@@ -86,7 +87,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
 
     private createXmlStringFromLocationQueries(queries: string[]): string {
         const xmlns: string = "http://schemas.microsoft.com/search/local/2010/5/geocode";
-        const xmlStart: string = `<?xml version="1.0" encoding="utf-8"?>  
+        const xmlStart: string = `<?xml version="1.0" encoding="utf-8"?>
             <GeocodeFeed xmlns="${xmlns}">`;
         const xmlEnd: string = `</GeocodeFeed>`;
 
@@ -95,9 +96,9 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         cultureName = mapLocalesForBing(cultureName);
         for (let i = 0; i < queries.length; i++) {
             let entity: string = `
-            <GeocodeEntity Id="${i + 1}" xmlns="${xmlns}">  
-                <GeocodeRequest Culture="${cultureName}" Query="${queries[i]}" MaxResults="1">  
-                </GeocodeRequest>  
+            <GeocodeEntity Id="${i + 1}" xmlns="${xmlns}">
+                <GeocodeRequest Culture="${cultureName}" Query="${queries[i]}" MaxResults="1">
+                </GeocodeRequest>
             </GeocodeEntity>`;
             entities += entity;
         }
@@ -112,24 +113,24 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         return new Promise<ILocationDictionary>((resolve, reject) => {
             this.createJob(xmlString)
                 .then((response) => {
-                    if (!response.ok || response.status != BingMapsGeocoder.HttpStatuses.CREATED) {
+                    if (!response.ok || response.status !== BingMapsGeocoder.HttpStatuses.CREATED) {
                         reject("Geocoder Job creation error");
                     }
-                    //get ID from readable stream
+                    // get ID from readable stream
                     response.json()
                         .then((body) => {
                             const jobID: string = body.resourceSets[0].resources[0].id;
-                            //get job status
+                            // get job status
                             let taskStatus = BingMapsGeocoder.JobStatuses.PENDING;
                             const interval = setInterval(() => {
                                 this.monitorJobStatusJsonp(jobID)
-                                    .then((response: any) => {
-                                        if (response.statusCode == BingMapsGeocoder.HttpStatuses.OK) {
+                                    .then((response: BingJobStatusResponse) => {
+                                        if (response.statusCode === BingMapsGeocoder.HttpStatuses.OK) {
                                             taskStatus = response.resourceSets[0].resources[0].status;
-                                            if (taskStatus == BingMapsGeocoder.JobStatuses.COMPLETED) {
+                                            if (taskStatus === BingMapsGeocoder.JobStatuses.COMPLETED) {
                                                 // get the job result in xml
                                                 this.getJobResultJsonp(jobID)
-                                                    .then((response: any) => {
+                                                    .then((response: XMLDocument) => {
                                                         const locationDictionary: ILocationDictionary = this.parseXmlJobResult(response);
                                                         clearInterval(interval);
                                                         resolve(locationDictionary);
@@ -137,10 +138,10 @@ export abstract class BingMapsGeocoder implements IGeocoder {
                                                     .catch(() => {
                                                         clearInterval(interval);
                                                         reject("Geocoder Job Result request has been failed");
-                                                    })
+                                                    });
                                             }
 
-                                            if (taskStatus == BingMapsGeocoder.JobStatuses.ABORTED) {
+                                            if (taskStatus === BingMapsGeocoder.JobStatuses.ABORTED) {
                                                 reject("Geocoder job was aborted due to an error");
                                                 clearInterval(interval);
                                             }
@@ -171,10 +172,10 @@ export abstract class BingMapsGeocoder implements IGeocoder {
                 },
                 method: "POST",
                 body: xmlInput
-            })
+            });
     }
 
-    private async getJobResultJsonp(jobID): Promise<Response> {
+    private async getJobResultJsonp(jobID): Promise<XMLDocument> {
         const queryString = `key=${this.key}`;
         const url = `${this.bingSpatialDataFlowUrl()}/${jobID}/output/succeeded/?${queryString}`;
 
@@ -193,10 +194,10 @@ export abstract class BingMapsGeocoder implements IGeocoder {
             crossDomain: true,
             jsonp: "jsonp",
             jsonpCallback: `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`
-        }).promise()
+        }).promise();
     }
 
-    private async monitorJobStatusJsonp(jobID: string): Promise<Response> {
+    private async monitorJobStatusJsonp(jobID: string): Promise<BingJobStatusResponse> {
         const queryString = `key=${this.key}`;
         const url = `${this.bingSpatialDataFlowUrl()}/${jobID}?${queryString}`;
 
@@ -214,7 +215,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
             crossDomain: true,
             jsonp: "jsonp",
             jsonpCallback: `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`
-        }).promise()
+        }).promise();
     }
 
     private static generateCallbackGuid(): string {
@@ -234,13 +235,13 @@ export abstract class BingMapsGeocoder implements IGeocoder {
             const query: string = geocodeRequest.item(0).getAttribute("Query");
             const statusCode: string = geocodeResponse.item(0).getAttribute("StatusCode");
 
-            if (statusCode == "Success") {
+            if (statusCode === "Success") {
                 const longitude: number = Number(geocodeResponse[0].children[1].getAttribute("Longitude"));
                 const latitude: number = Number(geocodeResponse[0].children[1].getAttribute("Latitude"));
                 result[query] = {
                     latitude,
                     longitude
-                }
+                };
             }
         }
 

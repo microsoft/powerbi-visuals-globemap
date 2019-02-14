@@ -65,7 +65,11 @@ export interface TileMap {
     [quadKey: string]: string;
 }
 
-export interface ILocationKeyDictionary { [placeKey: string]: { place: string, locationType: string } };
+export interface ILocationKeyDictionary {
+    [placeKey: string]: {
+        place: string; locationType: string;
+    };
+}
 
 export interface ICanvasCoordinate {
     x: number;

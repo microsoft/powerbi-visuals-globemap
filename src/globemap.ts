@@ -768,12 +768,12 @@ export class GlobeMap implements IVisual {
             tileCachePromise.then(data => {
                 GlobeMap.extendTiles(data, this.currentLanguage)
                     .then((tilesData) => resolve(tilesData))
-                    .catch(() => reject("Tiles loading from Storage error"))
+                    .catch(() => reject("Tiles loading from Storage error"));
             })
                 .catch(() => {
                     this.loadFromBing(language)
                         .then((bingData) => resolve(bingData))
-                        .catch(() => reject("Tiles loading from Bing error"))
+                        .catch(() => reject("Tiles loading from Bing error"));
                 });
         });
     }
@@ -794,7 +794,7 @@ export class GlobeMap implements IVisual {
         });
     }
 
-    private static getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> { //fetch
+    private static getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> {
         return $.ajax(GlobeMap.metadataUrl)
             .then((data: BingMetadata) => {
                 if (data.resourceSets.length) {
@@ -988,7 +988,7 @@ export class GlobeMap implements IVisual {
                     if (!d.location && d.place)
                         locationsNeedToBeLoaded[d.place] = {
                             place: d.place, locationType: d.locationType
-                        }
+                        };
                 });
                 this.cacheManager.loadCoordinates(locationsNeedToBeLoaded).then((coordinates: ILocationDictionary) => {
                     this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
