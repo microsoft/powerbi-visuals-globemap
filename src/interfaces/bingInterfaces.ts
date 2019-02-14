@@ -9,8 +9,8 @@ export interface BingJobStatusResponse {
 }
 
 export interface BingJobStatus {
-    status: string
-};
+    status: string;
+}
 
 export interface BingLocation {
     name?: string;
