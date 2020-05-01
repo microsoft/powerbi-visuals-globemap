@@ -1,0 +1,26 @@
+# Snyk (https://snyk.io) policy file, patches or ignores known vulnerabilities.
+version: v1.14.1
+ignore: {}
+# patches apply the minimum changes required to fix a vulnerability
+patch:
+  SNYK-JS-LODASH-567746:
+    - lodash:
+        patched: '2020-05-01T08:28:22.373Z'
+    - powerbi-visuals-utils-dataviewutils > lodash:
+        patched: '2020-05-01T08:28:22.373Z'
+    - powerbi-visuals-utils-typeutils > lodash:
+        patched: '2020-05-01T08:28:22.373Z'
+    - powerbi-visuals-utils-colorutils > powerbi-visuals-utils-dataviewutils > lodash:
+        patched: '2020-05-01T08:28:22.373Z'
+    - powerbi-visuals-utils-colorutils > powerbi-visuals-utils-typeutils > lodash:
+        patched: '2020-05-01T08:28:22.373Z'
+    - powerbi-visuals-utils-formattingutils > powerbi-visuals-utils-typeutils > lodash:
+        patched: '2020-05-01T08:28:22.373Z'
+    - powerbi-visuals-utils-interactivityutils > powerbi-visuals-utils-typeutils > lodash:
+        patched: '2020-05-01T08:28:22.373Z'
+    - powerbi-visuals-utils-formattingutils > powerbi-visuals-utils-dataviewutils > lodash:
+        patched: '2020-05-01T08:28:22.373Z'
+    - powerbi-visuals-utils-formattingutils > powerbi-visuals-utils-svgutils > powerbi-visuals-utils-typeutils > lodash:
+        patched: '2020-05-01T08:28:22.373Z'
+    - powerbi-visuals-utils-interactivityutils > powerbi-visuals-utils-svgutils > powerbi-visuals-utils-typeutils > lodash:
+        patched: '2020-05-01T08:28:22.373Z'
