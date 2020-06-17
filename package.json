@@ -14,7 +14,9 @@
     "lint": "tslint -r \"node_modules/tslint-microsoft-contrib\" \"+(src|test)/**/*.ts\"",
     "pretest": "pbiviz package --resources --no-minify --no-pbiviz --no-plugin",
     "test": "karma start",
-    "cert": "pbiviz --create-cert"
+    "cert": "pbiviz --create-cert",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
   },
   "license": "MIT",
   "repository": {
@@ -23,14 +25,15 @@
   },
   "dependencies": {
     "globalize": "0.1.0-a2",
-    "jquery": "3.1.1",
-    "lodash": "4.17.4",
-    "powerbi-visuals-utils-colorutils": "0.2.2",
-    "powerbi-visuals-utils-dataviewutils": "1.1.1",
-    "powerbi-visuals-utils-formattingutils": "1.0.0",
-    "powerbi-visuals-utils-interactivityutils": "0.3.1",
-    "powerbi-visuals-utils-typeutils": "1.0.0",
-    "three": "0.75.0"
+    "jquery": "3.5.0",
+    "lodash": "4.17.12",
+    "powerbi-visuals-utils-colorutils": "1.0.0",
+    "powerbi-visuals-utils-dataviewutils": "1.2.0",
+    "powerbi-visuals-utils-formattingutils": "2.1.0",
+    "powerbi-visuals-utils-interactivityutils": "1.0.0",
+    "powerbi-visuals-utils-typeutils": "1.1.0",
+    "three": "0.75.0",
+    "snyk": "^1.342.2"
   },
   "devDependencies": {
     "@types/d3": "3.5.36",
@@ -56,5 +59,6 @@
     "tslint": "5.4.3",
     "tslint-microsoft-contrib": "5.0.1",
     "typescript": "2.1.4"
-  }
+  },
+  "snyk": true
 }
