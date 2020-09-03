@@ -52,7 +52,7 @@
     "karma-typescript-preprocessor": "0.3.0",
     "powerbi-visuals-tools": "2.3.0",
     "powerbi-visuals-utils-testutils": "^1.3.2",
-    "puppeteer": "^1.7.0",
+    "puppeteer": "^1.13.0",
     "tslint": "5.4.3",
     "tslint-microsoft-contrib": "5.0.1",
     "typescript": "2.1.4"
