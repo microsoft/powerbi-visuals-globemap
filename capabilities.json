@@ -1,4 +1,17 @@
 {
+  "privileges": [
+    {
+      "name": "WebAccess",
+      "essential": true,
+      "parameters": [
+        "https://*.virtualearth.net"
+      ]
+    },
+    {
+      "name": "LocalStorage",
+      "essential": true
+    }
+  ],
   "dataRoles": [
     {
       "name": "Location",
@@ -152,41 +165,39 @@
         "categories": {
           "select": [
             { "bind": { "to": "Location" } }
-           ],
-           "dataReductionAlgorithm": {
-             "top": {}
-           }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {}
+          }
         },
         "values": {
-
-            "select": [
-              {
-                "for": {
-                  "in": "Height"
-                }
-              },
-              {
-                "for": {
-                  "in": "Heat"
-                }
-              },
-              {
-                "for": {
-                  "in": "X"
-                }
-              },
-              {
-                "for": {
-                  "in": "Y"
-                }
+          "select": [
+            {
+              "for": {
+                "in": "Height"
               }
-            ],
-            "dataReductionAlgorithm": {
-              "top": {}
+            },
+            {
+              "for": {
+                "in": "Heat"
+              }
+            },
+            {
+              "for": {
+                "in": "X"
+              }
+            },
+            {
+              "for": {
+                "in": "Y"
+              }
             }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {}
           }
         }
-      
+      }
     },
     {
       "conditions": [
@@ -210,7 +221,7 @@
       ],
       "categorical": {
         "categories": {
-         "select": [
+          "select": [
            { "bind": { "to": "X" } },
            { "bind": { "to": "Y" } }
           ],
@@ -219,21 +230,21 @@
           }
         },
         "values": {
-            "select": [
-              {
-                "for": {
-                  "in": "Height"
-                }
-              },
-              {
-                "for": {
-                  "in": "Heat"
-                }
+          "select": [
+            {
+              "for": {
+                "in": "Height"
               }
-            ],
-            "dataReductionAlgorithm": {
-              "top": {}
+            },
+            {
+              "for": {
+                "in": "Heat"
+              }
             }
+          ],
+          "dataReductionAlgorithm": {
+            "top": {}
+          }
         }
       }
     }
