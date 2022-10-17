@@ -1,5 +1,7 @@
 import powerbi from "powerbi-visuals-api";
-import * as _ from "lodash";
+
+import isEmpty from "lodash.isempty";
+
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 
 import { ILocationDictionary } from "../geocoder/interfaces/geocoderInterfaces";
@@ -28,7 +30,7 @@ export class CacheManager implements ICacheManager {
     public async loadCoordinates(locationsDictionary: ILocationKeyDictionary): Promise<ILocationDictionary> {
         let result: ILocationDictionary = {};
 
-        if (_.isEmpty(locationsDictionary)) {
+        if (isEmpty(locationsDictionary)) {
             return new Promise<ILocationDictionary>(resolve => resolve(result));
         }
 
@@ -46,7 +48,7 @@ export class CacheManager implements ICacheManager {
         }
 
         // Load from localStorage
-        if (_.isEmpty(this.coordsInLocalStorage)) {
+        if (isEmpty(this.coordsInLocalStorage)) {
             try {
                 this.coordsInLocalStorage = await this.localStorageCache.loadCoordinates(locations);
             }

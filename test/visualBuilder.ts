@@ -25,7 +25,8 @@
  */
 
 import powerbi from "powerbi-visuals-api";
-import * as _ from "lodash";
+
+import isArray from "lodash.isarray";
 
 import DataView = powerbi.DataView;
 import VisualUpdateType = powerbi.VisualUpdateType;
@@ -44,9 +45,9 @@ export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
 
     public update(dataView: DataView[] | DataView, updateType?: VisualUpdateType): void {
         let options: VisualUpdateOptions = {
-            dataViews: _.isArray(dataView) ? dataView : [dataView],
+            dataViews: isArray(dataView) ? dataView : [dataView],
             viewport: this.viewport,
-            type: updateType
+            type: updateType!
         };
 
         this.visual.update(options);

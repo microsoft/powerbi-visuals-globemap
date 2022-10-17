@@ -7,5 +7,7 @@ typings
 .api
 *.log
 /coverage
-.vscode/settings.json
+.vscode/
 webpack.statistics.html
+webpack.statistics.dev.html
+webpack.statistics.prod.html

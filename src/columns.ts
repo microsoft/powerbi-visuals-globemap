@@ -38,14 +38,35 @@ export type GlobeMapCategoricalColumns = DataViewCategoryColumn & DataViewValueC
 
 export class GlobeMapColumns<T> {
     public static getCategoricalColumns(dataView: DataView): GlobeMapColumns<GlobeMapCategoricalColumns> {
-        let categorical = dataView && dataView.categorical;
-        let categories = categorical && categorical.categories || [];
-        let values = categorical && categorical.values || <DataViewValueColumns>[];
-        return categorical && _.mapValues(
-            new this<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns>(),
-            (n, i) => categories.filter(x => x.source.roles && x.source.roles[i])[0]
-                || values.source && values.source.roles && values.source.roles[i] && values
-                || values.filter(x => x.source.roles && x.source.roles[i]));
+        let categorical: DataViewCategorical = dataView && dataView.categorical;
+        let categories: DataViewCategoryColumn[] = categorical && categorical.categories || [];
+        let values: DataViewValueColumns = categorical && categorical.values || <DataViewValueColumns>[];
+
+        let obj = new this<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns>();
+
+        let result = _.mapValues(
+            obj,
+            (n, i) => {
+                let dataViewCategoryColumn: DataViewCategoryColumn = categories.filter(x => 
+                    x.source.roles 
+                    && x.source.roles[i])[0];
+                
+                let dataViewValueColumns: DataViewValueColumns = values.source 
+                    && values.source.roles 
+                    && values.source.roles[i] 
+                    && values;
+                
+                let dataViewValueColumnArray: DataViewValueColumn[] = values.filter(x => 
+                    x.source.roles 
+                    && x.source.roles[i]);
+                
+                let res1 = dataViewCategoryColumn || dataViewValueColumns;
+                let res2 = res1 || dataViewValueColumnArray;
+
+                return res2;
+            });
+
+        return result; //{} as GlobeMapColumns<GlobeMapCategoricalColumns>;
     }
 
     public static getGroupedValueColumns(dataView: DataView): GlobeMapColumns<DataViewValueColumn>[] {

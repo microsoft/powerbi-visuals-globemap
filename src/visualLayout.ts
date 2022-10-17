@@ -23,7 +23,10 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-import * as _ from "lodash";
+
+import keys from "lodash.keys";
+import clone from "lodash.clone";
+
 import powerbi from "powerbi-visuals-api";
 import IViewport = powerbi.IViewport;
 
@@ -55,7 +58,7 @@ export class VisualLayout {
     }
 
     public get viewportCopy(): IViewport {
-        return _.clone(this.viewport);
+        return clone(this.viewport);
     }
 
     // Returns viewport minus margin
@@ -76,8 +79,8 @@ export class VisualLayout {
     }
 
     public set viewport(value: IViewport) {
-        this.previousOriginalViewportValue = _.clone(this.originalViewportValue);
-        this.originalViewportValue = _.clone(value);
+        this.previousOriginalViewportValue = clone(this.originalViewportValue);
+        this.originalViewportValue = clone(value);
         this.setUpdateObject(value,
             (v: IViewport) => this.viewportValue = v,
             (o: IViewport) => VisualLayout.restrictToMinMax(o, this.minViewport));
@@ -110,7 +113,7 @@ export class VisualLayout {
     }
 
     private setUpdateObject<T>(object: T, setObjectFn: (T) => void, beforeUpdateFn?: (T) => void): void {
-        object = _.clone(object);
+        object = clone(object);
         setObjectFn(VisualLayout.createNotifyChangedObject(object, (o: T) => {
             if (beforeUpdateFn) beforeUpdateFn(object);
             this.update();
@@ -124,7 +127,7 @@ export class VisualLayout {
 
     private static createNotifyChangedObject<T>(object: T, objectChanged: (o?: T, key?: string) => void): T {
         let result: T = <T>{};
-        _.keys(object).forEach(key => Object.defineProperty(result, key, {
+        keys(object).forEach(key => Object.defineProperty(result, key, {
             get: () => object[key],
             set: (value) => { object[key] = value; objectChanged(object, key); },
             enumerable: true,
@@ -134,7 +137,7 @@ export class VisualLayout {
     }
 
     private static restrictToMinMax<T>(value: T, minValue?: T): T {
-        _.keys(value).forEach(x => value[x] = Math.max(minValue && minValue[x] || 0, value[x]));
+        keys(value).forEach(x => value[x] = Math.max(minValue && minValue[x] || 0, value[x]));
         return value;
     }
 }

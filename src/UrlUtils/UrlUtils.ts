@@ -24,7 +24,10 @@
  *  THE SOFTWARE.
  */
 
-import * as _ from "lodash";
+import assign from "lodash.assign";
+import startsWith from "lodash.startswith";
+import isEmpty from "lodash.isempty";
+import toPairs from "lodash.topairs";
 
 export module UrlUtils {
     /**
@@ -38,20 +41,18 @@ export module UrlUtils {
         let result: string = splitUrl.baseUrl;
 
         if (keepExisting) {
-            _.assign(parameters, splitUrl.queryParameters);
+            assign(parameters, splitUrl.queryParameters);
         }
 
-        if (_.isEmpty(parameters)) {
+        if (isEmpty(parameters)) {
             return result;
         }
 
-        result += `?${
-            _.chain(parameters)
-                .toPairs()
-                .map(pair => pair.join("="))
-                .value()
-                .join("&")
-            }`;
+        const pairs = toPairs(parameters);
+        const mappedPairs = pairs.map(pair => pair.join("="));
+        const joinedPairs = mappedPairs.join("&");
+
+        result += `?${joinedPairs}`;
 
         return result;
     }
@@ -77,10 +78,10 @@ export module UrlUtils {
     /** Parses a query string of the form ?param1=value1&param2=value2 into its invidual parameters. The leading ? is not required */
     function parseQueryString(queryString: string): _.Dictionary<string> {
         if (!queryString) {
-            return null;
+            return {};
         }
 
-        if (_.startsWith(queryString, "?")) {
+        if (startsWith(queryString, "?")) {
             queryString = queryString.substring(1);
         }
 

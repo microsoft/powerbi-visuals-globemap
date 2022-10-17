@@ -26,13 +26,17 @@
 import "./../style/globemap.less";
 
 import powerbi from "powerbi-visuals-api";
-import * as _ from "lodash";
+
+import isEmpty from "lodash.isempty";
+import first from "lodash.first";
+import last from "lodash.last";
+
 import "@babel/polyfill";
 
 import * as THREE from "three";
 import "./lib/OrbitControls";
 import "../bower_components/webgl-heatmap/webgl-heatmap";
-import * as $ from "jquery";
+import $ from "jquery";
 
 import IPromise = powerbi.IPromise;
 import DataView = powerbi.DataView;
@@ -105,9 +109,9 @@ import converterHelper = ch.converterHelper;
 import { ColorHelper } from "powerbi-visuals-utils-colorutils";
 
 // powerbi.extensibility.utils.formatting
-import { valueFormatter as vf } from "powerbi-visuals-utils-formattingutils";
-import IValueFormatter = vf.IValueFormatter;
-import valueFormatter = vf.valueFormatter;
+import { IValueFormatter } from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
+import { valueFormatter } from "powerbi-visuals-utils-formattingutils";
+
 import { ICacheManager } from "./cache/interfaces/ICacheManager";
 
 interface ExtendedPromise<T> extends IPromise<T> {
@@ -195,7 +199,7 @@ export class GlobeMap implements IVisual {
         const categorical: GlobeMapColumns<GlobeMapCategoricalColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
         if (!categorical
             || !categorical.Location
-            || _.isEmpty(categorical.Location.values) && !(categorical.X && categorical.Y)) {
+            || isEmpty(categorical.Location.values) && !(categorical.X && categorical.Y)) {
             return null;
         }
 
@@ -228,7 +232,7 @@ export class GlobeMap implements IVisual {
                 locations = new Array(categorical.X.values.length);
             }
         }
-        if (!_.isEmpty(categorical.Height)) {
+        if (!isEmpty(categorical.Height)) {
             if (groupedColumns.length > 1) {
                 heights = [];
                 heightsBySeries = [];
@@ -322,7 +326,7 @@ export class GlobeMap implements IVisual {
                 };
             }
         }
-        if (!_.isEmpty(categorical.Heat)) {
+        if (!isEmpty(categorical.Heat)) {
             if (groupedColumns.length > 1) {
                 heats = [];
                 for (let i: number = 0; i < groupedColumns.length; i++) {
@@ -344,12 +348,12 @@ export class GlobeMap implements IVisual {
         const maxHeight: number = Math.max.apply(null, heights) || 1;
         const maxHeat: number = Math.max.apply(null, heats) || 1;
         const heatFormatter: IValueFormatter = valueFormatter.create({
-            format: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.format,
+            format: !isEmpty(categorical.Heat) && categorical.Heat[0].source.format,
             value: heats[0],
             value2: heats[1]
         });
         const heightFormatter = valueFormatter.create({
-            format: !_.isEmpty(categorical.Height) && categorical.Height[0].source.format,
+            format: !isEmpty(categorical.Height) && categorical.Height[0].source.format,
             value: heights[0],
             value2: heights[1]
         });
@@ -368,13 +372,13 @@ export class GlobeMap implements IVisual {
                 if (typeof (locations[i]) === "string") {
                     place = `${locations[i]}`.toLowerCase();
                     placeKey = `${place} / ${locationType}`;
-                    location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
+                    location = (!isEmpty(categorical.X) && !isEmpty(categorical.Y))
                         ? { longitude: <number>categorical.X[0].values[i] || 0, latitude: <number>categorical.Y[0].values[i] || 0 }
                         : undefined;
                     toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
                     locationValue = `${locations[i]}`;
                 } else {
-                    location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
+                    location = (!isEmpty(categorical.X) && !isEmpty(categorical.Y))
                         ? { longitude: <number>categorical.X.values[i] || 0, latitude: <number>categorical.Y.values[i] || 0 }
                         : undefined;
                     place = location ? `${categorical.X.values[i]} ${categorical.Y.values[i]}` : undefined;
@@ -397,11 +401,11 @@ export class GlobeMap implements IVisual {
                     seriesToolTipData: toolTipDataBySeries ? toolTipDataBySeries[i] : undefined,
                     heat: heat || 0,
                     toolTipData: {
-                        location: { displayName: !_.isEmpty(toolTipDataLocationName) && toolTipDataLocationName, value: locationValue },
-                        longitude: { displayName: !_.isEmpty(toolTipDataLongName) && toolTipDataLongName, value: longitudeValue },
-                        latitude: { displayName: !_.isEmpty(toolTipDataLatName) && toolTipDataLatName, value: latitudeValue },
-                        height: { displayName: !_.isEmpty(categorical.Height) && categorical.Height[0].source.displayName, value: heightFormatter.format(heights[i]) },
-                        heat: { displayName: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.displayName, value: heatFormatter.format(heats[i]) }
+                        location: { displayName: !isEmpty(toolTipDataLocationName) && toolTipDataLocationName, value: locationValue },
+                        longitude: { displayName: !isEmpty(toolTipDataLongName) && toolTipDataLongName, value: longitudeValue },
+                        latitude: { displayName: !isEmpty(toolTipDataLatName) && toolTipDataLatName, value: latitudeValue },
+                        height: { displayName: !isEmpty(categorical.Height) && categorical.Height[0].source.displayName, value: heightFormatter.format(heights[i]) },
+                        heat: { displayName: !isEmpty(categorical.Heat) && categorical.Heat[0].source.displayName, value: heatFormatter.format(heats[i]) }
                     }
                 };
                 dataPoints.push(renderDatum);
@@ -699,7 +703,7 @@ export class GlobeMap implements IVisual {
 
     public static extendTiles(tileCacheData: string, language: string): Promise<{}> {
         let result = [];
-
+    
         return new Promise<{}>((resolve, reject) => {
             if (!tileCacheData || !tileCacheData.length) {
                 resolve(result);
@@ -720,7 +724,7 @@ export class GlobeMap implements IVisual {
                         const gaps = zoomArray.gaps;
                         let resultForCurrentZoom = {};
                         gaps.forEach((gap: number[]) => {
-                            for (let gapItem = _.first(gap); gapItem <= _.last(gap); gapItem++) {
+                            for (let gapItem = first(gap); gapItem <= last(gap); gapItem++) {
                                 let stringGap: string = gapItem.toString();
                                 while (stringGap.length < rank) {
                                     stringGap = `0${stringGap}`;
@@ -733,7 +737,7 @@ export class GlobeMap implements IVisual {
 
                     resolve(result);
                 })
-                .fail(() => {
+                .catch(() => {
                     reject("Bing Map service metadata loading error");
                 });
         });
@@ -755,7 +759,7 @@ export class GlobeMap implements IVisual {
                     this.localStorageService.set(`${GlobeMap.TILE_STORAGE_KEY}_${language}`, minimizedTileCacheData);
 
                     resolve(tileCacheValue);
-                }).fail(() => {
+                }).catch(() => {
                     resolve(tileCacheValue);
                 });
         });
@@ -794,21 +798,24 @@ export class GlobeMap implements IVisual {
         });
     }
 
-    private static getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> {
-        return $.ajax(GlobeMap.metadataUrl)
-            .then((data: BingMetadata) => {
-                if (data.resourceSets.length) {
-                    let resourceSet = data.resourceSets[0];
-                    if (resourceSet && resourceSet.resources.length) {
-                        return resourceSet.resources[0];
-                    }
+    private static async getBingMapsServerMetadata(): Promise<BingResourceMetadata> {
+        let metaData: BingMetadata = {} as BingMetadata;
+        try {
+            const response = await fetch(GlobeMap.metadataUrl);
+            metaData = await response.json();
+
+            if (metaData.resourceSets.length) {
+                let resourceSet = metaData.resourceSets[0];
+                if (resourceSet && resourceSet.resources.length) {
+                    return resourceSet.resources[0];
                 }
-                throw "Bing Maps API response was changed. Please update code for new version";
-            })
-            .fail((error: JQueryPromise<{}>) => {
-                console.error(JSON.stringify(error));
-                return GlobeMap.reserveBindMapsMetadata;
-            });
+            }
+            throw "Bing Maps API response was changed. Please update code for new version";
+        }
+        catch(error) {
+            console.error(JSON.stringify(error));  
+            return GlobeMap.reserveBindMapsMetadata;   
+        } 
     }
 
     /**

@@ -8,7 +8,9 @@
     "sourceMap": true,
     "outDir": "./.tmp/build/",
     "moduleResolution": "node",
-    "declaration": true
+    "declaration": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "files": [
     "src/globemap.ts"

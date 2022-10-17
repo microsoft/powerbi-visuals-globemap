@@ -1,5 +1,7 @@
 import powerbi from "powerbi-visuals-api";
-import * as _ from "lodash";
+
+import assign from "lodash.assign";
+
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
 
 import { ICacheManager } from "./interfaces/ICacheManager";
@@ -70,7 +72,7 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
         return new Promise<string>((resolve, reject) => {
             this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS).then((data) => {
                 const locationsFromStorage = JSON.parse(data);
-                const mergedObject = locationsFromStorage ? _.extend(locationsFromStorage, locationItemsObject) : locationItemsObject;
+                const mergedObject = locationsFromStorage ? assign(locationsFromStorage, locationItemsObject) : locationItemsObject;
 
                 const valueObjectToString = JSON.stringify(mergedObject);
                 this.localStorageService.set(LocalStorageCache.TILE_LOCATIONS, valueObjectToString)
