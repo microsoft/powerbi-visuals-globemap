@@ -36,7 +36,6 @@ import "@babel/polyfill";
 import * as THREE from "three";
 import "./lib/OrbitControls";
 import "../bower_components/webgl-heatmap/webgl-heatmap";
-import $ from "jquery";
 
 import IPromise = powerbi.IPromise;
 import DataView = powerbi.DataView;
@@ -119,6 +118,7 @@ interface ExtendedPromise<T> extends IPromise<T> {
 }
 
 export class GlobeMap implements IVisual {
+    private mouseDownTime: number;
     private localStorageService: ILocalVisualStorageService;
     public static MercartorSphere: MercartorSphere;
     private GlobeSettings = {
@@ -155,8 +155,8 @@ export class GlobeMap implements IVisual {
     };
     private static CountTilesPerSegment: number = 4;
     private layout: VisualLayout;
-    private root: JQuery;
-    private rendererContainer: JQuery;
+    private root: HTMLElement;
+    private rendererContainer: HTMLElement;
     private rendererCanvas: HTMLElement;
     private camera: THREE.PerspectiveCamera;
     private renderer: THREE.WebGLRenderer;
@@ -500,11 +500,16 @@ export class GlobeMap implements IVisual {
     constructor(options: VisualConstructorOptions) {
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageService;
-        this.root = $("<div>").appendTo(options.element)
+
+        this.root = options.element;
+        this.root.setAttribute("drag-resize-disabled", "true");
+        this.root.style.position = "absolute";
+        
+        /*this.root = $("<div>").appendTo(options.element)
             .attr("drag-resize-disabled", "true")
             .css({
                 "position": "absolute"
-            });
+            });*/
 
         this.visualHost = options.host;
         this.visualHost.telemetry.trace(VisualEventType.Trace, 'bing load coordinates');
@@ -561,7 +566,11 @@ export class GlobeMap implements IVisual {
 
     private initScene(): void {
         this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-        this.rendererContainer = $("<div>").appendTo(this.root).addClass("globeMapView");
+        
+        this.rendererContainer = document.createElement("div");
+        this.rendererContainer.classList.add("globeMapView");
+
+        this.root.append(this.rendererContainer);
 
         this.rendererContainer.append(this.renderer.domElement);
         this.rendererCanvas = this.renderer.domElement;
@@ -864,7 +873,7 @@ export class GlobeMap implements IVisual {
 
     /**
      * Load tiles of Bing Maps
-     * @param jCanvas jQuery convas object
+     * @param canvasEl HTML canvas object
      * @param tiles map of tiles
      * @param successCallback call this function when all tiles of the map are successfully loaded
      */
@@ -969,7 +978,10 @@ export class GlobeMap implements IVisual {
             return;
         }
         this.layout.viewport = options.viewport;
-        this.root.css(this.layout.viewportIn);
+
+        this.root.style.height = this.layout.viewportIn.height.toString();
+        this.root.style.width = this.layout.viewportIn.width.toString();
+
         this.controlContainer.setAttribute("style",
             `display: ${this.layout.viewportIn.height > GlobeMap.ZoomControlSettings.height
                 && this.layout.viewportIn.width > GlobeMap.ZoomControlSettings.width
@@ -1090,67 +1102,82 @@ export class GlobeMap implements IVisual {
         }
     }
 
-    private initRayCaster() {
-        this.rayCaster = new THREE.Raycaster();
-
-        const element: HTMLElement = this.root.get(0);
-        let mouseDownTime: number;
+    private handleMouseMove = (event: MouseEvent) => {
+        const element = this.root;
         const elementStyle: CSSStyleDeclaration = window.getComputedStyle(element);
 
-        $(this.rendererCanvas).on("mousemove", (event: JQueryEventObject) => {
-            const elementViewHeight: number = element.offsetHeight - element.offsetTop
-                - parseFloat(elementStyle.paddingTop)
-                - parseFloat(elementStyle.paddingBottom);
+        const elementViewHeight: number = element.offsetHeight - element.offsetTop
+            - parseFloat(elementStyle.paddingTop)
+            - parseFloat(elementStyle.paddingBottom);
+    
+        const elementViewWidth: number = element.offsetWidth - element.offsetLeft
+            - parseFloat(elementStyle.paddingLeft)
+            - parseFloat(elementStyle.paddingRight);
+    
+        const fractionalPositionX: number = event.offsetX / elementViewWidth;
+        const fractionalPositionY: number = event.offsetY / elementViewHeight;
+    
+        this.mousePos = new THREE.Vector2(event.clientX, event.clientY);
+    
+        // get coordinates in -1 to +1 space
+        this.mousePosNormalized = new THREE.Vector2(fractionalPositionX * 2 - 1, -fractionalPositionY * 2 + 1);
+    
+        this.needsRender = true;
+    }
 
-            const elementViewWidth: number = element.offsetWidth - element.offsetLeft
-                - parseFloat(elementStyle.paddingLeft)
-                - parseFloat(elementStyle.paddingRight);
+    private handleMouseDown = (event: MouseEvent) => {
+        cancelAnimationFrame(this.cameraAnimationFrameId);
+        this.mouseDownTime = Date.now();
+    };
 
-            const fractionalPositionX: number = event.offsetX / elementViewWidth;
-            const fractionalPositionY: number = event.offsetY / elementViewHeight;
+    private handleMouseUp = (event: MouseEvent) => {
+        // Debounce slow clicks
+        if ((Date.now() - this.mouseDownTime) > this.GlobeSettings.clickInterval) {
+            return;
+        }
 
-            this.mousePos = new THREE.Vector2(event.clientX, event.clientY);
-
-            // get coordinates in -1 to +1 space
-            this.mousePosNormalized = new THREE.Vector2(fractionalPositionX * 2 - 1, -fractionalPositionY * 2 + 1);
-
-            this.needsRender = true;
-        }).on("mousedown", (event: JQueryEventObject) => {
-            cancelAnimationFrame(this.cameraAnimationFrameId);
-            mouseDownTime = Date.now();
-        }).on("mouseup", (event: JQueryEventObject) => {
-
-            // Debounce slow clicks
-            if ((Date.now() - mouseDownTime) > this.GlobeSettings.clickInterval) {
-                return;
-            }
-
-            if (this.hoveredBar && event.shiftKey) {
-                this.selectedBar = this.hoveredBar;
+        if (this.hoveredBar && event.shiftKey) {
+            this.selectedBar = this.hoveredBar;
+            this.animateCamera(this.selectedBar.position, () => {
+                if (!this.selectedBar) return;
+                this.orbitControls.target.copy(this.selectedBar.position.clone().normalize().multiplyScalar(this.GlobeSettings.earthRadius));
+                this.orbitControls.minDistance = 1;
+            });
+        } else {
+            if (this.selectedBar) {
                 this.animateCamera(this.selectedBar.position, () => {
-                    if (!this.selectedBar) return;
-                    this.orbitControls.target.copy(this.selectedBar.position.clone().normalize().multiplyScalar(this.GlobeSettings.earthRadius));
-                    this.orbitControls.minDistance = 1;
+                    this.orbitControls.target.set(0, 0, 0);
+                    this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
                 });
-            } else {
-                if (this.selectedBar) {
-                    this.animateCamera(this.selectedBar.position, () => {
-                        this.orbitControls.target.set(0, 0, 0);
-                        this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
-                    });
-                    this.selectedBar = null;
-                }
+                this.selectedBar = null;
             }
-        }).on("mousewheel DOMMouseScroll", (e: { originalEvent }) => {
-            this.needsRender = true;
-            if (this.orbitControls.enabled && this.orbitControls.enableZoom) {
-                cancelAnimationFrame(this.cameraAnimationFrameId);
-                this.heatTexture.needsUpdate = true;
-                let event: { wheelDelta, detail } = e.originalEvent;
-                const delta: number = event.wheelDelta > 0 || event.detail < 0 ? 1 : -1;
-                this.updateBarsAndHeatMapByZoom(delta);
-            }
-        });
+        }
+    }
+
+    private handleWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        this.needsRender = true;
+        if (this.orbitControls.enabled && this.orbitControls.enableZoom) {
+            cancelAnimationFrame(this.cameraAnimationFrameId);
+            this.heatTexture.needsUpdate = true;
+            let event: { deltaY, detail } = e;
+            const delta: number = event.deltaY < 0 || event.detail < 0 ? 1 : -1;
+            this.updateBarsAndHeatMapByZoom(delta);
+        }
+    }
+
+    private initRayCaster() {
+        this.rayCaster = new THREE.Raycaster();
+        const element = this.root;
+        const elementStyle: CSSStyleDeclaration = window.getComputedStyle(element);
+
+        this.rendererCanvas.addEventListener("mousemove", this.handleMouseMove);
+        
+        this.rendererCanvas.addEventListener("mousedown", this.handleMouseDown);
+        
+        this.rendererCanvas.addEventListener("mouseup", this.handleMouseUp);
+        
+        this.rendererCanvas.addEventListener("wheel", this.handleWheel, { passive: false });
     }
 
     private intersectBars() {
@@ -1324,15 +1351,22 @@ export class GlobeMap implements IVisual {
         }
 
         this.orbitControls = null;
+
         if (this.rendererCanvas) {
-            $(this.rendererCanvas)
-                .off("mousemove mouseup mousedown mousewheel DOMMouseScroll");
+
+            this.rendererCanvas.removeEventListener("mousemove", this.handleMouseMove); 
+
+            this.rendererCanvas.removeEventListener("mousedown", this.handleMouseDown); 
+
+            this.rendererCanvas.removeEventListener("mouseup", this.handleMouseUp); 
+
+            this.rendererCanvas.removeEventListener("wheel", this.handleWheel);  
         }
 
         this.rendererCanvas = null;
 
         if (this.root) {
-            this.root.empty();
+            this.root.replaceChildren();
         }
 
         this.hideTooltip();

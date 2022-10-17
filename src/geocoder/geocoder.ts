@@ -24,8 +24,6 @@
  *  THE SOFTWARE.
  */
 
-import * as $ from "jquery";
-
 import {
     IGeocoder,
     ILocationDictionary
@@ -180,21 +178,30 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         const url = `${this.bingSpatialDataFlowUrl()}/${jobID}/output/succeeded/?${queryString}`;
 
         const callbackGuid: string = BingMapsGeocoder.generateCallbackGuid();
+        let xmlDocument: XMLDocument = {} as XMLDocument;
 
         // This is super dirty hack to bypass faked window object in order to use jsonp
         // We use jsonp because sandboxed iframe does not have an origin. This fact breaks regular AJAX queries.
         window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid] = (data) => {
+            xmlDocument = data;
             delete window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid];
         };
 
         // output - json as default; xml
-        return $.ajax({
+        /*return $.ajax({
             url: url,
             dataType: 'xml',
             crossDomain: true,
             jsonp: "jsonp",
             jsonpCallback: `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`
-        }).promise();
+        }).promise();*/
+
+        const jsonpCallback = `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`;
+        const script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = `${url}&callback=${jsonpCallback}`;
+
+        return xmlDocument;
     }
 
     private async monitorJobStatusJsonp(jobID: string): Promise<BingJobStatusResponse> {
@@ -202,20 +209,29 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         const url = `${this.bingSpatialDataFlowUrl()}/${jobID}?${queryString}`;
 
         const callbackGuid: string = BingMapsGeocoder.generateCallbackGuid();
+        let bingJobStatusResponse: BingJobStatusResponse = {} as BingJobStatusResponse;
 
         // This is super dirty hack to bypass faked window object in order to use jsonp
         // We use jsonp because sandboxed iframe does not have an origin. This fact breaks regular AJAX queries.
         window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid] = (data) => {
+            bingJobStatusResponse = data;
             delete window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid];
         };
 
-        return $.ajax({
+        /*return $.ajax({
             url: url,
             dataType: 'json',
             crossDomain: true,
             jsonp: "jsonp",
             jsonpCallback: `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`
-        }).promise();
+        }).promise();*/
+
+        const jsonpCallback = `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`;
+        const script = document.createElement("script");
+        script.type = "text/javascript";
+        script.src = `${url}&callback=${jsonpCallback}`;
+
+        return bingJobStatusResponse;
     }
 
     private static generateCallbackGuid(): string {

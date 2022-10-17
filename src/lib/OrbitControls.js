@@ -214,8 +214,8 @@ if (!THREE.OrbitControl) {
 
             scope.domElement.removeEventListener('contextmenu', onContextMenu, false);
             scope.domElement.removeEventListener('mousedown', onMouseDown, false);
-            scope.domElement.removeEventListener('mousewheel', onMouseWheel, false);
-            scope.domElement.removeEventListener('MozMousePixelScroll', onMouseWheel, false); // firefox
+            scope.domElement.removeEventListener('wheel', onMouseWheel, false);
+            //scope.domElement.removeEventListener('MozMousePixelScroll', onMouseWheel, false); // firefox
 
             scope.domElement.removeEventListener('touchstart', onTouchStart, false);
             scope.domElement.removeEventListener('touchend', onTouchEnd, false);
@@ -486,11 +486,11 @@ if (!THREE.OrbitControl) {
         function handleMouseWheel(event) {
             var delta = 0;
 
-            if (event.wheelDelta !== undefined) {
+            if (event.deltaY !== undefined) {
 
                 // WebKit / Opera / Explorer 9
 
-                delta = event.wheelDelta;
+                delta = event.deltaY;
 
             } else if (event.detail !== undefined) {
 
@@ -502,11 +502,11 @@ if (!THREE.OrbitControl) {
 
             if (delta > 0) {
 
-                scope.dollyOut(getZoomScale());
+                scope.dollyIn(getZoomScale());
 
             } else if (delta < 0) {
 
-                scope.dollyIn(getZoomScale());
+                scope.dollyOut(getZoomScale());
 
             }
 
@@ -855,8 +855,8 @@ if (!THREE.OrbitControl) {
         scope.domElement.addEventListener('contextmenu', onContextMenu, false);
 
         scope.domElement.addEventListener('mousedown', onMouseDown, false);
-        scope.domElement.addEventListener('mousewheel', onMouseWheel, false);
-        scope.domElement.addEventListener('MozMousePixelScroll', onMouseWheel, false); // firefox
+        scope.domElement.addEventListener('wheel', onMouseWheel, false);
+        //scope.domElement.addEventListener('MozMousePixelScroll', onMouseWheel, false); // firefox
 
         scope.domElement.addEventListener('touchstart', onTouchStart, false);
         scope.domElement.addEventListener('touchend', onTouchEnd, false);

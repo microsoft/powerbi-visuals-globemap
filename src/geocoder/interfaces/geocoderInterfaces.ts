@@ -54,11 +54,6 @@ export interface IGeocodeQuery {
     getResult(data: {}): IGeocodeResult;
 }
 
-export interface IGeocodeQueueItem {
-    query: IGeocodeQuery;
-    deferred: JQueryDeferred<{}>;
-}
-
 export interface IGeocodeResource extends IGeocodeCoordinate {
     addressLine: string;
     locality: string;
