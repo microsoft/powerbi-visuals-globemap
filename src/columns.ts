@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 
-import * as _ from "lodash";
+import mapValues from "lodash.mapvalues";
 import powerbi from "powerbi-visuals-api";
 
 import DataView = powerbi.DataView;
@@ -44,22 +44,22 @@ export class GlobeMapColumns<T> {
 
         let obj = new this<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns>();
 
-        let result = _.mapValues(
+        let result = mapValues(
             obj,
             (n, i) => {
-                let dataViewCategoryColumn: DataViewCategoryColumn = categories.filter(x => 
-                    x.source.roles 
+                let dataViewCategoryColumn: DataViewCategoryColumn = categories.filter(x =>
+                    x.source.roles
                     && x.source.roles[i])[0];
-                
-                let dataViewValueColumns: DataViewValueColumns = values.source 
-                    && values.source.roles 
-                    && values.source.roles[i] 
+
+                let dataViewValueColumns: DataViewValueColumns = values.source
+                    && values.source.roles
+                    && values.source.roles[i]
                     && values;
-                
-                let dataViewValueColumnArray: DataViewValueColumn[] = values.filter(x => 
-                    x.source.roles 
+
+                let dataViewValueColumnArray: DataViewValueColumn[] = values.filter(x =>
+                    x.source.roles
                     && x.source.roles[i]);
-                
+
                 let res1 = dataViewCategoryColumn || dataViewValueColumns;
                 let res2 = res1 || dataViewValueColumnArray;
 
@@ -73,7 +73,7 @@ export class GlobeMapColumns<T> {
         let categorical: DataViewCategorical = dataView && dataView.categorical;
         let values = categorical && categorical.values;
         let grouped: DataViewValueColumnGroup[] = values && values.grouped();
-        return grouped && grouped.map(g => _.mapValues(
+        return grouped && grouped.map(g => mapValues(
             new this<DataViewValueColumn>(),
             (n, i) => g.values.filter(v => v.source.roles[i])[0]));
     }
