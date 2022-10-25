@@ -24,7 +24,7 @@
  *  THE SOFTWARE.
  */
 
-import * as _ from "lodash";
+import mapValues from "lodash.mapvalues";
 import powerbi from "powerbi-visuals-api";
 
 import DataView = powerbi.DataView;
@@ -34,46 +34,29 @@ import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import DataViewCategorical = powerbi.DataViewCategorical;
 import DataViewValueColumnGroup = powerbi.DataViewValueColumnGroup;
 
-export type GlobeMapCategoricalColumns = DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns;
+export type GlobeMapCategoricalColumns = DataViewCategoryColumn | DataViewValueColumn[] | DataViewValueColumns;
 
 export class GlobeMapColumns<T> {
     public static getCategoricalColumns(dataView: DataView): GlobeMapColumns<GlobeMapCategoricalColumns> {
-        let categorical: DataViewCategorical = dataView && dataView.categorical;
-        let categories: DataViewCategoryColumn[] = categorical && categorical.categories || [];
-        let values: DataViewValueColumns = categorical && categorical.values || <DataViewValueColumns>[];
+        const categorical: DataViewCategorical = dataView && dataView.categorical;
+        const categories: DataViewCategoryColumn[] = categorical && categorical.categories || [];
+        const values: DataViewValueColumns = categorical && categorical.values || <DataViewValueColumns>[];
 
-        let obj = new this<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns>();
+        const categoricalColumns = new this<GlobeMapCategoricalColumns>();
 
-        let result = _.mapValues(
-            obj,
-            (n, i) => {
-                let dataViewCategoryColumn: DataViewCategoryColumn = categories.filter(x => 
-                    x.source.roles 
-                    && x.source.roles[i])[0];
-                
-                let dataViewValueColumns: DataViewValueColumns = values.source 
-                    && values.source.roles 
-                    && values.source.roles[i] 
-                    && values;
-                
-                let dataViewValueColumnArray: DataViewValueColumn[] = values.filter(x => 
-                    x.source.roles 
-                    && x.source.roles[i]);
-                
-                let res1 = dataViewCategoryColumn || dataViewValueColumns;
-                let res2 = res1 || dataViewValueColumnArray;
-
-                return res2;
-            });
-
-        return result; //{} as GlobeMapColumns<GlobeMapCategoricalColumns>;
+        return categorical && mapValues(
+            categoricalColumns,
+            (n, i) => categories.filter(x => x.source.roles && x.source.roles[i])[0]
+                || values.source && values.source.roles && values.source.roles[i] && values
+                || values.filter(x => x.source.roles && x.source.roles[i]));
     }
 
     public static getGroupedValueColumns(dataView: DataView): GlobeMapColumns<DataViewValueColumn>[] {
-        let categorical: DataViewCategorical = dataView && dataView.categorical;
-        let values = categorical && categorical.values;
-        let grouped: DataViewValueColumnGroup[] = values && values.grouped();
-        return grouped && grouped.map(g => _.mapValues(
+        const categorical: DataViewCategorical = dataView && dataView.categorical;
+        const values = categorical && categorical.values;
+        const grouped: DataViewValueColumnGroup[] = values && values.grouped();
+
+        return grouped && grouped.map(g => mapValues(
             new this<DataViewValueColumn>(),
             (n, i) => g.values.filter(v => v.source.roles[i])[0]));
     }
