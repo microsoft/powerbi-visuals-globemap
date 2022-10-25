@@ -197,6 +197,7 @@ export class GlobeMap implements IVisual {
     private static datapointShiftPoint: number = 0.01;
     public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
         const categorical: GlobeMapColumns<GlobeMapCategoricalColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
+        debugger
         if (!categorical
             || !categorical.Location
             || isEmpty(categorical.Location.values) && !(categorical.X && categorical.Y)) {
@@ -217,6 +218,7 @@ export class GlobeMap implements IVisual {
 
         if (categorical.Location
             && categorical.Location.values
+            && !Array.isArray(categorical.Location)
             && categorical.Location.source
         ) {
             locations = categorical.Location.values;
@@ -264,8 +266,10 @@ export class GlobeMap implements IVisual {
                         if (!toolTipDataBySeries[j]) {
                             toolTipDataBySeries[j] = [];
                         }
+
+                        const displayName = categorical.Series && "source" in categorical.Series ? categorical.Series.source.displayName : "";
                         toolTipDataBySeries[j][i] = {
-                            displayName: categorical.Series && categorical.Series.source && categorical.Series.source.displayName,
+                            displayName: displayName,
                             value: dataView.categorical.values.grouped()[i].name,
                             dataPointValue: values[j]
                         };
@@ -369,13 +373,18 @@ export class GlobeMap implements IVisual {
                 let toolTipDataLatName: string;
                 let location: IGeocodeCoordinate;
                 let locationValue: string;
+
+                const tooltipLongitude = categorical.X && "source" in categorical.X && categorical.X.source && categorical.X.source.displayName;
+                const tooltipLatitiude = categorical.Y && "source" in categorical.Y && categorical.Y.source && categorical.Y.source.displayName;
+                const tooltipLocation = categorical.Location && "source" in categorical.Location && categorical.Location.source.displayName;
+
                 if (typeof (locations[i]) === "string") {
                     place = `${locations[i]}`.toLowerCase();
                     placeKey = `${place} / ${locationType}`;
                     location = (!isEmpty(categorical.X) && !isEmpty(categorical.Y))
                         ? { longitude: <number>categorical.X[0].values[i] || 0, latitude: <number>categorical.Y[0].values[i] || 0 }
                         : undefined;
-                    toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
+                    toolTipDataLocationName = tooltipLocation;
                     locationValue = `${locations[i]}`;
                 } else {
                     location = (!isEmpty(categorical.X) && !isEmpty(categorical.Y))
@@ -383,13 +392,21 @@ export class GlobeMap implements IVisual {
                         : undefined;
                     place = location ? `${categorical.X.values[i]} ${categorical.Y.values[i]}` : undefined;
                     placeKey = location ? categorical.X.values[i] + " " + categorical.Y.values[i] : undefined;
-                    toolTipDataLongName = categorical.X && categorical.X.source && categorical.X.source.displayName;
-                    toolTipDataLatName = categorical.Y && categorical.Y.source && categorical.Y.source.displayName;
+                    toolTipDataLongName = tooltipLongitude;
+                    toolTipDataLatName = tooltipLatitiude;
                     locationValue = "";
                 }
 
-                const longitudeValue: string = GlobeMap.getCategoricalValueByIndex(categorical.X, i);
-                const latitudeValue: string = GlobeMap.getCategoricalValueByIndex(categorical.Y, i);
+                let longitudeValue: string;
+                let latitudeValue: string;
+
+                if(!Array.isArray(categorical.X)) {
+                    longitudeValue = GlobeMap.getCategoricalValueByIndex(categorical.X, i);
+                }
+
+                if(!Array.isArray(categorical.Y)) {
+                    latitudeValue = GlobeMap.getCategoricalValueByIndex(categorical.Y, i);
+                }
 
                 let renderDatum: GlobeMapDataPoint = {
                     location: location,
