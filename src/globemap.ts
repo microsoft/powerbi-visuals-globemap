@@ -35,7 +35,8 @@ import "@babel/polyfill";
 
 import * as THREE from "three";
 import "./lib/OrbitControls";
-import "../bower_components/webgl-heatmap/webgl-heatmap";
+//import "../bower_components/webgl-heatmap/webgl-heatmap";
+const WebGLHeatmap = require("webgl-heatmap");
 
 import IPromise = powerbi.IPromise;
 import DataView = powerbi.DataView;
@@ -96,7 +97,7 @@ class GlobeMapHeatMapClass {
     public addPoint(x: number, y: number, heatPointSize: number, heatIntensity: number) { }
     canvas: HTMLVideoElement;
 }
-let WebGLHeatmap = <typeof GlobeMapHeatMapClass>window["createWebGLHeatmap"];
+//let WebGLHeatmap = <typeof GlobeMapHeatMapClass>window["createWebGLHeatmap"];
 
 import { ILocationDictionary, IGeocodeCoordinate } from "./geocoder/interfaces/geocoderInterfaces";
 

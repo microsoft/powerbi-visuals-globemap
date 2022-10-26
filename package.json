@@ -6,6 +6,11 @@
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
   },
+  "browser": {
+    "fs": false,
+    "os": false,
+    "path": false
+  },
   "scripts": {
     "postinstall": "bower install",
     "pbiviz": "pbiviz",
@@ -39,7 +44,8 @@
     "powerbi-visuals-utils-formattingutils": "^4.7.1",
     "powerbi-visuals-utils-interactivityutils": "^5.7.1",
     "powerbi-visuals-utils-typeutils": "^2.4.1",
-    "three": "0.75.0"
+    "three": "0.75.0",
+    "webgl-heatmap": "^0.2.3"
   },
   "devDependencies": {
     "@types/jasmine": "2.5.47",
