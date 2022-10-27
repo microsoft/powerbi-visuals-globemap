@@ -35,8 +35,6 @@ import "@babel/polyfill";
 
 import * as THREE from "three";
 import "./lib/OrbitControls";
-//import "../bower_components/webgl-heatmap/webgl-heatmap";
-const WebGLHeatmap = require("webgl-heatmap");
 
 import IPromise = powerbi.IPromise;
 import DataView = powerbi.DataView;
@@ -88,6 +86,8 @@ import { CacheManager } from "./cache/CacheManager";
 import { MercartorSphere } from "./map/MercartorSphere";
 import { BingSettings } from "./settings";
 
+const WebGLHeatmap = require("./lib/WebGLHeatmap");
+
 class GlobeMapHeatMapClass {
     constructor(properties: {}) { }
     public display() { }
@@ -97,7 +97,6 @@ class GlobeMapHeatMapClass {
     public addPoint(x: number, y: number, heatPointSize: number, heatIntensity: number) { }
     canvas: HTMLVideoElement;
 }
-//let WebGLHeatmap = <typeof GlobeMapHeatMapClass>window["createWebGLHeatmap"];
 
 import { ILocationDictionary, IGeocodeCoordinate } from "./geocoder/interfaces/geocoderInterfaces";
 
@@ -198,7 +197,7 @@ export class GlobeMap implements IVisual {
     private static datapointShiftPoint: number = 0.01;
     public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
         const categorical: GlobeMapColumns<GlobeMapCategoricalColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
-        debugger
+
         if (!categorical
             || !categorical.Location
             || isEmpty(categorical.Location.values) && !(categorical.X && categorical.Y)) {
@@ -950,7 +949,7 @@ export class GlobeMap implements IVisual {
             // IE & Edge will throw an error about texImage2D, we need to ignore it
             console.error(e);
         }
-
+debugger
         // canvas contents will be used for a texture
         const texture: THREE.Texture = this.heatTexture = new THREE.Texture(heatmap.canvas);
         texture.needsUpdate = true;

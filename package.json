@@ -6,13 +6,7 @@
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
   },
-  "browser": {
-    "fs": false,
-    "os": false,
-    "path": false
-  },
   "scripts": {
-    "postinstall": "bower install",
     "pbiviz": "pbiviz",
     "start": "pbiviz start",
     "package": "pbiviz package",
@@ -44,8 +38,7 @@
     "powerbi-visuals-utils-formattingutils": "^4.7.1",
     "powerbi-visuals-utils-interactivityutils": "^5.7.1",
     "powerbi-visuals-utils-typeutils": "^2.4.1",
-    "three": "0.75.0",
-    "webgl-heatmap": "^0.2.3"
+    "three": "0.75.0"
   },
   "devDependencies": {
     "@types/jasmine": "2.5.47",
@@ -62,7 +55,6 @@
     "@types/lodash.topairs": "^4.3.7",
     "@types/three": "0.0.19",
     "@typescript-eslint/eslint-plugin": "^5.40.0",
-    "bower": "1.8.4",
     "coveralls": "^3.1.1",
     "css-loader": "^6.7.1",
     "eslint": "^8.25.0",
