@@ -51,7 +51,7 @@ export interface IGeocodeResult {
 export interface IGeocodeQuery {
     getKey(): string;
     getUrl(): string;
-    getResult(data: {}): IGeocodeResult;
+    getResult(data: Record<string, never>): IGeocodeResult;
 }
 
 export interface IGeocodeResource extends IGeocodeCoordinate {

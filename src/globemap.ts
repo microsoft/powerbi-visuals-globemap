@@ -88,13 +88,12 @@ import { BingSettings } from "./settings";
 
 const WebGLHeatmap = require("./lib/WebGLHeatmap");
 
-class GlobeMapHeatMapClass {
-    constructor(properties: {}) { }
-    public display() { }
-    public blur() { }
-    public update() { }
-    public clear() { }
-    public addPoint(x: number, y: number, heatPointSize: number, heatIntensity: number) { }
+interface GlobeMapHeatMapClass {
+    display: () => void;
+    blur: () => void;
+    update: () => void;
+    clear: () => void;
+    addPoint: (x: number, y: number, heatPointSize: number, heatIntensity: number) => void;
     canvas: HTMLVideoElement;
 }
 
@@ -112,10 +111,6 @@ import { IValueFormatter } from "powerbi-visuals-utils-formattingutils/lib/src/v
 import { valueFormatter } from "powerbi-visuals-utils-formattingutils";
 
 import { ICacheManager } from "./cache/interfaces/ICacheManager";
-
-interface ExtendedPromise<T> extends IPromise<T> {
-    always(value: {}): void;
-}
 
 export class GlobeMap implements IVisual {
     private mouseDownTime: number;
@@ -195,6 +190,7 @@ export class GlobeMap implements IVisual {
 
     private tooltipService: ITooltipService;
     private static datapointShiftPoint: number = 0.01;
+    // eslint-disable-next-line max-lines-per-function
     public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
         const categorical: GlobeMapColumns<GlobeMapCategoricalColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
@@ -213,7 +209,7 @@ export class GlobeMap implements IVisual {
         let locationType: string;
         let heights: number[];
         let heightsBySeries: number[] | number[][];
-        let toolTipDataBySeries: {}[];
+        let toolTipDataBySeries: Record<string, unknown>[];
         let heats: number[];
 
         if (categorical.Location
@@ -243,7 +239,7 @@ export class GlobeMap implements IVisual {
                 // creating a matrix for drawing values by series later.
                 for (let i: number = 0; i < groupedColumns.length; i++) {
                     const values: number[] = <number[]>groupedColumns[i].Height.values;
-                    let dataPointsParams = {
+                    const dataPointsParams = {
                         dataView: dataView,
                         source: groupedColumns[i].Height.source,
                         seriesIndex: i,
@@ -264,7 +260,7 @@ export class GlobeMap implements IVisual {
                         }
                         heightsBySeries[j][i] = values[j];
                         if (!toolTipDataBySeries[j]) {
-                            toolTipDataBySeries[j] = [];
+                            toolTipDataBySeries[j] = {};
                         }
 
                         const displayName = categorical.Series && "source" in categorical.Series ? categorical.Series.source.displayName : "";
@@ -293,7 +289,7 @@ export class GlobeMap implements IVisual {
                         displayName = categorical.Location.values[index];
                     }
 
-                    let dataPointsParams = {
+                    const dataPointsParams = {
                         dataView: dataView,
                         source: { ...groupedColumns[0].Height.source, displayName: displayName },
                         seriesIndex: 0,
@@ -408,7 +404,7 @@ export class GlobeMap implements IVisual {
                     latitudeValue = GlobeMap.getCategoricalValueByIndex(categorical.Y, i);
                 }
 
-                let renderDatum: GlobeMapDataPoint = {
+                const renderDatum: GlobeMapDataPoint = {
                     location: location,
                     placeKey: placeKey,
                     place: place,
@@ -464,12 +460,13 @@ export class GlobeMap implements IVisual {
                 .createSelectionId();
 
         const category: string = `${converterHelper.getSeriesName(dataPointsParams.source)}`;
-        const objects: {} = categoryColumn && categoryColumn.objects;
+        const objects = categoryColumn && categoryColumn.objects;
         const color: string =
-            objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint ?
-                objects[dataPointsParams.catIndex].dataPoint.fill.solid.color : dataPointsParams.metaData && dataPointsParams.metaData.objects
-                    ? dataPointsParams.colorHelper.getColorForMeasure(dataPointsParams.metaData.objects, "")
-                    : dataPointsParams.colors.getColor(dataPointsParams.seriesIndex).value;
+            objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint 
+                ? objects[dataPointsParams.catIndex].dataPoint.fill["solid"].color 
+                : dataPointsParams.metaData && dataPointsParams.metaData.objects
+                ? dataPointsParams.colorHelper.getColorForMeasure(dataPointsParams.metaData.objects, "")
+                : dataPointsParams.colors.getColor(dataPointsParams.seriesIndex).value;
 
         return {
             label: label,
@@ -494,11 +491,11 @@ export class GlobeMap implements IVisual {
     }
 
     public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        let instances: VisualObjectInstanceEnumeration = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
+        const instances: VisualObjectInstanceEnumeration = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
         switch (options.objectName) {
             case "dataPoint": if (this.data && this.data.seriesDataPoints) {
                 for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
-                    let dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
+                    const dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
                     this.addAnInstanceToEnumeration(instances, {
                         objectName: "dataPoint",
                         displayName: dataPoint.label,
@@ -521,12 +518,6 @@ export class GlobeMap implements IVisual {
         this.root = options.element;
         this.root.setAttribute("drag-resize-disabled", "true");
         this.root.style.position = "absolute";
-        
-        /*this.root = $("<div>").appendTo(options.element)
-            .attr("drag-resize-disabled", "true")
-            .css({
-                "position": "absolute"
-            });*/
 
         this.visualHost = options.host;
         this.visualHost.telemetry.trace(VisualEventType.Trace, 'bing load coordinates');
@@ -698,13 +689,13 @@ export class GlobeMap implements IVisual {
             return [];
         }
 
-        let result = [];
+        const result = [];
         tileCacheArray.forEach(obj => {
             let rank: number = 0, lastKey: number = Number(Object.keys(obj)[0]);
             let gap: number[] = [lastKey];
-            let gaps = [];
-            for (let key in obj) {
-                if (obj.hasOwnProperty(key)) {
+            const gaps = [];
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
                     rank = key.length;
                     const convertedKey: number = Number(key);
                     if (Math.abs(convertedKey - lastKey) > 1) {
@@ -717,7 +708,7 @@ export class GlobeMap implements IVisual {
             }
             gap.push(lastKey);
             gaps.push(gap);
-            let currentZoomTiles: ITileGapObject = {
+            const currentZoomTiles: ITileGapObject = {
                 gaps,
                 rank
             };
@@ -727,28 +718,28 @@ export class GlobeMap implements IVisual {
         return result;
     }
 
-    public static extendTiles(tileCacheData: string, language: string): Promise<{}> {
-        let result = [];
+    public static extendTiles(tileCacheData: string, language: string): Promise<Record<string, unknown>[]> {
+        const result: Record<string, unknown>[] = [];
     
-        return new Promise<{}>((resolve, reject) => {
+        return new Promise<Record<string, unknown>[]>((resolve, reject) => {
             if (!tileCacheData || !tileCacheData.length) {
                 resolve(result);
             }
 
-            let tileCacheArray: ITileGapObject[] = JSON.parse(tileCacheData);
+            const tileCacheArray: ITileGapObject[] = JSON.parse(tileCacheData);
             if (!Array.isArray(tileCacheArray) || !tileCacheArray.length) {
                 resolve(result);
             }
 
             GlobeMap.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
-                    let urlTemplate = metadata.imageUrl.replace("{culture}", language);
+                    const urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     const subdomains = metadata.imageUrlSubdomains;
 
                     tileCacheArray.forEach((zoomArray: ITileGapObject, level) => {
                         const rank: number = zoomArray.rank;
                         const gaps = zoomArray.gaps;
-                        let resultForCurrentZoom = {};
+                        const resultForCurrentZoom = {};
                         gaps.forEach((gap: number[]) => {
                             for (let gapItem = first(gap); gapItem <= last(gap); gapItem++) {
                                 let stringGap: string = gapItem.toString();
@@ -769,15 +760,15 @@ export class GlobeMap implements IVisual {
         });
     }
 
-    private loadFromBing(language: string): Promise<{}> {
-        let tileCacheValue = [];
-        return new Promise<{}>((resolve, reject) => {
+    private loadFromBing(language: string): Promise<TileMap[]> {
+        const tileCacheValue: TileMap[] = [];
+        return new Promise<TileMap[]>((resolve, reject) => {
             GlobeMap.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
 
-                    let urlTemplate = metadata.imageUrl.replace("{culture}", language);
+                    const urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                        let levelTiles = GlobeMap.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
+                        const levelTiles = GlobeMap.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
                         tileCacheValue.push(levelTiles);
                     }
 
@@ -791,9 +782,9 @@ export class GlobeMap implements IVisual {
         });
     }
 
-    private getTilesData(language: string): Promise<{}> {
-        return new Promise<{}>((resolve, reject) => {
-            let tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
+    private getTilesData(language: string): Promise<Record<string, unknown>[] | TileMap[]> {
+        return new Promise<Record<string, unknown>[] | TileMap[]>((resolve, reject) => {
+            const tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
 
             tileCachePromise.then(data => {
                 GlobeMap.extendTiles(data, this.currentLanguage)
@@ -831,7 +822,7 @@ export class GlobeMap implements IVisual {
             metaData = await response.json();
 
             if (metaData.resourceSets.length) {
-                let resourceSet = metaData.resourceSets[0];
+                const resourceSet = metaData.resourceSets[0];
                 if (resourceSet && resourceSet.resources.length) {
                     return resourceSet.resources[0];
                 }
@@ -894,12 +885,12 @@ export class GlobeMap implements IVisual {
      * @param tiles map of tiles
      * @param successCallback call this function when all tiles of the map are successfully loaded
      */
-    private loadTiles(canvasEl: HTMLCanvasElement, tiles: TileMap, successCallback: Function): void {
+    private loadTiles(canvasEl: HTMLCanvasElement, tiles: TileMap, successCallback: () => void): void {
         let tilesLoaded: number = 0;
         const countTiles: number = Object.keys(tiles).length;
         const canvasContext: CanvasRenderingContext2D = canvasEl.getContext("2d");
-        for (let quadKey in tiles) {
-            if (tiles.hasOwnProperty(quadKey)) {
+        for (const quadKey in tiles) {
+            if (Object.prototype.hasOwnProperty.call(tiles, quadKey)) {
                 const coords: ICanvasCoordinate = this.getCoordByQuadKey(quadKey);
                 const tile: HTMLImageElement = new Image();
                 tile.onload = (event: Event) => {
@@ -949,7 +940,7 @@ export class GlobeMap implements IVisual {
             // IE & Edge will throw an error about texImage2D, we need to ignore it
             console.error(e);
         }
-debugger
+
         // canvas contents will be used for a texture
         const texture: THREE.Texture = this.heatTexture = new THREE.Texture(heatmap.canvas);
         texture.needsUpdate = true;
@@ -990,7 +981,7 @@ debugger
         }
     }
 
-    public update(options: VisualUpdateOptions): Promise<{}> {
+    public update(options: VisualUpdateOptions) {
         if (options.dataViews === undefined || options.dataViews === null) {
             return;
         }
@@ -1101,7 +1092,7 @@ debugger
         return new THREE.MeshPhongMaterial({ color: this.data.seriesDataPoints[index] ? this.data.seriesDataPoints[index].color : this.data.seriesDataPoints[0].color });
     }
 
-    private getToolTipDataForSeries(toolTipData, dataPointToolTip): {} {
+    private getToolTipDataForSeries(toolTipData, dataPointToolTip): { height } {
         const result: { height } = Object.assign({}, {
             series: { displayName: dataPointToolTip.displayName, value: dataPointToolTip.value }
         }, toolTipData);
@@ -1177,7 +1168,7 @@ debugger
         if (this.orbitControls.enabled && this.orbitControls.enableZoom) {
             cancelAnimationFrame(this.cameraAnimationFrameId);
             this.heatTexture.needsUpdate = true;
-            let event: { deltaY, detail } = e;
+            const event: { deltaY, detail } = e;
             const delta: number = event.deltaY < 0 || event.detail < 0 ? 1 : -1;
             this.updateBarsAndHeatMapByZoom(delta);
         }
@@ -1185,8 +1176,6 @@ debugger
 
     private initRayCaster() {
         this.rayCaster = new THREE.Raycaster();
-        const element = this.root;
-        const elementStyle: CSSStyleDeclaration = window.getComputedStyle(element);
 
         this.rendererCanvas.addEventListener("mousemove", this.handleMouseMove);
         
@@ -1290,7 +1279,7 @@ debugger
         this.camera.position.set(pos.x, pos.y, pos.z);
     }
 
-    private animateCamera(to: THREE.Vector3, done?: Function) {
+    private animateCamera(to: THREE.Vector3, done?: () => void) {
         this.hideTooltip();
 
         if (!this.camera) {
@@ -1428,7 +1417,7 @@ debugger
         this.controlContainer.className = "controls-container";
         this.controlContainer.appendChild(this.createControlElements());
         this.root.append(this.controlContainer);
-        let allG = this.controlContainer.querySelectorAll("g");
+        const allG = this.controlContainer.querySelectorAll("g");
 
         for (let i = 0; i < allG.length; ++i) {
             allG[i].onmousedown = (event) => {
@@ -1450,7 +1439,7 @@ debugger
     private initMercartorSphere() {
         if (GlobeMap.MercartorSphere) return;
 
-        let ms = new MercartorSphere(
+        const ms = new MercartorSphere(
             this.GlobeSettings.earthRadius,
             this.GlobeSettings.earthSegments,
             this.GlobeSettings.earthSegments);
@@ -1523,10 +1512,20 @@ debugger
                 const dataPointToolTip: string[] = [];
                 if (renderDatum.heightBySeries) {
                     for (let c: number = 0; c < renderDatum.heightBySeries.length; c++) {
+
                         if (renderDatum.heightBySeries[c] || renderDatum.heightBySeries[c] === 0) {
                             measuresBySeries.push(renderDatum.heightBySeries[c]);
                         }
-                        dataPointToolTip.push(renderDatum.seriesToolTipData && renderDatum.seriesToolTipData[c] ? renderDatum.seriesToolTipData[c] : "");
+
+                        let seriesToolTipData = "";
+
+                        if (renderDatum.seriesToolTipData
+                            && renderDatum.seriesToolTipData[c] 
+                            && typeof renderDatum.seriesToolTipData[c] === "string") {
+                                seriesToolTipData = renderDatum.seriesToolTipData[c] as string;
+                            }
+
+                        dataPointToolTip.push(seriesToolTipData);
                     }
                 } else {
                     // no category series so we'll just draw one value
@@ -1568,10 +1567,10 @@ debugger
 
     private createControlElements(): Element {
         const protocol: string = "http";
-        let svgNS: string = `${protocol}://www.w3.org/2000/svg`;
+        const svgNS: string = `${protocol}://www.w3.org/2000/svg`;
 
         const circle = (cx: number, cy: number, r: number, classNames?: string) => {
-            let c = document.createElementNS(svgNS, "circle");
+            const c = document.createElementNS(svgNS, "circle");
             c.setAttribute("cx", cx.toString());
             c.setAttribute("cy", cy.toString());
             c.setAttribute("r", r.toString());
@@ -1582,7 +1581,7 @@ debugger
         };
 
         const path = (d: string, classNames?: string) => {
-            let p = document.createElementNS(svgNS, "path");
+            const p = document.createElementNS(svgNS, "path");
             p.setAttribute("d", d);
             if (classNames) {
                 (<{ className }>p).className.baseVal = classNames;
@@ -1591,7 +1590,7 @@ debugger
         };
 
         const rect = (x: number, y: number, width: number, height: number, classNames?: string) => {
-            let r = document.createElementNS(svgNS, "rect");
+            const r = document.createElementNS(svgNS, "rect");
             r.setAttribute("x", x.toString());
             r.setAttribute("y", y.toString());
             r.setAttribute("width", width.toString());
@@ -1603,39 +1602,39 @@ debugger
         };
 
         const g = (classNames: string) => {
-            let g = document.createElementNS(svgNS, "g");
+            const g = document.createElementNS(svgNS, "g");
             if (classNames) {
                 (<{ className }>g).className.baseVal = classNames;
             }
             return g;
         };
 
-        let moveUpButton = g("control js-control--move-up");
+        const moveUpButton = g("control js-control--move-up");
         moveUpButton.appendChild(circle(85, 20, 17));
         moveUpButton.appendChild(path("M85 8 l12 20 a40,70 0 0,0 -24,0z"));
 
-        let moveRightButton = g("control js-control--move-right");
+        const moveRightButton = g("control js-control--move-right");
         moveRightButton.appendChild(circle(119, 54, 17, "zoomControlCircle"));
         moveRightButton.appendChild(path("M130.9 54 l-20 -12 a70,40 0 0,1 0,24z", "zoomControlPath"));
 
-        let moveDownButton = g("control js-control--move-down");
+        const moveDownButton = g("control js-control--move-down");
         moveDownButton.appendChild(circle(85, 88, 17));
         moveDownButton.appendChild(path("M 85 100 l12 -20 a40,70 0 0,1 -24,0z"));
 
-        let moveLeftButton = g("control js-control--move-left");
+        const moveLeftButton = g("control js-control--move-left");
         moveLeftButton.appendChild(circle(51, 54, 17));
         moveLeftButton.appendChild(path("M39 54 l20 -12 a70,40 0 0,0 0,24z"));
 
-        let zoomDownButton = g("control js-control--zoom-down");
+        const zoomDownButton = g("control js-control--zoom-down");
         zoomDownButton.appendChild(circle(51, 122, 17));
         zoomDownButton.appendChild(rect(42, 120, 17, 6, "zoomControlPath"));
 
-        let zoomUpButton = g("control js-control--zoom-up");
+        const zoomUpButton = g("control js-control--zoom-up");
         zoomUpButton.appendChild(circle(119, 122, 17));
         zoomUpButton.appendChild(rect(110.5, 120, 17, 6));
         zoomUpButton.appendChild(rect(116, 114, 6, 17));
 
-        let controlsContainerSVG = document.createElementNS(svgNS, "svg");
+        const controlsContainerSVG = document.createElementNS(svgNS, "svg");
         (<{ className }>controlsContainerSVG).className.baseVal = "controls";
         controlsContainerSVG.setAttribute("width", "145");
         controlsContainerSVG.setAttribute("height", "145");

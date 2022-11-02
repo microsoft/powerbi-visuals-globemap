@@ -50,9 +50,9 @@ export interface GlobeMapDataPoint {
     placeKey: string;
     height: number;
     heightBySeries: number[];
-    seriesToolTipData: {};
+    seriesToolTipData: Record<string, unknown>;
     heat: number;
-    toolTipData: {};
+    toolTipData: Record<string, unknown>;
 }
 
 export interface GlobeMapSeriesDataPoint extends SelectableDataPoint {

@@ -2,13 +2,12 @@
 //     Copyright (c) 2006-2009 Microsoft Corporation.  All rights reserved.
 // </copyright>
 
-class TileSystem {
+export class TileSystem {
     private static EarthRadius: number = 6378137;
     private static MinLatitude: number = -85.05112878;
     private static MaxLatitude: number = 85.05112878;
     private static MinLongitude: number = -180;
     private static MaxLongitude: number = 180;
-
 
     /// <summary>
     /// Clips a number to the specified minimum and maximum values.
@@ -21,7 +20,6 @@ class TileSystem {
         return Math.min(Math.max(n, minValue), maxValue);
     }
 
-
     /// <summary>
     /// Determines the map width and height (in pixels) at a specified level
     /// of detail.
@@ -32,7 +30,6 @@ class TileSystem {
     public static  MapSize(levelOfDetail: number): number {
         return 256 << levelOfDetail;
     }
-
 
     /// <summary>
     /// Determines the ground resolution (in meters per pixel) at a specified
@@ -48,7 +45,6 @@ class TileSystem {
         return Math.cos(latitude * Math.PI / 180) * 2 * Math.PI * this.EarthRadius / this.MapSize(levelOfDetail);
     }
 
-
     /// <summary>
     /// Determines the map scale at a specified latitude, level of detail,
     /// and screen resolution.
@@ -62,8 +58,6 @@ class TileSystem {
     public static MapScale(latitude: number, levelOfDetail: number, screenDpi: number): number {
         return this.GroundResolution(latitude, levelOfDetail) * screenDpi / 0.0254;
     }
-
-
 
     /// <summary>
     /// Converts a point from latitude/longitude WGS-84 coordinates (in degrees)
@@ -79,15 +73,14 @@ class TileSystem {
         latitude = this.Clip(latitude, this.MinLatitude, this.MaxLatitude);
         longitude = this.Clip(longitude, this.MinLongitude, this.MaxLongitude);
 
-        let x: number = (longitude + 180) / 360;
-        let sinLatitude: number = Math.sin(latitude * Math.PI / 180);
-        let y: number = 0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * Math.PI);
+        const x: number = (longitude + 180) / 360;
+        const sinLatitude: number = Math.sin(latitude * Math.PI / 180);
+        const y: number = 0.5 - Math.log((1 + sinLatitude) / (1 - sinLatitude)) / (4 * Math.PI);
 
-        let mapSize: number = this.MapSize(levelOfDetail);
+        const mapSize: number = this.MapSize(levelOfDetail);
         pixelX = this.Clip(x * mapSize + 0.5, 0, mapSize - 1); // int
         pixelY = this.Clip(y * mapSize + 0.5, 0, mapSize - 1); // int
     }
-
 
     /// <summary>
     /// Converts a pixel from pixel XY coordinates at a specified level of detail
@@ -100,15 +93,13 @@ class TileSystem {
     /// <param name="latitude">Output parameter receiving the latitude in degrees.</param>
     /// <param name="longitude">Output parameter receiving the longitude in degrees.</param>
     public static PixelXYToLatLong(pixelX: number, pixelY: number, levelOfDetail: number, latitude: number, longitude: number): void {
-        let mapSize: number = this.MapSize(levelOfDetail);
-        let x: number = (this.Clip(pixelX, 0, mapSize - 1) / mapSize) - 0.5;
-        let y: number = 0.5 - (this.Clip(pixelY, 0, mapSize - 1) / mapSize);
+        const mapSize: number = this.MapSize(levelOfDetail);
+        const x: number = (this.Clip(pixelX, 0, mapSize - 1) / mapSize) - 0.5;
+        const y: number = 0.5 - (this.Clip(pixelY, 0, mapSize - 1) / mapSize);
 
         latitude = 90 - 360 * Math.atan(Math.exp(-y * 2 * Math.PI)) / Math.PI;
         longitude = 360 * x;
     }
-
-
 
     /// <summary>
     /// Converts pixel XY coordinates into tile XY coordinates of the tile containing
@@ -123,8 +114,6 @@ class TileSystem {
         tileY = pixelY / 256;
     }
 
-
-
     /// <summary>
     /// Converts tile XY coordinates into pixel XY coordinates of the upper-left pixel
     /// of the specified tile.
@@ -138,8 +127,6 @@ class TileSystem {
         pixelY = tileY * 256;
     }
 
-
-
     /// <summary>
     /// Converts tile XY coordinates into a QuadKey at a specified level of detail.
     /// </summary>
@@ -149,10 +136,10 @@ class TileSystem {
     /// to 23 (highest detail).</param>
     /// <returns>A string containing the QuadKey.</returns>
     public static  TileXYToQuadKey(tileX: number, tileY: number, levelOfDetail: number): string {
-        let  quadKey = new Array();
+        const quadKey: number[] = [];
         for (let i = levelOfDetail; i > 0; i--) {
             let digit: number = 0;
-            let mask: number = 1 << (i - 1);
+            const mask: number = 1 << (i - 1);
             if ((tileX & mask) !== 0) {
                 digit++;
             }
@@ -165,8 +152,6 @@ class TileSystem {
         return quadKey.toString();
     }
 
-
-
     /// <summary>
     /// Converts a QuadKey into tile XY coordinates.
     /// </summary>
@@ -178,7 +163,7 @@ class TileSystem {
         tileX = tileY = 0;
         levelOfDetail = quadKey.length;
         for (let i = levelOfDetail; i > 0; i--) {
-            let mask: number = 1 << (i - 1);
+            const mask: number = 1 << (i - 1);
             switch (quadKey[levelOfDetail - i]) {
                 case '0':
                     break;

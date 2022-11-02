@@ -19,7 +19,7 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
     }
 
     public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
-        let result: ILocationDictionary = {};
+        const result: ILocationDictionary = {};
 
         return new Promise<ILocationDictionary>((resolve, reject) => {
             this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS).then((data) => {
@@ -29,8 +29,8 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
                 }
 
                 if (!keys || !keys.length) {
-                    for (let key in parsedValue) {
-                        if (parsedValue.hasOwnProperty(key)) {
+                    for (const key in parsedValue) {
+                        if (Object.prototype.hasOwnProperty.call(parsedValue, key)) {
                             const location = parsedValue[key];
                             if (location) {
                                 result[key] = {
@@ -61,8 +61,8 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
     }
 
     public async saveCoordinates(coordinates: ILocationDictionary): Promise<string> {
-        const locationItemsObject: {} = {};
-        for (let key in coordinates) {
+        const locationItemsObject = {};
+        for (const key in coordinates) {
             locationItemsObject[key] = {
                 "lon": coordinates[key].longitude,
                 "lat": coordinates[key].latitude

@@ -6,7 +6,7 @@ export class MercartorSphere extends THREE.Geometry {
     heightSegments: number;
     t: number;
     vertices: THREE.Vector3[];
-    prototype: {};
+    prototype: Record<string, never>;
     constructor(radius: number, widthSegments: number, heightSegments: number) {
         super();
         this.radius = radius;

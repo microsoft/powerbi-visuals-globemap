@@ -29,75 +29,73 @@ import startsWith from "lodash.startswith";
 import isEmpty from "lodash.isempty";
 import toPairs from "lodash.topairs";
 
-export module UrlUtils {
-    /**
-     * Given a URL, set the provided query string parameters
-     * @param url The URL to modify
-     * @param parameters The query parameters to set.
-     * @param keepExisting if true, existing query parameters will be maintained, even if specified in the parameters argument. Else, all existing parameters are removed
-     */
-    export function setQueryParameters(url: string, parameters: _.Dictionary<string>, keepExisting = false): string {
-        const splitUrl: IUrlParameters = splitUrlAndQuery(url);
-        let result: string = splitUrl.baseUrl;
+/**
+ * Given a URL, set the provided query string parameters
+ * @param url The URL to modify
+ * @param parameters The query parameters to set.
+ * @param keepExisting if true, existing query parameters will be maintained, even if specified in the parameters argument. Else, all existing parameters are removed
+ */
+export function setQueryParameters(url: string, parameters: _.Dictionary<string>, keepExisting = false): string {
+    const splitUrl: IUrlParameters = splitUrlAndQuery(url);
+    let result: string = splitUrl.baseUrl;
 
-        if (keepExisting) {
-            assign(parameters, splitUrl.queryParameters);
-        }
+    if (keepExisting) {
+        assign(parameters, splitUrl.queryParameters);
+    }
 
-        if (isEmpty(parameters)) {
-            return result;
-        }
-
-        const pairs = toPairs(parameters);
-        const mappedPairs = pairs.map(pair => pair.join("="));
-        const joinedPairs = mappedPairs.join("&");
-
-        result += `?${joinedPairs}`;
-
+    if (isEmpty(parameters)) {
         return result;
     }
 
-    /** Given a URL, split it into the base URL (everything before the query string) and its collection of query string parameters */
-    export function splitUrlAndQuery(url: string): IUrlParameters {
-        const queryString: string = getQueryString(url);
-        const baseUrl: string = queryString ? url.slice(0, url.lastIndexOf(queryString)) : url;
+    const pairs = toPairs(parameters);
+    const mappedPairs = pairs.map(pair => pair.join("="));
+    const joinedPairs = mappedPairs.join("&");
 
-        return {
-            baseUrl: baseUrl,
-            queryParameters: parseQueryString(queryString)
-        };
+    result += `?${joinedPairs}`;
+
+    return result;
+}
+
+/** Given a URL, split it into the base URL (everything before the query string) and its collection of query string parameters */
+export function splitUrlAndQuery(url: string): IUrlParameters {
+    const queryString: string = getQueryString(url);
+    const baseUrl: string = queryString ? url.slice(0, url.lastIndexOf(queryString)) : url;
+
+    return {
+        baseUrl: baseUrl,
+        queryParameters: parseQueryString(queryString)
+    };
+}
+
+function getQueryString(url: string): string {
+    const elem: HTMLAnchorElement = document.createElement("a");
+    elem.href = url;
+
+    return elem.search;
+}
+
+/** Parses a query string of the form ?param1=value1&param2=value2 into its invidual parameters. The leading ? is not required */
+function parseQueryString(queryString: string): _.Dictionary<string> {
+    if (!queryString) {
+        return {};
     }
 
-    function getQueryString(url: string): string {
-        let elem: HTMLAnchorElement = document.createElement("a");
-        elem.href = url;
-
-        return elem.search;
+    if (startsWith(queryString, "?")) {
+        queryString = queryString.substring(1);
     }
 
-    /** Parses a query string of the form ?param1=value1&param2=value2 into its invidual parameters. The leading ? is not required */
-    function parseQueryString(queryString: string): _.Dictionary<string> {
-        if (!queryString) {
-            return {};
-        }
+    const params: string[] = queryString.split("&");
 
-        if (startsWith(queryString, "?")) {
-            queryString = queryString.substring(1);
-        }
-
-        let params: string[] = queryString.split("&");
-
-        let result: _.Dictionary<string> = {};
-        for (let keyEqualsValue of params) {
-            let pair = keyEqualsValue.split("=");
-            result[pair[0]] = decodeURIComponent(pair[1]);
-        }
-
-        return result;
+    const result: _.Dictionary<string> = {};
+    for (const keyEqualsValue of params) {
+        const pair = keyEqualsValue.split("=");
+        result[pair[0]] = decodeURIComponent(pair[1]);
     }
 
-    export interface IUrlParameters {
-        baseUrl: string;
-        queryParameters: _.Dictionary<string>;
-    }
+    return result;
+}
+
+export interface IUrlParameters {
+    baseUrl: string;
+    queryParameters: _.Dictionary<string>;
 }

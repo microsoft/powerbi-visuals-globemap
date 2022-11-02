@@ -1,11 +1,6 @@
 {
   "privileges": [
     {
-        "name": "LocalStorage",
-        "essential": false,
-        "parameters": []
-    },
-    {
       "name": "WebAccess",
       "essential": true,
       "parameters": [ "https://*.virtualearth.net" ]

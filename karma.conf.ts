@@ -34,7 +34,7 @@ const srcOriginalRecursivePath = "src/**/*.ts";
 const srcRecursivePath = ".tmp/drop/**/*.js";
 const coverageFolder = "coverage";
 
-process.env.CHROME_BIN = require("playwright").executablePath();
+process.env.CHROME_BIN = require("playwright").chromium.executablePath();
 
 module.exports = (config) => {
     config.set({

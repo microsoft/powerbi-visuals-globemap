@@ -2,7 +2,6 @@ import { ICacheManager } from "./interfaces/ICacheManager";
 import { BaseCache } from "./base";
 import { ILocationDictionary, IGeocoder } from "../geocoder/interfaces/geocoderInterfaces";
 import { createGeocoder } from "../geocoder/geocoder";
-import { ILocationKeyDictionary } from "../interfaces/dataInterfaces";
 
 export class Bing extends BaseCache implements ICacheManager {
 
@@ -14,7 +13,6 @@ export class Bing extends BaseCache implements ICacheManager {
     }
 
     public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
-        // const keys: string[] = Object.keys(keyDictionary);
         if (!keys || !keys.length) {
             return new Promise<ILocationDictionary>((resolve, reject) => reject("Empty location keys"));
         }
@@ -23,6 +21,7 @@ export class Bing extends BaseCache implements ICacheManager {
     }
 
     public async saveCoordinates(coordinates: ILocationDictionary): Promise<string> {
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
         return new Promise<string>(() => { });
     }
 

@@ -38,7 +38,7 @@ export class CacheManager implements ICacheManager {
         let locations: string[] = Object.keys(locationsDictionary);
 
         // load from memory
-        let coordsInMemory: ILocationDictionary = await this.memoryCache.loadCoordinates(locations); // {"London": {"lat": 54, "lon": 34"}, "Moscow": {"lat": 64, "lon": 54"}
+        const coordsInMemory: ILocationDictionary = await this.memoryCache.loadCoordinates(locations); // {"London": {"lat": 54, "lon": 34"}, "Moscow": {"lat": 64, "lon": 54"}
         locationsInMemory = Object.keys(coordsInMemory);                                             // ["London", "Moscow"]
         locations = locations.filter(loc => !locationsInMemory.includes(loc));                       // ["Moscow"] need to be loaded from LS or Bing
 
@@ -56,7 +56,7 @@ export class CacheManager implements ICacheManager {
         }
 
         if (this.coordsInLocalStorage) {
-            let locationsInLocalStorage = Object.keys(this.coordsInLocalStorage);
+            const locationsInLocalStorage = Object.keys(this.coordsInLocalStorage);
             locations = locations.filter(loc => !locationsInLocalStorage.includes(loc));
 
             if (locations.length === 0) {
@@ -68,7 +68,7 @@ export class CacheManager implements ICacheManager {
         // load from Bing
         locationsDictionary = locations
             .reduce((obj, key) => ({ ...obj, [key]: locationsDictionary[key] }), {});
-        let coordsInBing = await this.bing.loadCoordinates(locations);
+        const coordsInBing = await this.bing.loadCoordinates(locations);
         result = Object.assign({}, locationsInMemory, this.coordsInLocalStorage, coordsInBing);
 
         return new Promise<ILocationDictionary>(resolve => resolve(result));

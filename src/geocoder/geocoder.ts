@@ -28,15 +28,7 @@ import {
     IGeocoder,
     ILocationDictionary
 } from "./interfaces/geocoderInterfaces";
-import {
-    BingAddress,
-    BingGeoboundary,
-    BingLocation,
-    BingGeocodeResponse,
-    BingGeoboundaryResponse,
-    BingGeoboundaryPrimitive,
-    BingJobStatusResponse
-} from "../interfaces/bingInterfaces";
+import { BingJobStatusResponse } from "../interfaces/bingInterfaces";
 
 import { BingSettings } from "../settings";
 
@@ -84,7 +76,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
     }
 
     private createXmlStringFromLocationQueries(queries: string[]): string {
-        const xmlns: string = "http://schemas.microsoft.com/search/local/2010/5/geocode";
+        const xmlns: string = "https://schemas.microsoft.com/search/local/2010/5/geocode";
         const xmlStart: string = `<?xml version="1.0" encoding="utf-8"?>
             <GeocodeFeed xmlns="${xmlns}">`;
         const xmlEnd: string = `</GeocodeFeed>`;
@@ -93,7 +85,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         let cultureName: string = navigator["userLanguage"] || navigator["language"];
         cultureName = mapLocalesForBing(cultureName);
         for (let i = 0; i < queries.length; i++) {
-            let entity: string = `
+            const entity: string = `
             <GeocodeEntity Id="${i + 1}" xmlns="${xmlns}">
                 <GeocodeRequest Culture="${cultureName}" Query="${queries[i]}" MaxResults="1">
                 </GeocodeRequest>
@@ -106,7 +98,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
     }
 
     public async geocodeByDataFlow(queries: string[]): Promise<ILocationDictionary> {
-        let xmlString = this.createXmlStringFromLocationQueries(queries);
+        const xmlString = this.createXmlStringFromLocationQueries(queries);
 
         return new Promise<ILocationDictionary>((resolve, reject) => {
             this.createJob(xmlString)
@@ -175,75 +167,36 @@ export abstract class BingMapsGeocoder implements IGeocoder {
 
     private async getJobResultJsonp(jobID): Promise<XMLDocument> {
         const queryString = `key=${this.key}`;
-        const url = `${this.bingSpatialDataFlowUrl()}/${jobID}/output/succeeded/?${queryString}`;
+        const url = `${this.bingSpatialDataFlowUrl()}/${jobID}/output/succeeded?${queryString}`;
+    
+        const response = await fetch(url);
+        const responseText = await response.text(); 
+        
+        const xmlDoc: XMLDocument = new DOMParser().parseFromString(responseText, "application/xml");
 
-        const callbackGuid: string = BingMapsGeocoder.generateCallbackGuid();
-        let xmlDocument: XMLDocument = {} as XMLDocument;
-
-        // This is super dirty hack to bypass faked window object in order to use jsonp
-        // We use jsonp because sandboxed iframe does not have an origin. This fact breaks regular AJAX queries.
-        window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid] = (data) => {
-            xmlDocument = data;
-            delete window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid];
-        };
-
-        // output - json as default; xml
-        /*return $.ajax({
-            url: url,
-            dataType: 'xml',
-            crossDomain: true,
-            jsonp: "jsonp",
-            jsonpCallback: `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`
-        }).promise();*/
-
-        const jsonpCallback = `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`;
-        const script = document.createElement("script");
-        script.type = "text/javascript";
-        script.src = `${url}&callback=${jsonpCallback}`;
-
-        return xmlDocument;
+        return xmlDoc;
     }
 
     private async monitorJobStatusJsonp(jobID: string): Promise<BingJobStatusResponse> {
         const queryString = `key=${this.key}`;
         const url = `${this.bingSpatialDataFlowUrl()}/${jobID}?${queryString}`;
 
-        const callbackGuid: string = BingMapsGeocoder.generateCallbackGuid();
-        let bingJobStatusResponse: BingJobStatusResponse = {} as BingJobStatusResponse;
+        const response = await fetch(url);
+        const jobStatus: BingJobStatusResponse = await response.json();
 
-        // This is super dirty hack to bypass faked window object in order to use jsonp
-        // We use jsonp because sandboxed iframe does not have an origin. This fact breaks regular AJAX queries.
-        window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid] = (data) => {
-            bingJobStatusResponse = data;
-            delete window[BingMapsGeocoder.jsonpCallbackObjectName][callbackGuid];
-        };
-
-        /*return $.ajax({
-            url: url,
-            dataType: 'json',
-            crossDomain: true,
-            jsonp: "jsonp",
-            jsonpCallback: `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`
-        }).promise();*/
-
-        const jsonpCallback = `window.${BingMapsGeocoder.jsonpCallbackObjectName}.${callbackGuid}`;
-        const script = document.createElement("script");
-        script.type = "text/javascript";
-        script.src = `${url}&callback=${jsonpCallback}`;
-
-        return bingJobStatusResponse;
+        return jobStatus;
     }
 
     private static generateCallbackGuid(): string {
-        let cryptoObj = window.crypto || window["msCrypto"]; // For IE
+        const cryptoObj = window.crypto || window["msCrypto"]; // For IE
         const guidSequence: number = cryptoObj.getRandomValues(new Uint32Array(1))[0].toString(16).substring(0, 4);
 
         return `GeocodeCallback${guidSequence}${guidSequence}${guidSequence}`;
     }
 
     private parseXmlJobResult(xmlDocument: XMLDocument): ILocationDictionary {
-        let result: ILocationDictionary = {};
-        let entities = xmlDocument.getElementsByTagName("GeocodeEntity");
+        const result: ILocationDictionary = {};
+        const entities = xmlDocument.getElementsByTagName("GeocodeEntity");
         for (let i = 0; i < entities.length; i++) {
             const currentEntity = entities[i];
             const geocodeRequest = currentEntity.getElementsByTagName("GeocodeRequest");

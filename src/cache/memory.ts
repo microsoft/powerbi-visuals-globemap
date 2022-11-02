@@ -27,8 +27,8 @@ export class MemoryCache extends BaseCache implements ICacheManager {
             if (!keys || !keys.length) {
                 reject("No locations to be loaded");
             }
-            let locations: ILocationDictionary = {};
-            for (let key in this.geocodeCache) {
+            const locations: ILocationDictionary = {};
+            for (const key in this.geocodeCache) {
                 if (this.geocodeCache[key]) {
                     this.geocodeCache[key].hitCount++;
                     locations[key] = this.geocodeCache[key].coordinate;
@@ -45,8 +45,8 @@ export class MemoryCache extends BaseCache implements ICacheManager {
                 reject("No locations to be saved");
             }
 
-            for (let key in coordinates) {
-                let coordinateRecord: ILocationCoordinateRecord = {
+            for (const key in coordinates) {
+                const coordinateRecord: ILocationCoordinateRecord = {
                     key: key,
                     coordinate: {
                         latitude: coordinates[key].latitude,
@@ -66,20 +66,20 @@ export class MemoryCache extends BaseCache implements ICacheManager {
             return;
         }
 
-        let maxCacheSize: number = this.maxCacheSize;
-        let maxCacheCount: number = maxCacheSize + this.maxCacheSizeOverflow;
+        const maxCacheSize: number = this.maxCacheSize;
+        const maxCacheCount: number = maxCacheSize + this.maxCacheSizeOverflow;
 
         // are we about to exceed the maximum?
         if (this.geocodeCacheCount >= maxCacheCount) {
-            let keys: string[] = Object.keys(geocodeCache);
-            let cacheSize: number = keys.length;
+            const keys: string[] = Object.keys(geocodeCache);
+            const cacheSize: number = keys.length;
 
             // sort keys in *descending* hitCount order
             keys.sort((a: string, b: string) => {
-                let cachedA: GeocodeCacheEntry = geocodeCache[a];
-                let cachedB: GeocodeCacheEntry = geocodeCache[b];
-                let ca: number = cachedA ? cachedA.hitCount : 0;
-                let cb: number = cachedB ? cachedB.hitCount : 0;
+                const cachedA: GeocodeCacheEntry = geocodeCache[a];
+                const cachedB: GeocodeCacheEntry = geocodeCache[b];
+                const ca: number = cachedA ? cachedA.hitCount : 0;
+                const cb: number = cachedB ? cachedB.hitCount : 0;
                 return ca < cb ? 1 : (ca > cb ? -1 : 0);
             });
 
@@ -93,7 +93,7 @@ export class MemoryCache extends BaseCache implements ICacheManager {
                 }
             }
             else {
-                let newGeocodeCache: _.Dictionary<GeocodeCacheEntry> = {};
+                const newGeocodeCache: _.Dictionary<GeocodeCacheEntry> = {};
                 for (let i = 0; i < maxCacheSize; ++i) {
                     newGeocodeCache[keys[i]] = geocodeCache[keys[i]];
                 }

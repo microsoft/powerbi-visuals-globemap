@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-empty-function */
 import { ICacheManager } from "./interfaces/ICacheManager";
 import { ILocationDictionary } from "../geocoder/interfaces/geocoderInterfaces";
 import { ILocationKeyDictionary } from "../interfaces/dataInterfaces";
