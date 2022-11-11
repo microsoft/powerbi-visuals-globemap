@@ -1,14 +1,12 @@
 import { ICacheManager } from "./interfaces/ICacheManager";
-import { BaseCache } from "./base";
 import { ILocationDictionary, IGeocoder } from "../geocoder/interfaces/geocoderInterfaces";
 import { createGeocoder } from "../geocoder/geocoder";
 
-export class Bing extends BaseCache implements ICacheManager {
+export class Bing implements ICacheManager {
 
     private geocoder: IGeocoder;
 
     constructor() {
-        super();
         this.geocoder = createGeocoder();
     }
 
@@ -20,9 +18,9 @@ export class Bing extends BaseCache implements ICacheManager {
         return this.geocoder.geocodeByDataFlow(keys);
     }
 
-    public async saveCoordinates(coordinates: ILocationDictionary): Promise<string> {
+    public async saveCoordinates(coordinates: ILocationDictionary): Promise<void> {
         // eslint-disable-next-line @typescript-eslint/no-empty-function
-        return new Promise<string>(() => { });
+        return new Promise<void>(() => { });
     }
 
 }

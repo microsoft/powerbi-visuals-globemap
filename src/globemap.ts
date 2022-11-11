@@ -512,6 +512,8 @@ export class GlobeMap implements IVisual {
     }
 
     constructor(options: VisualConstructorOptions) {
+        console.log("Globemap constructor");
+        
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageService;
 
@@ -982,6 +984,8 @@ export class GlobeMap implements IVisual {
     }
 
     public update(options: VisualUpdateOptions) {
+        console.log("Update triggered");
+        
         if (options.dataViews === undefined || options.dataViews === null) {
             return;
         }
@@ -1009,6 +1013,7 @@ export class GlobeMap implements IVisual {
             const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
             if (data) {
                 this.data = data;
+                console.log("Update for coordinates");
 
                 const locationsNeedToBeLoaded: ILocationKeyDictionary = {};
                 data.dataPoints.forEach((d: GlobeMapDataPoint) => {

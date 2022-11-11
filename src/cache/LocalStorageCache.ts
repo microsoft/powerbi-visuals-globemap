@@ -3,29 +3,50 @@ import powerbi from "powerbi-visuals-api";
 import assign from "lodash.assign";
 
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
+import LocalStorageStatus = powerbi.PrivilegeStatus;
 
 import { ICacheManager } from "./interfaces/ICacheManager";
-import { BaseCache } from "./base";
 import { ILocationDictionary } from "../geocoder/interfaces/geocoderInterfaces";
 
-export class LocalStorageCache extends BaseCache implements ICacheManager {
+export class LocalStorageCache implements ICacheManager {
 
     private static TILE_LOCATIONS = "GLOBEMAP_TILE_LOCATIONS";
     private localStorageService: ILocalVisualStorageService;
+    private localStorageStatus: LocalStorageStatus;
 
     constructor(localStorageService: ILocalVisualStorageService) {
-        super();
         this.localStorageService = localStorageService;
+        console.log("LocalStorageCache constructor");
+
+        /*this.setStatus()
+            .then(status => {
+                console.log(`Local storage status promise resolved in LocalStorageCache constructor with code ${status}`);
+            });*/
     }
 
-    public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
-        const result: ILocationDictionary = {};
+    public setStatus() {
+        return this.localStorageService.status()
+            .then(status => {
+                console.log(`Received local storage status with code ${status} in getStatus method`);
+                this.localStorageStatus = status;
+                return status;
+            })
+            .catch(() => console.log("Could not get local storage status"));
+    }
 
-        return new Promise<ILocationDictionary>((resolve, reject) => {
-            this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS).then((data) => {
+    public loadCoordinates(keys: string[]) {
+        const result: ILocationDictionary = {};
+        console.log("Loading coordinates from local storage...");
+
+        if (this.localStorageStatus !== LocalStorageStatus.Allowed) {
+            console.error("Local storage is not allowed");
+            return;
+        }
+        
+        return this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS).then((data) => {
                 const parsedValue = JSON.parse(data);
                 if (!parsedValue) {
-                    reject("Storage can not be parsed");
+                    throw "Storage can not be parsed";
                 }
 
                 if (!keys || !keys.length) {
@@ -52,15 +73,19 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
                     });
                 }
 
-                resolve(result);
+                return result;
             })
                 .catch(() => {
-                    reject("No locations in storage");
+                    return("No locations in storage");
                 });
-        });
     }
 
-    public async saveCoordinates(coordinates: ILocationDictionary): Promise<string> {
+    public saveCoordinates(coordinates: ILocationDictionary) {
+        if (this.localStorageStatus !== LocalStorageStatus.Allowed) {
+            console.error("Local storage is not allowed");
+            return;
+        }
+
         const locationItemsObject = {};
         for (const key in coordinates) {
             locationItemsObject[key] = {
@@ -68,22 +93,21 @@ export class LocalStorageCache extends BaseCache implements ICacheManager {
                 "lat": coordinates[key].latitude
             };
         }
+console.log("Saving coordinates to local storage...");
 
-        return new Promise<string>((resolve, reject) => {
-            this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS).then((data) => {
+        return this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS).then((data) => {
                 const locationsFromStorage = JSON.parse(data);
                 const mergedObject = locationsFromStorage ? assign(locationsFromStorage, locationItemsObject) : locationItemsObject;
 
                 const valueObjectToString = JSON.stringify(mergedObject);
                 this.localStorageService.set(LocalStorageCache.TILE_LOCATIONS, valueObjectToString)
-                    .then(() => resolve("success"))
-                    .catch(() => reject("Storage service save error"));
+                    .catch(() => console.error("Could not save location to local storage")
+                );
             }).catch(() => {
+                console.error("Storage service save error")
                 const valueObjectToString = JSON.stringify(locationItemsObject);
                 this.localStorageService.set(LocalStorageCache.TILE_LOCATIONS, valueObjectToString)
-                    .then(() => resolve("success"))
-                    .catch(() => reject("Storage service save error"));
+                    .catch(() => console.error("Could not save location to local storage"));
             });
-        });
     }
 }

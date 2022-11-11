@@ -4,7 +4,12 @@
       "name": "WebAccess",
       "essential": true,
       "parameters": [ "https://*.virtualearth.net" ]
-  }
+    },
+    {
+      "name": "LocalStorage",
+      "essential": false,
+      "parameters": []
+    }
   ],
   "dataRoles": [
     {

@@ -1,21 +1,18 @@
 import { ICacheManager } from "./interfaces/ICacheManager";
 import { ILocationDictionary, ILocationCoordinateRecord, IGeocodeCoordinate } from "../geocoder/interfaces/geocoderInterfaces";
 
-import { BaseCache } from "./base";
-
 interface GeocodeCacheEntry {
     coordinate: IGeocodeCoordinate;
     hitCount: number;
 }
 
-export class MemoryCache extends BaseCache implements ICacheManager {
+export class MemoryCache implements ICacheManager {
     private geocodeCache: _.Dictionary<GeocodeCacheEntry>;
     private geocodeCacheCount: number;
     private maxCacheSize: number;
     private maxCacheSizeOverflow: number;
 
     constructor(maxCacheSize: number, maxCacheSizeOverflow: number) {
-        super();
         this.geocodeCache = {};
         this.geocodeCacheCount = 0;
         this.maxCacheSize = maxCacheSize;
@@ -23,6 +20,8 @@ export class MemoryCache extends BaseCache implements ICacheManager {
     }
 
     public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
+        console.log("Loading from memory cache...");
+        
         return new Promise<ILocationDictionary>((resolve, reject) => {
             if (!keys || !keys.length) {
                 reject("No locations to be loaded");
@@ -39,27 +38,27 @@ export class MemoryCache extends BaseCache implements ICacheManager {
         });
     }
 
-    public async saveCoordinates(coordinates: ILocationDictionary): Promise<string> {
-        return new Promise<string>((resolve, reject) => {
-            if (!coordinates) {
-                reject("No locations to be saved");
-            }
+    public saveCoordinates(coordinates: ILocationDictionary): Promise<void> {
+        console.log("Saving coordinates to memory cache...");
+        
+        if (!coordinates) {
+            console.log("No locations to be saved");
+            return;
+        }
 
-            for (const key in coordinates) {
-                const coordinateRecord: ILocationCoordinateRecord = {
-                    key: key,
-                    coordinate: {
-                        latitude: coordinates[key].latitude,
-                        longitude: coordinates[key].longitude
-                    }
-                };
-                this.saveCoordinate(coordinateRecord);
-                resolve("success");
-            }
-        });
+        for (const key in coordinates) {
+            const coordinateRecord: ILocationCoordinateRecord = {
+                key: key,
+                coordinate: {
+                    latitude: coordinates[key].latitude,
+                    longitude: coordinates[key].longitude
+                }
+            };
+            this.saveCoordinate(coordinateRecord);
+        }
     }
 
-    public async saveCoordinate(locationRecord: ILocationCoordinateRecord) {
+    public saveCoordinate(locationRecord: ILocationCoordinateRecord) {
         let geocodeCache: _.Dictionary<GeocodeCacheEntry> = this.geocodeCache;
 
         if (geocodeCache[locationRecord.key]) {
@@ -107,5 +106,4 @@ export class MemoryCache extends BaseCache implements ICacheManager {
         geocodeCache[locationRecord.key] = { coordinate: locationRecord.coordinate, hitCount: 1 };
         ++this.geocodeCacheCount;
     }
-
 }
