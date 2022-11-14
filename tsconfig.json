@@ -10,7 +10,8 @@
     "moduleResolution": "node",
     "declaration": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true
   },
   "files": [
     "src/globemap.ts"

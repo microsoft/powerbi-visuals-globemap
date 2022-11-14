@@ -43,8 +43,7 @@ module.exports = (config) => {
         colors: true,
         frameworks: ["jasmine"],
         reporters: [
-            "progress",
-            "coverage-istanbul"
+            "progress"
         ],
         coverageIstanbulReporter: {
             reports: ["html", "lcovonly", "text-summary"],
@@ -52,16 +51,7 @@ module.exports = (config) => {
             fixWebpackSourcePaths: true
         },
         singleRun: true,
-        plugins: [
-            "karma-coverage",
-            "karma-typescript",
-            "karma-webpack",
-            "karma-jasmine",
-            "karma-sourcemap-loader",
-            "karma-chrome-launcher",
-        ],
         files: [
-            "node_modules/jasmine-jquery/lib/jasmine-jquery.js",
             srcRecursivePath,
             testRecursivePath,
             {

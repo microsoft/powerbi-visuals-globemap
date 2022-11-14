@@ -36,6 +36,7 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 
 import { VisualBuilderBase, renderTimeout } from "powerbi-visuals-utils-testutils";
 import { GlobeMap as VisualClass } from "../src/globemap";
+import { createStorageService } from "powerbi-visuals-utils-testutils/lib/mocks/mocks";
 
 export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
     private static ChangeAllType: number = 62;
@@ -55,7 +56,7 @@ export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
 
     public updateRenderTimeout(
         dataViews: DataView[] | DataView,
-        fn: Function,
+        fn: () => any,
         updateType: VisualUpdateType = GlobeMapBuilder.ChangeAllType,
         timeout?: number): number {
         this.update(dataViews, updateType);
@@ -63,6 +64,7 @@ export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
     }
 
     protected build(options: VisualConstructorOptions): VisualClass {
+        //options.host.storageService = createStorageService();
         return new VisualClass(options);
     }
 

@@ -7,3 +7,4 @@ karma.conf.ts
 test.webpack.config.js
 src/lib/WebGlHeatmap
 src/lib/OrbitControls.js
+src/lib/OrbitControlsNew.js

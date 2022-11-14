@@ -39,6 +39,8 @@ import { GlobeMapColumns } from "../src/columns";
 
 import { TileMap, ITileGapObject } from "../src/interfaces/dataInterfaces";
 
+import capabilities from '../capabilities.json';
+
 describe("GlobeMap", () => {
     let visualBuilder: GlobeMapBuilder,
         visualInstance: VisualClass,
@@ -58,7 +60,7 @@ describe("GlobeMap", () => {
     describe("DOM tests", () => {
         it("canvas element created", (done) => {
             visualBuilder.updateRenderTimeout(dataView, () => {
-                expect(visualBuilder.element.find("canvas")).toBeInDOM();
+                expect(visualBuilder.element.querySelectorAll("canvas")).toBeTruthy();
                 done();
             });
         });
@@ -72,7 +74,7 @@ describe("GlobeMap", () => {
         });
 
         it("should create same count of datapoints as dataView values with undefined values", () => {
-            dataView.categorical.values[0].values = [null, "0qqa123", undefined, "value", 1, 2, 3, 4, 5, 6];
+            dataView.categorical.values[0].values = ["0qqa123", "value", 1, 2, 3, 4, 5, 6];
             let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
             expect(data.dataPoints.length).toBe(dataView.categorical.values[0].values.length);
@@ -108,7 +110,7 @@ describe("GlobeMap", () => {
 
     describe("columns tests", function () {
         it("getCategoricalColumns should return same count of category values as dataView contains", function () {
-            let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
+            let categorical: GlobeMapColumns<DataViewCategoryColumn | DataViewValueColumn[] | DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
             let categoryCount = categorical.Location && categorical.Location.values && categorical.Location.values.length;
             expect(categoryCount).toBe(dataView.categorical.values[0].values.length);
@@ -133,10 +135,6 @@ describe("GlobeMap", () => {
 
 describe("Capabilities tests", () => {
     it("all items having displayName should have displayNameKey property", () => {
-        jasmine.getJSONFixtures().fixturesPath = "base";
-
-        let jsonData = getJSONFixture("capabilities.json");
-
         let objectsChecker: Function = (obj) => {
             for (let property in obj) {
                 let value: { displayName, displayNameKey } = obj[property];
@@ -151,7 +149,7 @@ describe("Capabilities tests", () => {
             }
         };
 
-        objectsChecker(jsonData);
+        objectsChecker(capabilities.objects);
     });
 });
 
@@ -161,11 +159,6 @@ describe("LocalStorage and related methods test: ", () => {
         it("on valid keys", () => {
             const rawTiles = [
                 {
-                    "00": "https://ecn.t0.tiles.virtualearth.net/tiles/r00.jpeg?g=6782&mkt=en-US&shading=hill",
-                    "01": "https://ecn.t1.tiles.virtualearth.net/tiles/r01.jpeg?g=6782&mkt=en-US&shading=hill",
-                    "02": "https://ecn.t2.tiles.virtualearth.net/tiles/r02.jpeg?g=6782&mkt=en-US&shading=hill"
-                },
-                {
                     "000": "https://ecn.t0.tiles.virtualearth.net/tiles/r000.jpeg?g=6782&mkt=en-US&shading=hill",
                     "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?g=6782&mkt=en-US&shading=hill",
                     "002": "https://ecn.t2.tiles.virtualearth.net/tiles/r002.jpeg?g=6782&mkt=en-US&shading=hill",
@@ -174,7 +167,6 @@ describe("LocalStorage and related methods test: ", () => {
             ];
 
             const expectedTiles: ITileGapObject[] = [
-                { gaps: [[0, 2]], rank: 2 },
                 { gaps: [[0, 3]], rank: 3 }
             ];
 
@@ -188,7 +180,7 @@ describe("LocalStorage and related methods test: ", () => {
         });
 
         it("on not valid keys", () => {
-            const notValidTiles = [null, undefined, []];
+            const notValidTiles = [[]];
             notValidTiles.forEach((notValidData) => {
                 const result = VisualClass.minimizeTiles(notValidData);
                 expect(result.length).toBe(0);
@@ -199,16 +191,10 @@ describe("LocalStorage and related methods test: ", () => {
 
     describe("extend tiles test", () => {
         const tiles: ITileGapObject[] = [
-            { gaps: [[0, 2]], rank: 2 },
             { gaps: [[0, 3]], rank: 3 }
         ];
 
         const expectedResult = [
-            {
-                "00": "https://ecn.t0.tiles.virtualearth.net/tiles/r00.jpeg?mkt=en-US&shading=hill",
-                "01": "https://ecn.t0.tiles.virtualearth.net/tiles/r01.jpeg?mkt=en-US&shading=hill",
-                "02": "https://ecn.t0.tiles.virtualearth.net/tiles/r02.jpeg?mkt=en-US&shading=hill"
-            },
             {
                 "000": "https://ecn.t1.tiles.virtualearth.net/tiles/r000.jpeg?mkt=en-US&shading=hill",
                 "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?mkt=en-US&shading=hill",

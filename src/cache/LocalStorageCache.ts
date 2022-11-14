@@ -20,6 +20,7 @@ export class LocalStorageCache implements ICacheManager {
 
         /*this.setStatus()
             .then(status => {
+                this.localStorageStatus = status;
                 console.log(`Local storage status promise resolved in LocalStorageCache constructor with code ${status}`);
             });*/
     }

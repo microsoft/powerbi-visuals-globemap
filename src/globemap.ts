@@ -34,7 +34,7 @@ import last from "lodash.last";
 import "@babel/polyfill";
 
 import * as THREE from "three";
-import "./lib/OrbitControls";
+import { OrbitControls } from "./lib/OrbitControlsNew";
 
 import IPromise = powerbi.IPromise;
 import DataView = powerbi.DataView;
@@ -156,7 +156,7 @@ export class GlobeMap implements IVisual {
     private camera: THREE.PerspectiveCamera;
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
-    private orbitControls: THREE.OrbitControls;
+    private orbitControls: OrbitControls;
     private earth: THREE.Mesh | { material };
     private data: GlobeMapData;
     private get settings(): GlobeMapSettings {
@@ -589,7 +589,7 @@ export class GlobeMap implements IVisual {
             this.layout.viewportIn.width / this.layout.viewportIn.height,
             GlobeMap.cameraNear,
             GlobeMap.cameraFar);
-        this.orbitControls = new THREE.OrbitControls(this.camera, this.rendererCanvas);
+        this.orbitControls = new OrbitControls(this.camera, this.rendererCanvas);
         this.orbitControls.enablePan = false;
         this.scene = new THREE.Scene();
 
@@ -649,7 +649,7 @@ export class GlobeMap implements IVisual {
         const material: THREE.MeshPhongMaterial = new THREE.MeshPhongMaterial({
             map: this.mapTextures[0],
             side: THREE.DoubleSide,
-            shading: THREE.SmoothShading,
+            flatShading: true, //THREE.SmoothShading,
             shininess: 1
         });
 
@@ -720,10 +720,10 @@ export class GlobeMap implements IVisual {
         return result;
     }
 
-    public static extendTiles(tileCacheData: string, language: string): Promise<Record<string, unknown>[]> {
-        const result: Record<string, unknown>[] = [];
+    public static extendTiles(tileCacheData: string, language: string): Promise<TileMap[]> {
+        const result: TileMap[] = [];
     
-        return new Promise<Record<string, unknown>[]>((resolve, reject) => {
+        return new Promise<TileMap[]>((resolve, reject) => {
             if (!tileCacheData || !tileCacheData.length) {
                 resolve(result);
             }
@@ -1345,12 +1345,13 @@ export class GlobeMap implements IVisual {
         this.heatTexture = null;
         this.camera = null;
         if (this.renderer) {
-            if (this.renderer.context) {
-                const extension: { loseContext } = this.renderer.context.getExtension("WEBGL_lose_context");
+            const context = this.renderer.getContext();
+            if (context) {
+                const extension: { loseContext } = context.getExtension("WEBGL_lose_context");
                 if (extension) {
                     extension.loseContext();
                 }
-                this.renderer.context = null;
+                this.renderer.forceContextLoss();
             }
             this.renderer.domElement = null;
         }
@@ -1541,7 +1542,7 @@ export class GlobeMap implements IVisual {
                 for (let j: number = 0; j < measuresBySeries.length; j++) {
                     previousMeasureValue += measuresBySeries[j];
                     const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(this.GlobeSettings.barWidth, this.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
-                    const bar: THREE.Mesh & { toolTipData } = <THREE.Mesh & { toolTipData }>new THREE.Mesh(geometry, this.getBarMaterialByIndex(i));
+                    const bar: THREE.Mesh & {toolTipData?} = new THREE.Mesh(geometry, this.getBarMaterialByIndex(i));
                     const position: THREE.Vector3 = vector.clone().multiplyScalar(this.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
                     bar.position.set(position.x, position.y, position.z);
                     bar.lookAt(vector);

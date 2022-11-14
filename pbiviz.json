@@ -9,7 +9,7 @@
     "supportUrl": "https://aka.ms/customvisualscommunity",
     "gitHubUrl": "https://github.com/Microsoft/powerbi-visuals-globemap"
   },
-  "apiVersion": "5.1.0",
+  "apiVersion": "4.7.0",
   "author": {
     "name": "Microsoft",
     "email": "pbicvsupport@microsoft.com"
