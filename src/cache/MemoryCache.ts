@@ -1,4 +1,3 @@
-import { ICacheManager } from "./interfaces/ICacheManager";
 import { ILocationDictionary, ILocationCoordinateRecord, IGeocodeCoordinate } from "../geocoder/interfaces/geocoderInterfaces";
 
 interface GeocodeCacheEntry {
@@ -6,7 +5,7 @@ interface GeocodeCacheEntry {
     hitCount: number;
 }
 
-export class MemoryCache implements ICacheManager {
+export class MemoryCache {
     private geocodeCache: _.Dictionary<GeocodeCacheEntry>;
     private geocodeCacheCount: number;
     private maxCacheSize: number;
@@ -22,9 +21,8 @@ export class MemoryCache implements ICacheManager {
     public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
         console.log("Loading from memory cache...");
         
-        return new Promise<ILocationDictionary>((resolve, reject) => {
             if (!keys || !keys.length) {
-                reject("No locations to be loaded");
+                return;
             }
             const locations: ILocationDictionary = {};
             for (const key in this.geocodeCache) {
@@ -34,8 +32,7 @@ export class MemoryCache implements ICacheManager {
                 }
             }
 
-            resolve(locations);
-        });
+            return locations;
     }
 
     public saveCoordinates(coordinates: ILocationDictionary): Promise<void> {

@@ -114,7 +114,7 @@ export class GlobeMapData extends TestDataViewBuilder {
                     roles: { [GlobeMapData.ColumnSource]: true },
                     type: ValueType.fromDescriptor({ text: true })
                 },
-                values: this.valuesSourceDestination.map(x => x[0])
+                values: this.valuesSourceDestination
             }
         ], [
                 {

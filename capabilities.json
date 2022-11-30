@@ -3,7 +3,7 @@
     {
       "name": "WebAccess",
       "essential": true,
-      "parameters": [ "https://*.virtualearth.net" ]
+      "parameters": [ "http://*.virtualearth.net" ]
     },
     {
       "name": "LocalStorage",
