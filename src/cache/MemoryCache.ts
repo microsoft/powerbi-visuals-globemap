@@ -19,9 +19,11 @@ export class MemoryCache {
     }
 
     public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
-        console.log("Loading from memory cache...");
+            console.log("Loading from memory cache...");
         
             if (!keys || !keys.length) {
+                console.log("Memory cache is empty!");
+                
                 return;
             }
             const locations: ILocationDictionary = {};
@@ -31,6 +33,7 @@ export class MemoryCache {
                     locations[key] = this.geocodeCache[key].coordinate;
                 }
             }
+            console.log("Memcache returned", JSON.stringify(locations));
 
             return locations;
     }

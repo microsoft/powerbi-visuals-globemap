@@ -37,9 +37,10 @@ import { GlobeMapData as GlobeMapDataViewBuilder } from "./visualData";
 import { GlobeMap as VisualClass } from "../src/globemap";
 import { GlobeMapColumns } from "../src/columns";
 
-import { TileMap, ITileGapObject } from "../src/interfaces/dataInterfaces";
+import { TileMap, ITileGapObject, ILocationKeyDictionary } from "../src/interfaces/dataInterfaces";
 
 import capabilities from '../capabilities.json';
+import PrimitiveValue = powerbi.PrimitiveValue;
 
 describe("GlobeMap", () => {
     let visualBuilder: GlobeMapBuilder,
@@ -47,21 +48,49 @@ describe("GlobeMap", () => {
         defaultDataViewBuilder: GlobeMapDataViewBuilder,
         dataView: DataView;
 
-    beforeEach(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
+    beforeAll(() => {
+        jasmine.DEFAULT_TIMEOUT_INTERVAL = 600_000;
         visualBuilder = new GlobeMapBuilder(1024, 1024);
-
-        defaultDataViewBuilder = new GlobeMapDataViewBuilder();
-        dataView = defaultDataViewBuilder.getDataView();
-
         visualInstance = visualBuilder.instance;
     });
 
+    beforeEach(() => {
+        defaultDataViewBuilder = new GlobeMapDataViewBuilder();
+        dataView = defaultDataViewBuilder.getDataView();
+    });
+
     describe("DOM tests", () => {
-        it("canvas element created", (done) => {
+
+        beforeAll(async () => {
+            defaultDataViewBuilder = new GlobeMapDataViewBuilder();
+            dataView = defaultDataViewBuilder.getDataView();
+
+            let categoricalColumns = GlobeMapColumns.getCategoricalColumns(dataView);
+            
+            let locations = categoricalColumns.Location.values as PrimitiveValue[];
+            let locationsNeedToBeLoaded = {} as ILocationKeyDictionary;
+
+            locations.forEach((locationName) => {
+                const name = (locationName as string).toLowerCase();
+                locationsNeedToBeLoaded[name] = {
+                    place: name, 
+                    locationType: ""
+                };
+            });
+
+            const coordinates = await visualInstance.cacheManager.loadCoordinates(locationsNeedToBeLoaded);
+            
+            if (Object.keys(coordinates).length > 0) {
+                await visualInstance.cacheManager.saveCoordinates(coordinates);
+            }
+        });
+
+        it("canvas element created", async () => {
+            console.log("dom test started");
+
             visualBuilder.updateRenderTimeout(dataView, () => {
                 expect(visualBuilder.element.querySelectorAll("canvas")).toBeTruthy();
-                done();
+                console.log("dom test passed");                
             });
         });
     });
@@ -81,7 +110,7 @@ describe("GlobeMap", () => {
         });
 
         it("should create same count of datapoints as valid categories", () => {
-            let invalidDataSet = [null, "0qqa123", undefined, "value", 1, 2, 3, 4, 5, 6];
+            let invalidDataSet = ["0qqa123", "value", 1, 2, 3, 4, 5, 6];
 
             dataView.categorical.categories[0].values = invalidDataSet;
             let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
@@ -108,7 +137,7 @@ describe("GlobeMap", () => {
         });
     });
 
-    describe("columns tests", function () {
+    describe("Columns tests", function () {
         it("getCategoricalColumns should return same count of category values as dataView contains", function () {
             let categorical: GlobeMapColumns<DataViewCategoryColumn | DataViewValueColumn[] | DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
@@ -129,105 +158,105 @@ describe("GlobeMap", () => {
         it("getCategoricalValueByIndex should return latitude value", function () {
             let latitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[2], 1);
             expect(latitude).toEqual(`${dataView.categorical.values[2].values[1]}`);
+            
         });
     });
-});
 
-describe("Capabilities tests", () => {
-    it("all items having displayName should have displayNameKey property", () => {
-        let objectsChecker: Function = (obj) => {
-            for (let property in obj) {
-                let value: { displayName, displayNameKey } = obj[property];
+    describe("Capabilities tests", () => {
+        it("all items having displayName should have displayNameKey property", () => {
+            let objectsChecker: Function = (obj) => {
+                for (let property in obj) {
+                    let value: { displayName, displayNameKey } = obj[property];
 
-                if (value.displayName) {
-                    expect(value.displayNameKey).toBeDefined();
+                    if (value.displayName) {
+                        expect(value.displayNameKey).toBeDefined();
+                    }
+
+                    if (typeof value === "object") {
+                        objectsChecker(value);
+                    }
                 }
+            };
 
-                if (typeof value === "object") {
-                    objectsChecker(value);
-                }
-            }
-        };
-
-        objectsChecker(capabilities.objects);
+            objectsChecker(capabilities.objects);
+        });
     });
-});
 
-describe("LocalStorage and related methods test: ", () => {
-    describe("minimize tiles test", () => {
+    describe("LocalStorage and related methods test: ", () => {
+        describe("minimize tiles test", () => {
 
-        it("on valid keys", () => {
-            const rawTiles = [
-                {
-                    "000": "https://ecn.t0.tiles.virtualearth.net/tiles/r000.jpeg?g=6782&mkt=en-US&shading=hill",
-                    "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?g=6782&mkt=en-US&shading=hill",
-                    "002": "https://ecn.t2.tiles.virtualearth.net/tiles/r002.jpeg?g=6782&mkt=en-US&shading=hill",
-                    "003": "https://ecn.t3.tiles.virtualearth.net/tiles/r003.jpeg?g=6782&mkt=en-US&shading=hill"
+            it("on valid keys", () => {
+                const rawTiles = [
+                    {
+                        "000": "https://ecn.t0.tiles.virtualearth.net/tiles/r000.jpeg?g=6782&mkt=en-US&shading=hill",
+                        "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?g=6782&mkt=en-US&shading=hill",
+                        "002": "https://ecn.t2.tiles.virtualearth.net/tiles/r002.jpeg?g=6782&mkt=en-US&shading=hill",
+                        "003": "https://ecn.t3.tiles.virtualearth.net/tiles/r003.jpeg?g=6782&mkt=en-US&shading=hill"
+                    }
+                ];
+
+                const expectedTiles: ITileGapObject[] = [
+                    { gaps: [[0, 3]], rank: 3 }
+                ];
+
+                const result: ITileGapObject[] = VisualClass.minimizeTiles(rawTiles);
+
+                expect(result.length).toEqual(expectedTiles.length);
+                for (let i = 0; i < result.length; i++) {
+                    expect(expectedTiles[i].rank).toEqual(result[i].rank);
+                    expect(expectedTiles[i].gaps).toEqual(result[i].gaps);
                 }
-            ];
+            });
 
-            const expectedTiles: ITileGapObject[] = [
+            it("on not valid keys", () => {
+                const notValidTiles = [[]];
+                notValidTiles.forEach((notValidData) => {
+                    const result = VisualClass.minimizeTiles(notValidData);
+                    expect(result.length).toBe(0);
+                });
+            });
+        });
+    
+        describe("extend tiles test", () => {
+            const tiles: ITileGapObject[] = [
                 { gaps: [[0, 3]], rank: 3 }
             ];
 
-            const result: ITileGapObject[] = VisualClass.minimizeTiles(rawTiles);
+            const expectedResult = [
+                {
+                    "000": "https://ecn.t1.tiles.virtualearth.net/tiles/r000.jpeg?mkt=en-US&shading=hill",
+                    "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?mkt=en-US&shading=hill",
+                    "002": "https://ecn.t1.tiles.virtualearth.net/tiles/r002.jpeg?mkt=en-US&shading=hill",
+                    "003": "https://ecn.t1.tiles.virtualearth.net/tiles/r003.jpeg?mkt=en-US&shading=hill"
+                }
+            ];
 
-            expect(result.length).toEqual(expectedTiles.length);
-            for (let i = 0; i < result.length; i++) {
-                expect(expectedTiles[i].rank).toEqual(result[i].rank);
-                expect(expectedTiles[i].gaps).toEqual(result[i].gaps);
-            }
-        });
+            const culture: string = "en-US";
 
-        it("on not valid keys", () => {
-            const notValidTiles = [[]];
-            notValidTiles.forEach((notValidData) => {
-                const result = VisualClass.minimizeTiles(notValidData);
-                expect(result.length).toBe(0);
+            it("for not valid input", () => {
+                const expectedResult = [];
+                const tiles = [[]];
+                tiles.forEach((tile) => {
+                    visualInstance.extendTiles(JSON.stringify(tile), culture)
+                        .then((data: TileMap[]) => {
+                            expect(data.length).toBe(expectedResult.length);
+                        });
+                });
             });
-        });
 
-    });
-
-    describe("extend tiles test", () => {
-        const tiles: ITileGapObject[] = [
-            { gaps: [[0, 3]], rank: 3 }
-        ];
-
-        const expectedResult = [
-            {
-                "000": "https://ecn.t1.tiles.virtualearth.net/tiles/r000.jpeg?mkt=en-US&shading=hill",
-                "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?mkt=en-US&shading=hill",
-                "002": "https://ecn.t1.tiles.virtualearth.net/tiles/r002.jpeg?mkt=en-US&shading=hill",
-                "003": "https://ecn.t1.tiles.virtualearth.net/tiles/r003.jpeg?mkt=en-US&shading=hill"
-            }
-        ];
-
-        const culture: string = "en-US";
-
-        it("for not valid input", () => {
-            const expectedResult = [];
-            const tiles = [null, undefined, []];
-            tiles.forEach((tile) => {
-                VisualClass.extendTiles(JSON.stringify(tile), culture)
+            it("for valid input", () => {
+                visualInstance.extendTiles(JSON.stringify(tiles), culture)
                     .then((data: TileMap[]) => {
-                        expect(data.length).toBe(expectedResult.length);
+                        expect(data).not.toBeNull();
+                        for (let i = 0; data.length; i++) {
+                            const tile: TileMap = data[i];
+                            for (let key in tile) {
+                                tile[key] = tile[key].replace(/g=\w+&/g, '');
+                            }
+                            expect(data[i]).toBe(expectedResult[i]);
+                        }
                     });
             });
-        });
-
-        it("for valid input", () => {
-            VisualClass.extendTiles(JSON.stringify(tiles), culture)
-                .then((data: TileMap[]) => {
-                    expect(data).not.toBeNull();
-                    for (let i = 0; data.length; i++) {
-                        const tile: TileMap = data[i];
-                        for (let key in tile) {
-                            tile[key] = tile[key].replace(/g=\w+&/g, '');
-                        }
-                        expect(data[i]).toBe(expectedResult[i]);
-                    }
-                });
         });
     });
 });

@@ -34,7 +34,7 @@ import last from "lodash.last";
 import "@babel/polyfill";
 
 import * as THREE from "three";
-import { OrbitControls } from "./lib/OrbitControlsNew";
+import { OrbitControls } from "./lib/Three/OrbitControls";
 
 import IPromise = powerbi.IPromise;
 import DataView = powerbi.DataView;
@@ -64,7 +64,8 @@ import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructor
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 
-import { GlobeMapSettings } from "./settings";
+import { GlobeMapSettings, GlobeMapSettingsModel } from "./settings";
+import { formattingSettings } from 'powerbi-visuals-utils-formattingmodel';
 import { VisualLayout } from "./visualLayout";
 import { GlobeMapCategoricalColumns, GlobeMapColumns } from "./columns";
 import {
@@ -83,7 +84,8 @@ import {
     BingMetadata
 } from "./interfaces/bingInterfaces";
 import { CacheManager } from "./cache/CacheManager";
-import { MercartorSphere } from "./map/MercartorSphere";
+//import { MercartorSphere } from "./map/MercartorSphere";
+import { Geometry as CustomGeometry } from "./lib/Three/Geometry";
 import { BingSettings } from "./settings";
 
 const WebGLHeatmap = require("./lib/WebGLHeatmap");
@@ -110,12 +112,13 @@ import { ColorHelper } from "powerbi-visuals-utils-colorutils";
 import { IValueFormatter } from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
 import { valueFormatter } from "powerbi-visuals-utils-formattingutils";
 
-import { ICacheManager } from "./cache/interfaces/ICacheManager";
+import { Geometry } from "./lib/Three/Geometry";
+import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 
 export class GlobeMap implements IVisual {
     private mouseDownTime: number;
     private localStorageService: ILocalVisualStorageService;
-    public static MercartorSphere: MercartorSphere;
+    public static MercatorSphere: CustomGeometry;
     private GlobeSettings = {
         autoRotate: false,
         earthRadius: 30,
@@ -168,7 +171,7 @@ export class GlobeMap implements IVisual {
     public barsGroup: THREE.Object3D;
     private readyToRender: boolean;
     private deferredRenderTimerId: number;
-    private cacheManager: ICacheManager;
+    public cacheManager: CacheManager;
     private locationsToLoad: number = 0;
     private locationsLoaded: number = 0;
     private initialLocationsLength: number = 0;
@@ -185,6 +188,9 @@ export class GlobeMap implements IVisual {
     private animationFrameId: number;
     private cameraAnimationFrameId: number;
     public visualHost: IVisualHost;
+
+    private formattingSettingsService: FormattingSettingsService;
+    private formattingServiceModel: GlobeMapSettingsModel;
 
     private isFirstLoad: boolean = true;
 
@@ -490,7 +496,27 @@ export class GlobeMap implements IVisual {
         }
     }
 
-    public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
+    public getFormattingModel(): powerbi.visuals.FormattingModel {
+        
+        if (this.data && this.data.seriesDataPoints) {
+            for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
+                const dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
+
+                this.formattingServiceModel.dataPoint.slices.push(new formattingSettings.ColorPicker({                    
+                    name: "fill",
+                    displayName: dataPoint.label,
+                    selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()),
+                    value: { value: dataPoint.color },
+                }));
+            }
+        }
+
+        const model = this.formattingSettingsService.buildFormattingModel(this.formattingServiceModel);
+
+        return model;
+    }
+
+    /*public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
         const instances: VisualObjectInstanceEnumeration = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
         switch (options.objectName) {
             case "dataPoint": if (this.data && this.data.seriesDataPoints) {
@@ -509,13 +535,14 @@ export class GlobeMap implements IVisual {
                 break;
         }
         return instances;
-    }
+    }*/
 
     constructor(options: VisualConstructorOptions) {
         console.log("Globemap constructor");
         
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageService;
+        this.formattingSettingsService = new FormattingSettingsService();
 
         this.root = options.element;
         this.root.setAttribute("drag-resize-disabled", "true");
@@ -529,7 +556,6 @@ export class GlobeMap implements IVisual {
         this.readyToRender = false;
         this.cacheManager = new CacheManager(this.localStorageService);
         this.colors = options.host.colorPalette;
-
         this.setup();
     }
 
@@ -556,7 +582,7 @@ export class GlobeMap implements IVisual {
     private static tileSize: number = 256;
     private static initialResolutionLevel: number = 2;
     private static maxResolutionLevel: number = 5;
-    private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&uriScheme=https&key=${BingSettings.BingKey}`;
+    private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&key=${BingSettings.BingKey}`;
     private static reserveBindMapsMetadata: BingResourceMetadata = {
         imageUrl: "https://{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=0&mkt={culture}",
         imageUrlSubdomains: [
@@ -630,7 +656,7 @@ export class GlobeMap implements IVisual {
                 this.intersectBars();
                 this.needsRender = false;
             } catch (e) {
-                console.error(e);
+                console.error(`Render error: ${e}`);
             }
         };
 
@@ -642,18 +668,18 @@ export class GlobeMap implements IVisual {
     }
 
     private createEarth(): THREE.Mesh {
-        const geometry: MercartorSphere = new MercartorSphere(
+        const geometry: CustomGeometry = new CustomGeometry(
             this.GlobeSettings.earthRadius,
             this.GlobeSettings.earthSegments,
             this.GlobeSettings.earthSegments);
         const material: THREE.MeshPhongMaterial = new THREE.MeshPhongMaterial({
             map: this.mapTextures[0],
             side: THREE.DoubleSide,
-            flatShading: true, //THREE.SmoothShading,
+            flatShading: false,
             shininess: 1
         });
 
-        const mesh: THREE.Mesh = new THREE.Mesh(geometry, material);
+        const mesh: THREE.Mesh = new THREE.Mesh(geometry.toBufferGeometry(), material);
         mesh.add(new THREE.AmbientLight(0xaaaaaa, 1));
 
         return mesh;
@@ -687,6 +713,8 @@ export class GlobeMap implements IVisual {
     }
 
     public static minimizeTiles(tileCacheArray: TileMap[]): ITileGapObject[] {
+        console.log("minimizeTiles method execution");
+
         if (!tileCacheArray || !tileCacheArray.length) {
             return [];
         }
@@ -720,29 +748,33 @@ export class GlobeMap implements IVisual {
         return result;
     }
 
-    public static extendTiles(tileCacheData: string, language: string): Promise<TileMap[]> {
+    public extendTiles(tileCacheData: string, language: string): Promise<TileMap[]> {
         const result: TileMap[] = [];
+        console.log("extendTiles method execution");
     
         return new Promise<TileMap[]>((resolve, reject) => {
             if (!tileCacheData || !tileCacheData.length) {
                 resolve(result);
+                return;
             }
 
             const tileCacheArray: ITileGapObject[] = JSON.parse(tileCacheData);
-            if (!Array.isArray(tileCacheArray) || !tileCacheArray.length) {
+            if (!tileCacheArray || !Array.isArray(tileCacheArray) || !tileCacheArray.length) {
                 resolve(result);
+                return;
             }
+            console.log("In extendTiles now, will try to load bing maps metadata");
 
-            GlobeMap.getBingMapsServerMetadata()
+            this.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
                     const urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     const subdomains = metadata.imageUrlSubdomains;
 
-                    tileCacheArray.forEach((zoomArray: ITileGapObject, level) => {
+                    tileCacheArray?.forEach((zoomArray: ITileGapObject, level) => {
                         const rank: number = zoomArray.rank;
                         const gaps = zoomArray.gaps;
                         const resultForCurrentZoom = {};
-                        gaps.forEach((gap: number[]) => {
+                        gaps?.forEach((gap: number[]) => {
                             for (let gapItem = first(gap); gapItem <= last(gap); gapItem++) {
                                 let stringGap: string = gapItem.toString();
                                 while (stringGap.length < rank) {
@@ -756,7 +788,9 @@ export class GlobeMap implements IVisual {
 
                     resolve(result);
                 })
-                .catch(() => {
+                .catch((e) => {
+                    console.error(`Bing map service metadata loading error: ${e}`);
+                    throw "Bing map service metadata loading error thrown";
                     reject("Bing Map service metadata loading error");
                 });
         });
@@ -764,8 +798,9 @@ export class GlobeMap implements IVisual {
 
     private loadFromBing(language: string): Promise<TileMap[]> {
         const tileCacheValue: TileMap[] = [];
-        return new Promise<TileMap[]>((resolve, reject) => {
-            GlobeMap.getBingMapsServerMetadata()
+        console.log("LoadFromBing method executing");
+
+        return this.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
 
                     const urlTemplate = metadata.imageUrl.replace("{culture}", language);
@@ -777,54 +812,70 @@ export class GlobeMap implements IVisual {
                     const minimizedTileCacheData: string = JSON.stringify(GlobeMap.minimizeTiles(tileCacheValue));
                     this.localStorageService.set(`${GlobeMap.TILE_STORAGE_KEY}_${language}`, minimizedTileCacheData);
 
-                    resolve(tileCacheValue);
-                }).catch(() => {
-                    resolve(tileCacheValue);
+                    return tileCacheValue;
+                }).catch((e) => {
+                    console.log(`Load from Bing error: ${e}`);
+                    
+                    return tileCacheValue;
                 });
-        });
     }
 
     private getTilesData(language: string): Promise<Record<string, unknown>[] | TileMap[]> {
         return new Promise<Record<string, unknown>[] | TileMap[]>((resolve, reject) => {
             const tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
+            console.log("GetTilesData method executing");
 
             tileCachePromise.then(data => {
-                GlobeMap.extendTiles(data, this.currentLanguage)
-                    .then((tilesData) => resolve(tilesData))
-                    .catch(() => reject("Tiles loading from Storage error"));
-            })
-                .catch(() => {
-                    this.loadFromBing(language)
-                        .then((bingData) => resolve(bingData))
-                        .catch(() => reject("Tiles loading from Bing error"));
-                });
-        });
+                this.extendTiles(data, this.currentLanguage)
+                    .then((tilesData) => {
+                        if (!tilesData || tilesData.length === 0) throw "Empty tiles, will try to load from Bing";
+                        resolve(tilesData);
+                    })
+                    .catch((e) => {
+                        console.error("Loading from Bing...", e);
+
+                        this.loadFromBing(language)
+                            .then((bingData) => resolve(bingData))
+                            .catch((e) => reject(`Tiles loading from Bing error: ${e}`));
+                    })
+            }).catch((e) => {
+                console.error("Tiles loading from Storage error", e);
+
+                this.loadFromBing(language)
+                            .then((bingData) => resolve(bingData))
+                            .catch((e) => reject(`Tiles loading from Bing error: ${e}`));
+            });
+        })
     }
 
     private initTextures(): Promise<string> {
         this.mapTextures = [];
-        return new Promise<string>((resolve, reject) => {
-            this.getTilesData(this.currentLanguage)
-                .then((tiles: TileMap[]) => {
+        
+        return this.getTilesData(this.currentLanguage)
+                .then((tiles: TileMap[]) => {                    
                     for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
                         this.mapTextures.push(this.createTexture(level, tiles[level - GlobeMap.initialResolutionLevel]));
                     }
-                    resolve("success");
+                    return "success";
                 })
-                .catch(() => {
-                    reject("Get tiles error");
+                .catch((e) => {
+                    console.error(`Get tiles error: ${e}`);
+                    
+                    return "Get tiles error" ;
                 });
-        });
+
     }
 
-    private static async getBingMapsServerMetadata(): Promise<BingResourceMetadata> {
+    private async getBingMapsServerMetadata(): Promise<BingResourceMetadata> {
         let metaData: BingMetadata = {} as BingMetadata;
+        console.log("getBingMapsServerMetadata method executing");
+
         try {
             const response = await fetch(GlobeMap.metadataUrl);
             metaData = await response.json();
-
             if (metaData.resourceSets.length) {
                 const resourceSet = metaData.resourceSets[0];
+                
                 if (resourceSet && resourceSet.resources.length) {
                     return resourceSet.resources[0];
                 }
@@ -832,7 +883,7 @@ export class GlobeMap implements IVisual {
             throw "Bing Maps API response was changed. Please update code for new version";
         }
         catch(error) {
-            console.error(JSON.stringify(error));  
+            console.error(`Server metadata error is: ${error} ${error.message}`);  
             return GlobeMap.reserveBindMapsMetadata;   
         } 
     }
@@ -889,8 +940,10 @@ export class GlobeMap implements IVisual {
      */
     private loadTiles(canvasEl: HTMLCanvasElement, tiles: TileMap, successCallback: () => void): void {
         let tilesLoaded: number = 0;
-        const countTiles: number = Object.keys(tiles).length;
+        const countTiles: number = tiles && Object.keys(tiles).length;
         const canvasContext: CanvasRenderingContext2D = canvasEl.getContext("2d");
+        console.log("Load tiles method execution");
+        
         for (const quadKey in tiles) {
             if (Object.prototype.hasOwnProperty.call(tiles, quadKey)) {
                 const coords: ICanvasCoordinate = this.getCoordByQuadKey(quadKey);
@@ -985,7 +1038,7 @@ export class GlobeMap implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         console.log("Update triggered");
-        
+        debugger
         if (options.dataViews === undefined || options.dataViews === null) {
             return;
         }
@@ -993,6 +1046,8 @@ export class GlobeMap implements IVisual {
 
         this.root.style.height = this.layout.viewportIn.height.toString();
         this.root.style.width = this.layout.viewportIn.width.toString();
+
+        this.formattingServiceModel = this.formattingSettingsService.populateFormattingSettingsModel(GlobeMapSettingsModel, options.dataViews)
 
         this.controlContainer.setAttribute("style",
             `display: ${this.layout.viewportIn.height > GlobeMap.ZoomControlSettings.height
@@ -1013,7 +1068,6 @@ export class GlobeMap implements IVisual {
             const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
             if (data) {
                 this.data = data;
-                console.log("Update for coordinates");
 
                 const locationsNeedToBeLoaded: ILocationKeyDictionary = {};
                 data.dataPoints.forEach((d: GlobeMapDataPoint) => {
@@ -1022,14 +1076,24 @@ export class GlobeMap implements IVisual {
                             place: d.place, locationType: d.locationType
                         };
                 });
-                this.cacheManager.loadCoordinates(locationsNeedToBeLoaded).then((coordinates: ILocationDictionary) => {
-                    this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
-                        d.location = coordinates[d.place] || d.location;
-                    });
+                console.log("Loc: ", JSON.stringify(locationsNeedToBeLoaded));
 
-                    this.render();
-                    this.cacheManager.saveCoordinates(coordinates);
-                });
+                this.cacheManager.loadCoordinates(locationsNeedToBeLoaded)
+                    .then((coordinates: ILocationDictionary) => {
+                        this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
+                            d.location = coordinates[d.place] || d.location;
+                        });
+
+                        this.render();
+
+                        console.log("Coordinates: ", JSON.stringify(coordinates));
+                        if (Object.keys(coordinates).length > 0) {
+                            this.cacheManager.saveCoordinates(coordinates);
+                        }
+
+                    }).catch((e) => {
+                        console.error("Load coordinates in update method error", e);
+                    });
             }
         }
     }
@@ -1182,11 +1246,11 @@ export class GlobeMap implements IVisual {
     private initRayCaster() {
         this.rayCaster = new THREE.Raycaster();
 
-        this.rendererCanvas.addEventListener("mousemove", this.handleMouseMove);
+        this.rendererCanvas.addEventListener("pointermove", this.handleMouseMove);
         
-        this.rendererCanvas.addEventListener("mousedown", this.handleMouseDown);
+        this.rendererCanvas.addEventListener("pointerdown", this.handleMouseDown);
         
-        this.rendererCanvas.addEventListener("mouseup", this.handleMouseUp);
+        this.rendererCanvas.addEventListener("pointerup", this.handleMouseUp);
         
         this.rendererCanvas.addEventListener("wheel", this.handleWheel, { passive: false });
     }
@@ -1351,6 +1415,7 @@ export class GlobeMap implements IVisual {
                 if (extension) {
                     extension.loseContext();
                 }
+                this.renderer.dispose();
                 this.renderer.forceContextLoss();
             }
             this.renderer.domElement = null;
@@ -1366,11 +1431,11 @@ export class GlobeMap implements IVisual {
 
         if (this.rendererCanvas) {
 
-            this.rendererCanvas.removeEventListener("mousemove", this.handleMouseMove); 
+            this.rendererCanvas.removeEventListener("pointermove", this.handleMouseMove); 
 
-            this.rendererCanvas.removeEventListener("mousedown", this.handleMouseDown); 
+            this.rendererCanvas.removeEventListener("pointerdown", this.handleMouseDown); 
 
-            this.rendererCanvas.removeEventListener("mouseup", this.handleMouseUp); 
+            this.rendererCanvas.removeEventListener("pointerup", this.handleMouseUp); 
 
             this.rendererCanvas.removeEventListener("wheel", this.handleWheel);  
         }
@@ -1443,15 +1508,15 @@ export class GlobeMap implements IVisual {
         }
     }
     private initMercartorSphere() {
-        if (GlobeMap.MercartorSphere) return;
+        if (GlobeMap.MercatorSphere) return;
 
-        const ms = new MercartorSphere(
+        const ms = new CustomGeometry(
             this.GlobeSettings.earthRadius,
             this.GlobeSettings.earthSegments,
             this.GlobeSettings.earthSegments);
-        ms.prototype = Object.create(THREE.Geometry.prototype);
+        ms.prototype = Object.create(Geometry.prototype);
 
-        GlobeMap.MercartorSphere = ms;
+        GlobeMap.MercatorSphere = ms;
     }
 
     private updateBarsAndHeatMapByZoom(delta: number = 0): void {
