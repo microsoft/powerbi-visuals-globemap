@@ -12,7 +12,6 @@ import { CacheSettings } from "./../settings";
 import { ILocationKeyDictionary } from "../interfaces/dataInterfaces";
 
 export class CacheManager {
-
     private memoryCache: MemoryCache;
     private localStorageCache: LocalStorageCache;
     private bing: Bing;
@@ -20,9 +19,7 @@ export class CacheManager {
     private localStorageService: ILocalVisualStorageService;
 
     constructor(localStorageService: ILocalVisualStorageService) {
-        console.log("CacheManager constructor");
         this.memoryCache = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
-        //this.localStorageCache = new LocalStorageCache(localStorageService);
         this.localStorageService = localStorageService;
         this.bing = new Bing();
         this.coordsInLocalStorage = {};
@@ -54,11 +51,7 @@ export class CacheManager {
         const coordsInMemory: ILocationDictionary = await this.memoryCache.loadCoordinates(locations); // {"London": {"lat": 54, "lon": 34"}, "Moscow": {"lat": 64, "lon": 54"}
         locationsInMemory = Object.keys(coordsInMemory);
         
-        console.log("Locations in memory", JSON.stringify(locationsInMemory));
-        
-        locations = locations.filter(loc => !locationsInMemory.includes(loc));                       // ["Moscow"] need to be loaded from LS or Bing
-
-        console.log("Locations after filter", JSON.stringify(locations));
+        locations = locations.filter(loc => !locationsInMemory.includes(loc));                        
         
         if (locations.length === 0) {
             result = Object.assign({}, coordsInMemory);
@@ -66,7 +59,7 @@ export class CacheManager {
         }
 
         const getLocationsFromBing = async (): Promise<ILocationDictionary> => {
-            console.log("Getting locations from BING");
+            console.log("Getting locations from Bing");
             
             locationsDictionary = locations
                 .reduce((obj, key) => ({ ...obj, [key]: locationsDictionary[key] }), {});
@@ -110,7 +103,7 @@ export class CacheManager {
                     }
                     
                 }).catch((e) => {
-                    console.error("Error while loading coordinates", e);
+                    console.error("Error while loading coordinates from local storage", e);
                     return getLocationsFromBing();
             });
         }

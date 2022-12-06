@@ -57,8 +57,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
     private inputType: string;
     private key: string;
 
-    private static jsonpCallbackObjectName = "powerbi";
-    private static requestTimeout = 2000;
+    private static requestTimeout = 3500;
     private static HttpStatuses = {
         OK: 200,
         CREATED: 201
@@ -99,10 +98,11 @@ export abstract class BingMapsGeocoder implements IGeocoder {
 
     // eslint-disable-next-line max-lines-per-function
     public async geocodeByDataFlow(queries: string[]): Promise<ILocationDictionary> {
-        console.log("GEOCODING BY DATAFLOW...");
         const xmlString = this.createXmlStringFromLocationQueries(queries);
         try {
-            const createJobResult = await this.createJob(xmlString); //.catch(e => { console.error("Fetch err", e); throw "FETCH ERR" });
+            console.log("Creating a job...");
+            
+            const createJobResult = await this.createJob(xmlString);
             
             console.log("Created job with response status", createJobResult.status);
             const createJobResultJson = await createJobResult.json();
@@ -120,7 +120,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
             return await new Promise((resolve, reject) => {
                 const interval = setInterval(async () => {
                     try {
-                        const jobStatus: BingJobStatusResponse = await this.monitorJobStatusJsonp(jobID);
+                        const jobStatus: BingJobStatusResponse = await this.monitorJobStatus(jobID);
                         console.log(`Returned job status ${jobStatus.statusCode}`);
                         
                         if (jobStatus.statusCode === BingMapsGeocoder.HttpStatuses.OK) {
@@ -130,9 +130,9 @@ export abstract class BingMapsGeocoder implements IGeocoder {
                             if (taskStatus === BingMapsGeocoder.JobStatuses.COMPLETED) {
                                 console.log("Getting job results...");
                                 
-                                const jobResult: XMLDocument = await this.getJobResultJsonp(jobID);
+                                const jobResult: XMLDocument = await this.getJobResult(jobID);
                                 const locationDictionary: ILocationDictionary = this.parseXmlJobResult(jobResult);     
-                                console.log("locationDictionary returned by API", locationDictionary);                   
+                                console.log("Locations were retrieved from API");                   
                                 clearInterval(interval);
                                     
                                 resolve (locationDictionary);
@@ -159,61 +159,6 @@ export abstract class BingMapsGeocoder implements IGeocoder {
             console.error("Geocoder API call error", e);
             return;
         }
-
-        /*return new Promise<ILocationDictionary>((resolve, reject) => {
-           return this.createJob(xmlString)
-                .then((response) => {
-                    console.log("Created job with response status", response.status);
-                    
-                    if (!response.ok || response.status !== BingMapsGeocoder.HttpStatuses.CREATED) {
-                        reject("Geocoder Job creation error");
-                    }
-                    // get ID from readable stream
-                    response.json()
-                        .then((body) => {
-                            const jobID: string = body.resourceSets[0].resources[0].id;
-                            // get job status
-                            let taskStatus = BingMapsGeocoder.JobStatuses.PENDING;
-                            const interval = setInterval(() => {
-                                this.monitorJobStatusJsonp(jobID)
-                                    .then((response: BingJobStatusResponse) => {
-                                        if (response.statusCode === BingMapsGeocoder.HttpStatuses.OK) {
-                                            taskStatus = response.resourceSets[0].resources[0].status;
-                                            if (taskStatus === BingMapsGeocoder.JobStatuses.COMPLETED) {
-                                                // get the job result in xml
-                                                this.getJobResultJsonp(jobID)
-                                                    .then((response: XMLDocument) => {
-                                                        const locationDictionary: ILocationDictionary = this.parseXmlJobResult(response);
-                                                        console.log("locationDictionary", locationDictionary);
-                                                        
-                                                        clearInterval(interval);
-                                                        resolve(locationDictionary);
-                                                    })
-                                                    .catch(() => {
-                                                        clearInterval(interval);
-                                                        reject("Geocoder Job Result request has been failed");
-                                                    });
-                                            }
-
-                                            if (taskStatus === BingMapsGeocoder.JobStatuses.ABORTED) {
-                                                reject("Geocoder job was aborted due to an error");
-                                                clearInterval(interval);
-                                            }
-                                        }
-                                    })
-                                    .catch(() => {
-                                        clearInterval(interval);
-                                        reject("Geocoder Job status request has been failed");
-                                    });
-                            }, BingMapsGeocoder.requestTimeout);
-                        })
-                        .catch(() => reject("Geocoder API response has been changed"));
-                })
-                .catch((e) => { 
-                    console.error("Geocoder API call error", e);
-                    reject("Geocoder error")
-                });
-        });*/
     }
 
     private async createJob(xmlInput): Promise<Response> {
@@ -222,7 +167,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
                 
         return fetch(url, {
             headers: {
-                //'Accept': this.contentType,
+                'Accept': this.contentType,
                 'Content-Type': this.contentType
             },
             method: "POST",
@@ -230,7 +175,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         });
     }
 
-    private async getJobResultJsonp(jobID): Promise<XMLDocument> {
+    private async getJobResult(jobID: string): Promise<XMLDocument> {
         const queryString = `key=${this.key}`;
         const url = `${this.bingSpatialDataFlowUrl()}/${jobID}/output/succeeded?${queryString}`;
     
@@ -242,7 +187,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         return xmlDoc;
     }
 
-    private async monitorJobStatusJsonp(jobID: string): Promise<BingJobStatusResponse> {
+    private async monitorJobStatus(jobID: string): Promise<BingJobStatusResponse> {
         const queryString = `key=${this.key}`;
         const url = `${this.bingSpatialDataFlowUrl()}/${jobID}?${queryString}`;
 
@@ -250,13 +195,6 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         const jobStatus: BingJobStatusResponse = await response.json();
 
         return jobStatus;
-    }
-
-    private static generateCallbackGuid(): string {
-        const cryptoObj = window.crypto || window["msCrypto"]; // For IE
-        const guidSequence: number = cryptoObj.getRandomValues(new Uint32Array(1))[0].toString(16).substring(0, 4);
-
-        return `GeocodeCallback${guidSequence}${guidSequence}${guidSequence}`;
     }
 
     private parseXmlJobResult(xmlDocument: XMLDocument): ILocationDictionary {

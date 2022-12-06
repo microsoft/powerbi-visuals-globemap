@@ -49,7 +49,6 @@ describe("GlobeMap", () => {
         dataView: DataView;
 
     beforeAll(() => {
-        jasmine.DEFAULT_TIMEOUT_INTERVAL = 600_000;
         visualBuilder = new GlobeMapBuilder(1024, 1024);
         visualInstance = visualBuilder.instance;
     });
@@ -62,6 +61,8 @@ describe("GlobeMap", () => {
     describe("DOM tests", () => {
 
         beforeAll(async () => {
+            console.log("jasmine.DEFAULT_TIMEOUT_INTERVAL", jasmine.DEFAULT_TIMEOUT_INTERVAL);
+            
             defaultDataViewBuilder = new GlobeMapDataViewBuilder();
             dataView = defaultDataViewBuilder.getDataView();
 
@@ -85,11 +86,12 @@ describe("GlobeMap", () => {
             }
         });
 
-        it("canvas element created", async () => {
+        it("canvas element created", () => {
             console.log("dom test started");
 
             visualBuilder.updateRenderTimeout(dataView, () => {
                 expect(visualBuilder.element.querySelectorAll("canvas")).toBeTruthy();
+                //await Promise.resolve();
                 console.log("dom test passed");                
             });
         });
@@ -99,23 +101,16 @@ describe("GlobeMap", () => {
         it("should create same count of datapoints as dataView values", () => {
             let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
-            expect(data.dataPoints.length).toBe(dataView.categorical.values[0].values.length);
-        });
-
-        it("should create same count of datapoints as dataView values with undefined values", () => {
-            dataView.categorical.values[0].values = ["0qqa123", "value", 1, 2, 3, 4, 5, 6];
-            let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
-
-            expect(data.dataPoints.length).toBe(dataView.categorical.values[0].values.length);
+            expect(data.dataPoints.length).toBe(dataView.categorical!.values![0].values.length);
         });
 
         it("should create same count of datapoints as valid categories", () => {
             let invalidDataSet = ["0qqa123", "value", 1, 2, 3, 4, 5, 6];
 
-            dataView.categorical.categories[0].values = invalidDataSet;
+            dataView.categorical!.categories![0].values = invalidDataSet;
             let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
-            expect(data.dataPoints.length).toBe(dataView.categorical.categories[0].values.length);
+            expect(data.dataPoints.length).toBe(dataView.categorical!.categories![0].values.length);
         });
 
         describe("Data fields", () => {

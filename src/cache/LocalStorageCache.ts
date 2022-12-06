@@ -15,13 +15,11 @@ export class LocalStorageCache {
 
     constructor(localStorageService: ILocalVisualStorageService) {
         this.localStorageService = localStorageService;
-        console.log("LocalStorageCache constructor");
     }
 
     public setStatus() {
         return this.localStorageService.status()
             .then(status => {
-                console.log(`Received local storage status with code ${status} in getStatus method`);
                 this.localStorageStatus = status;
                 return status;
             })
@@ -45,7 +43,6 @@ export class LocalStorageCache {
             })
             .then((data) => {    
                 const parsedValue = JSON.parse(data);
-                console.log("Data parsed from LS", JSON.stringify(parsedValue));
 
                 if (!parsedValue) {
                     console.log("Local storage can not be parsed");      
@@ -76,7 +73,7 @@ export class LocalStorageCache {
                         }
                     });
                 }
-                console.log("LS RETURNED", JSON.stringify(result));
+
                 resolve(result);
             })  
     })   
@@ -110,7 +107,6 @@ export class LocalStorageCache {
                 const mergedObject = locationsFromStorage ? assign(locationsFromStorage, locationItemsObject) : locationItemsObject;
 
                 const valueObjectToString = JSON.stringify(mergedObject);
-                console.log("valueObjectToString set to storage", valueObjectToString);
                 
 
                 this.localStorageService.set(LocalStorageCache.TILE_LOCATIONS, valueObjectToString)
@@ -121,7 +117,7 @@ export class LocalStorageCache {
                 console.error("Local storage is likely empty, setting locations...", e)
                 const valueObjectToString = JSON.stringify(locationItemsObject);
                 this.localStorageService.set(LocalStorageCache.TILE_LOCATIONS, valueObjectToString)
-                    .then(() => console.log("Set locations to storage in CATCH block"))
+                    .then(() => console.log("Set locations to storage"))
                     .catch(() => console.error("Could not save location to local storage"));
             });
     }

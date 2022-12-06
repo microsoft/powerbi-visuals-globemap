@@ -42,6 +42,12 @@ module.exports = (config) => {
         browsers: ["ChromeHeadless"],
         colors: true,
         frameworks: ["jasmine"],
+        client: {
+            jasmine: {
+                timeoutInterval: 60_000,
+                random: false
+            }
+        },
         reporters: [
             "progress"
         ],

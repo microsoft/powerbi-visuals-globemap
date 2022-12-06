@@ -33,7 +33,6 @@ export class MemoryCache {
                     locations[key] = this.geocodeCache[key].coordinate;
                 }
             }
-            console.log("Memcache returned", JSON.stringify(locations));
 
             return locations;
     }

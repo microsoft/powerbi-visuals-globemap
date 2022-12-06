@@ -713,8 +713,6 @@ export class GlobeMap implements IVisual {
     }
 
     public static minimizeTiles(tileCacheArray: TileMap[]): ITileGapObject[] {
-        console.log("minimizeTiles method execution");
-
         if (!tileCacheArray || !tileCacheArray.length) {
             return [];
         }
@@ -750,7 +748,6 @@ export class GlobeMap implements IVisual {
 
     public extendTiles(tileCacheData: string, language: string): Promise<TileMap[]> {
         const result: TileMap[] = [];
-        console.log("extendTiles method execution");
     
         return new Promise<TileMap[]>((resolve, reject) => {
             if (!tileCacheData || !tileCacheData.length) {
@@ -763,7 +760,6 @@ export class GlobeMap implements IVisual {
                 resolve(result);
                 return;
             }
-            console.log("In extendTiles now, will try to load bing maps metadata");
 
             this.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
@@ -788,9 +784,8 @@ export class GlobeMap implements IVisual {
 
                     resolve(result);
                 })
-                .catch((e) => {
-                    console.error(`Bing map service metadata loading error: ${e}`);
-                    throw "Bing map service metadata loading error thrown";
+                .catch(() => {
+                    //throw "Bing map service metadata loading error thrown";
                     reject("Bing Map service metadata loading error");
                 });
         });
@@ -798,11 +793,9 @@ export class GlobeMap implements IVisual {
 
     private loadFromBing(language: string): Promise<TileMap[]> {
         const tileCacheValue: TileMap[] = [];
-        console.log("LoadFromBing method executing");
 
         return this.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
-
                     const urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
                         const levelTiles = GlobeMap.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
@@ -823,27 +816,25 @@ export class GlobeMap implements IVisual {
     private getTilesData(language: string): Promise<Record<string, unknown>[] | TileMap[]> {
         return new Promise<Record<string, unknown>[] | TileMap[]>((resolve, reject) => {
             const tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
-            console.log("GetTilesData method executing");
 
             tileCachePromise.then(data => {
                 this.extendTiles(data, this.currentLanguage)
                     .then((tilesData) => {
-                        if (!tilesData || tilesData.length === 0) throw "Empty tiles, will try to load from Bing";
+                        if (!tilesData || tilesData.length === 0) {
+                            throw "No tiles in cache, will try to load from Bing"; 
+                        }
                         resolve(tilesData);
                     })
-                    .catch((e) => {
-                        console.error("Loading from Bing...", e);
-
+                    .catch(() => {
                         this.loadFromBing(language)
                             .then((bingData) => resolve(bingData))
                             .catch((e) => reject(`Tiles loading from Bing error: ${e}`));
                     })
             }).catch((e) => {
                 console.error("Tiles loading from Storage error", e);
-
                 this.loadFromBing(language)
-                            .then((bingData) => resolve(bingData))
-                            .catch((e) => reject(`Tiles loading from Bing error: ${e}`));
+                    .then((bingData) => resolve(bingData))
+                    .catch((e) => reject(`Tiles loading from Bing error: ${e}`));
             });
         })
     }
@@ -868,7 +859,6 @@ export class GlobeMap implements IVisual {
 
     private async getBingMapsServerMetadata(): Promise<BingResourceMetadata> {
         let metaData: BingMetadata = {} as BingMetadata;
-        console.log("getBingMapsServerMetadata method executing");
 
         try {
             const response = await fetch(GlobeMap.metadataUrl);
@@ -942,7 +932,6 @@ export class GlobeMap implements IVisual {
         let tilesLoaded: number = 0;
         const countTiles: number = tiles && Object.keys(tiles).length;
         const canvasContext: CanvasRenderingContext2D = canvasEl.getContext("2d");
-        console.log("Load tiles method execution");
         
         for (const quadKey in tiles) {
             if (Object.prototype.hasOwnProperty.call(tiles, quadKey)) {
@@ -1038,7 +1027,7 @@ export class GlobeMap implements IVisual {
 
     public update(options: VisualUpdateOptions) {
         console.log("Update triggered");
-        debugger
+        
         if (options.dataViews === undefined || options.dataViews === null) {
             return;
         }
@@ -1076,7 +1065,6 @@ export class GlobeMap implements IVisual {
                             place: d.place, locationType: d.locationType
                         };
                 });
-                console.log("Loc: ", JSON.stringify(locationsNeedToBeLoaded));
 
                 this.cacheManager.loadCoordinates(locationsNeedToBeLoaded)
                     .then((coordinates: ILocationDictionary) => {
@@ -1092,7 +1080,7 @@ export class GlobeMap implements IVisual {
                         }
 
                     }).catch((e) => {
-                        console.error("Load coordinates in update method error", e);
+                        console.error("Error occured while loading coordinates", e);
                     });
             }
         }
