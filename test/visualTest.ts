@@ -137,7 +137,7 @@ describe("GlobeMap", () => {
             let categorical: GlobeMapColumns<DataViewCategoryColumn | DataViewValueColumn[] | DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
             let categoryCount = categorical.Location && categorical.Location.values && categorical.Location.values.length;
-            expect(categoryCount).toBe(dataView.categorical.values[0].values.length);
+            expect(categoryCount).toBe(dataView.categorical!.values![0].values.length);
         });
 
         it("getGroupedValueColumns should group dataView columns", function () {
@@ -146,13 +146,13 @@ describe("GlobeMap", () => {
         });
 
         it("getCategoricalValueByIndex should return longitude value", function () {
-            let longitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[1], 1);
-            expect(longitude).toEqual(`${dataView.categorical.values[1].values[1]}`);
+            let longitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical!.values![1], 1);
+            expect(longitude).toEqual(`${dataView.categorical!.values![1].values[1]}`);
         });
 
         it("getCategoricalValueByIndex should return latitude value", function () {
-            let latitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[2], 1);
-            expect(latitude).toEqual(`${dataView.categorical.values[2].values[1]}`);
+            let latitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical!.values![2], 1);
+            expect(latitude).toEqual(`${dataView.categorical!.values![2].values[1]}`);
             
         });
     });
