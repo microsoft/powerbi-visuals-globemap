@@ -74,7 +74,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         this.key = BingSettings.BingKey;
     }
 
-    private createXmlStringFromLocationQueries(queries: string[]): string {
+    private createXmlStringFromLocationQueries(locations: string[]): string {
         const xmlns: string = "https://schemas.microsoft.com/search/local/2010/5/geocode";
         const xmlStart: string = `<?xml version="1.0" encoding="utf-8"?>
             <GeocodeFeed xmlns="${xmlns}">`;
@@ -83,10 +83,10 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         let entities: string = '';
         let cultureName: string = navigator["userLanguage"] || navigator["language"];
         cultureName = mapLocalesForBing(cultureName);
-        for (let i = 0; i < queries.length; i++) {
+        for (let i = 0; i < locations.length; i++) {
             const entity: string = `
             <GeocodeEntity Id="${i + 1}" xmlns="${xmlns}">
-                <GeocodeRequest Culture="${cultureName}" Query="${queries[i]}" MaxResults="1">
+                <GeocodeRequest Culture="${cultureName}" Query="${locations[i]}" MaxResults="1">
                 </GeocodeRequest>
             </GeocodeEntity>`;
             entities += entity;
@@ -97,8 +97,8 @@ export abstract class BingMapsGeocoder implements IGeocoder {
     }
 
     // eslint-disable-next-line max-lines-per-function
-    public async geocodeByDataFlow(queries: string[]): Promise<ILocationDictionary> {
-        const xmlString = this.createXmlStringFromLocationQueries(queries);
+    public async geocodeByDataFlow(locations: string[]): Promise<ILocationDictionary> {
+        const xmlString = this.createXmlStringFromLocationQueries(locations);
         try {
             console.log("Creating a job...");
             
@@ -106,18 +106,16 @@ export abstract class BingMapsGeocoder implements IGeocoder {
             
             console.log("Created job with response status", createJobResult.status);
             const createJobResultJson = await createJobResult.json();
-            console.log("createJobResultJson", JSON.stringify(createJobResultJson));
             
             if (!createJobResult.ok || createJobResult.status !== BingMapsGeocoder.HttpStatuses.CREATED) {
                 console.error("Geocoder Job creation error");
                 return {};
             }
 
-            //const createdJobBody = await createJobResult.json();
             const jobID: string = createJobResultJson.resourceSets[0].resources[0].id;
             let taskStatus = BingMapsGeocoder.JobStatuses.PENDING;
             
-            return await new Promise((resolve, reject) => {
+            return new Promise((resolve, reject) => {
                 const interval = setInterval(async () => {
                     try {
                         const jobStatus: BingJobStatusResponse = await this.monitorJobStatus(jobID);
@@ -140,17 +138,15 @@ export abstract class BingMapsGeocoder implements IGeocoder {
                             }
 
                             if (taskStatus === BingMapsGeocoder.JobStatuses.ABORTED) {
-                                console.error("Geocoder job was aborted due to an error");
                                 clearInterval(interval);
-                                reject("123");
+                                reject("Geocoder job was aborted due to an error");
                                 return;
                             }
                         }
 
                     } catch(e) {
                         clearInterval(interval);
-                        console.error("Geocoder Job status request has been failed");
-                        reject("123");
+                        reject("Geocoder Job status request has been failed");
                         return;
                     }
                 }, BingMapsGeocoder.requestTimeout);
@@ -161,7 +157,7 @@ export abstract class BingMapsGeocoder implements IGeocoder {
         }
     }
 
-    private async createJob(xmlInput): Promise<Response> {
+    private async createJob(xmlInput: string): Promise<Response> {
         const queryString = `input=${this.inputType}&output=json&key=${this.key}`;
         const url = `${this.bingSpatialDataFlowUrl()}?${queryString}`;
                 

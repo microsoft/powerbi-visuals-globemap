@@ -60,9 +60,7 @@ describe("GlobeMap", () => {
 
     describe("DOM tests", () => {
 
-        beforeAll(async () => {
-            console.log("jasmine.DEFAULT_TIMEOUT_INTERVAL", jasmine.DEFAULT_TIMEOUT_INTERVAL);
-            
+        beforeAll(async () => {            
             defaultDataViewBuilder = new GlobeMapDataViewBuilder();
             dataView = defaultDataViewBuilder.getDataView();
 

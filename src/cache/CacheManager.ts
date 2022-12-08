@@ -1,4 +1,5 @@
 import powerbi from "powerbi-visuals-api";
+import IPromise2 = powerbi.IPromise2;
 
 import isEmpty from "lodash.isempty";
 
@@ -25,26 +26,37 @@ export class CacheManager {
         this.coordsInLocalStorage = {};
     }
 
-    private createLocalStorageCache()  {
+    private createLocalStorageCache(): IPromise2<LocalStorageCache, void>  {
         const cache = new LocalStorageCache(this.localStorageService);
 
-        return (<LocalStorageCache>cache).setStatus()
+        return (<LocalStorageCache>cache).syncStatus()
             .then(status => {
-                console.log(`createLocalStorageCache method received local storage status: ${status}`);
+                console.log(`Received local storage status: ${status}`);
                 this.localStorageCache = cache;
                 return cache            
             });
     }
 
+    private getLocationsFromBing = async (locations: string[], locationsInMemory: string[], locationsDictionary: ILocationKeyDictionary): Promise<ILocationDictionary> => {
+        console.log("Getting locations from Bing...");
+        
+        locationsDictionary = locations
+            .reduce((obj, key) => ({ ...obj, [key]: locationsDictionary[key] }), {});
+
+        const coordinatesFromBing = await this.bing.loadCoordinates(locations);
+        const resultObject = Object.assign({}, locationsInMemory, this.coordsInLocalStorage, coordinatesFromBing);
+        
+        return resultObject;
+    }
+
     public async loadCoordinates(locationsDictionary: ILocationKeyDictionary): Promise<ILocationDictionary> {
-    
         let result: ILocationDictionary = {};
 
         if (isEmpty(locationsDictionary)) {
             return result;
         }
 
-        let locationsInMemory = [];
+        let locationsInMemory: string[] = [];
         let locations: string[] = Object.keys(locationsDictionary);
         
         // Load from memory
@@ -58,24 +70,13 @@ export class CacheManager {
             return result;
         }
 
-        const getLocationsFromBing = async (): Promise<ILocationDictionary> => {
-            console.log("Getting locations from Bing");
-            
-            locationsDictionary = locations
-                .reduce((obj, key) => ({ ...obj, [key]: locationsDictionary[key] }), {});
-
-            const coordsInBing = await this.bing.loadCoordinates(locations);
-            result = Object.assign({}, locationsInMemory, this.coordsInLocalStorage, coordsInBing);
-            
-            return result;
-        }
 
         // Load from localStorage
         if (isEmpty(this.coordsInLocalStorage)) {
             return this.createLocalStorageCache()
                 .then(cache => cache.loadCoordinates(locations))
-                .then(async (c ) => {
-                    const coordinates = await c;
+                .then(async (coordinatesPromise: Promise<ILocationDictionary>) => {
+                    const coordinates = await coordinatesPromise;
                     if (coordinates && Object.keys(coordinates).length > 0) {
                         if (isEmpty(this.coordsInLocalStorage)) {
                             this.coordsInLocalStorage = coordinates;
@@ -91,27 +92,26 @@ export class CacheManager {
                             }
     
                             // Load additional locations from Bing
-                            const locationsFromBing = await getLocationsFromBing();
+                            const locationsFromBing = await this.getLocationsFromBing(locations, locationsInMemory, locationsDictionary);
                             return locationsFromBing;
                         }
                     }
                     else {
                         console.log("Local storage is empty, will attempt to load the coordinates from Bing API");
                         
-                        const locationsFromBing = await getLocationsFromBing();
+                        const locationsFromBing = await this.getLocationsFromBing(locations, locationsInMemory, locationsDictionary);
                         return locationsFromBing;
                     }
                     
-                }).catch((e) => {
+                }).catch(async (e) => {
                     console.error("Error while loading coordinates from local storage", e);
-                    return getLocationsFromBing();
+                    const locationsFromBing = await this.getLocationsFromBing(locations, locationsInMemory, locationsDictionary);
+                    return locationsFromBing;
             });
         }
-        else return this.coordsInLocalStorage;
-
-        // Load from Bing
-        const locationsFromBing = await getLocationsFromBing();
-        return locationsFromBing;
+        else {
+            return this.coordsInLocalStorage;
+        }
     }
 
     public async saveCoordinates(coordinates: ILocationDictionary): Promise<void> {

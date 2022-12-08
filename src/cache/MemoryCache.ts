@@ -5,8 +5,12 @@ interface GeocodeCacheEntry {
     hitCount: number;
 }
 
+interface Dictionary<T> {
+    [index: string]: T;
+}
+
 export class MemoryCache {
-    private geocodeCache: _.Dictionary<GeocodeCacheEntry>;
+    private geocodeCache: Dictionary<GeocodeCacheEntry>;
     private geocodeCacheCount: number;
     private maxCacheSize: number;
     private maxCacheSizeOverflow: number;
@@ -19,29 +23,32 @@ export class MemoryCache {
     }
 
     public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
-            console.log("Loading from memory cache...");
+        console.log("Loading from memory cache...");
         
-            if (!keys || !keys.length) {
-                console.log("Memory cache is empty!");
-                
-                return;
-            }
-            const locations: ILocationDictionary = {};
-            for (const key in this.geocodeCache) {
-                if (this.geocodeCache[key]) {
-                    this.geocodeCache[key].hitCount++;
-                    locations[key] = this.geocodeCache[key].coordinate;
-                }
-            }
+        if (!keys || !keys.length) {
+            return;
+        }
 
-            return locations;
+        const locations: ILocationDictionary = {};
+        for (const key in this.geocodeCache) {
+            if (this.geocodeCache[key]) {
+                this.geocodeCache[key].hitCount++;
+                locations[key] = this.geocodeCache[key].coordinate;
+            }
+        }
+
+        if (Object.keys(locations).length === 0) {
+            console.log("Memory cache is empty");  
+        }
+
+        return locations;
     }
 
     public saveCoordinates(coordinates: ILocationDictionary): Promise<void> {
         console.log("Saving coordinates to memory cache...");
         
         if (!coordinates) {
-            console.log("No locations to be saved");
+            console.log("No locations to be saved to memory cache");
             return;
         }
 
@@ -53,12 +60,14 @@ export class MemoryCache {
                     longitude: coordinates[key].longitude
                 }
             };
-            this.saveCoordinate(coordinateRecord);
+            this.saveSingleCoordinate(coordinateRecord);
         }
+
+        console.log("Successfully saved coordinates to memory cache");
     }
 
-    public saveCoordinate(locationRecord: ILocationCoordinateRecord) {
-        let geocodeCache: _.Dictionary<GeocodeCacheEntry> = this.geocodeCache;
+    private saveSingleCoordinate(locationRecord: ILocationCoordinateRecord) {
+        let geocodeCache: Dictionary<GeocodeCacheEntry> = this.geocodeCache;
 
         if (geocodeCache[locationRecord.key]) {
             return;
@@ -91,7 +100,7 @@ export class MemoryCache {
                 }
             }
             else {
-                const newGeocodeCache: _.Dictionary<GeocodeCacheEntry> = {};
+                const newGeocodeCache: Dictionary<GeocodeCacheEntry> = {};
                 for (let i = 0; i < maxCacheSize; ++i) {
                     newGeocodeCache[keys[i]] = geocodeCache[keys[i]];
                 }

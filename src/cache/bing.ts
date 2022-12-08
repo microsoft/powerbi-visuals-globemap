@@ -2,18 +2,17 @@ import { ILocationDictionary, IGeocoder } from "../geocoder/interfaces/geocoderI
 import { createGeocoder } from "../geocoder/geocoder";
 
 export class Bing {
-
     private geocoder: IGeocoder;
 
     constructor() {
         this.geocoder = createGeocoder();
     }
 
-    public loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
-        if (!keys || !keys.length) {
+    public loadCoordinates(locations: string[]): Promise<ILocationDictionary> {
+        if (!locations || !locations.length) {
             return;
         }
 
-        return this.geocoder.geocodeByDataFlow(keys);
+        return this.geocoder.geocodeByDataFlow(locations);
     }
 }

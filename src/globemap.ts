@@ -44,11 +44,8 @@ import DataViewValueColumn = powerbi.DataViewValueColumn;
 import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
 import DataViewValueColumns = powerbi.DataViewValueColumns;
 import DataViewValueColumnGroup = powerbi.DataViewValueColumnGroup;
-import VisualObjectInstance = powerbi.VisualObjectInstance;
 import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
-import VisualObjectInstanceEnumeration = powerbi.VisualObjectInstanceEnumeration;
 import DataViewObjectPropertyIdentifier = powerbi.DataViewObjectPropertyIdentifier;
-import VisualObjectInstanceEnumerationObject = powerbi.VisualObjectInstanceEnumerationObject;
 
 import ISelectionId = powerbi.visuals.ISelectionId;
 
@@ -83,7 +80,6 @@ import {
     BingMetadata
 } from "./interfaces/bingInterfaces";
 import { CacheManager } from "./cache/CacheManager";
-//import { MercartorSphere } from "./map/MercartorSphere";
 import { Geometry as CustomGeometry } from "./lib/Three/Geometry";
 import { BingSettings } from "./settings";
 
@@ -100,14 +96,11 @@ interface GlobeMapHeatMapClass {
 
 import { ILocationDictionary, IGeocodeCoordinate } from "./geocoder/interfaces/geocoderInterfaces";
 
-// powerbi.extensibility.utils.dataview
 import { converterHelper as ch } from "powerbi-visuals-utils-dataviewutils";
 import converterHelper = ch.converterHelper;
 
-// powerbi.extensibility.utils.color
 import { ColorHelper } from "powerbi-visuals-utils-colorutils";
 
-// powerbi.extensibility.utils.formatting
 import { IValueFormatter } from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
 import { valueFormatter } from "powerbi-visuals-utils-formattingutils";
 
@@ -482,21 +475,7 @@ export class GlobeMap implements IVisual {
         };
     }
 
-    private addAnInstanceToEnumeration(
-        instanceEnumeration: VisualObjectInstanceEnumeration,
-        instance: VisualObjectInstance): void {
-
-        if ((instanceEnumeration as VisualObjectInstanceEnumerationObject).instances) {
-            (instanceEnumeration as VisualObjectInstanceEnumerationObject)
-                .instances
-                .push(instance);
-        } else {
-            (instanceEnumeration as VisualObjectInstance[]).push(instance);
-        }
-    }
-
-    public getFormattingModel(): powerbi.visuals.FormattingModel {
-        
+    public getFormattingModel(): powerbi.visuals.FormattingModel { 
         if (this.data && this.data.seriesDataPoints) {
             for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
                 const dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
@@ -515,30 +494,7 @@ export class GlobeMap implements IVisual {
         return model;
     }
 
-    /*public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-        const instances: VisualObjectInstanceEnumeration = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
-        switch (options.objectName) {
-            case "dataPoint": if (this.data && this.data.seriesDataPoints) {
-                for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
-                    const dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
-                    this.addAnInstanceToEnumeration(instances, {
-                        objectName: "dataPoint",
-                        displayName: dataPoint.label,
-                        selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()),
-                        properties: {
-                            fill: { solid: { color: dataPoint.color } }
-                        }
-                    });
-                }
-            }
-                break;
-        }
-        return instances;
-    }*/
-
-    constructor(options: VisualConstructorOptions) {
-        console.log("Globemap constructor");
-        
+    constructor(options: VisualConstructorOptions) {        
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageService;
         this.formattingSettingsService = new FormattingSettingsService();
@@ -690,9 +646,9 @@ export class GlobeMap implements IVisual {
             return;
         }
 
-        if (zoomDirection === -1) {
+        if (zoomDirection === 1) {
             this.orbitControls.dollyOut(Math.pow(GlobeMap.dollyX, this.GlobeSettings.zoomSpeed));
-        } else if (zoomDirection === 1) {
+        } else if (zoomDirection === -1) {
             this.orbitControls.dollyIn(Math.pow(GlobeMap.dollyX, this.GlobeSettings.zoomSpeed));
         }
 
@@ -784,7 +740,6 @@ export class GlobeMap implements IVisual {
                     resolve(result);
                 })
                 .catch(() => {
-                    //throw "Bing map service metadata loading error thrown";
                     reject("Bing Map service metadata loading error");
                 });
         });
@@ -805,9 +760,7 @@ export class GlobeMap implements IVisual {
                     this.localStorageService.set(`${GlobeMap.TILE_STORAGE_KEY}_${language}`, minimizedTileCacheData);
 
                     return tileCacheValue;
-                }).catch((e) => {
-                    console.log(`Load from Bing error: ${e}`);
-                    
+                }).catch(() => {                    
                     return tileCacheValue;
                 });
     }
@@ -829,8 +782,7 @@ export class GlobeMap implements IVisual {
                             .then((bingData) => resolve(bingData))
                             .catch((e) => reject(`Tiles loading from Bing error: ${e}`));
                     })
-            }).catch((e) => {
-                console.error("Tiles loading from Storage error", e);
+            }).catch(() => {
                 this.loadFromBing(language)
                     .then((bingData) => resolve(bingData))
                     .catch((e) => reject(`Tiles loading from Bing error: ${e}`));
@@ -848,9 +800,7 @@ export class GlobeMap implements IVisual {
                     }
                     return "success";
                 })
-                .catch((e) => {
-                    console.error(`Get tiles error: ${e}`);
-                    
+                .catch(() => {                    
                     return "Get tiles error" ;
                 });
 
@@ -871,8 +821,8 @@ export class GlobeMap implements IVisual {
             }
             throw "Bing Maps API response was changed. Please update code for new version";
         }
-        catch(error) {
-            console.error(`Server metadata error is: ${error} ${error.message}`);  
+        catch(e) {
+            console.error(`Error occured while retrieving metadata from Bing: ${e}`);  
             return GlobeMap.reserveBindMapsMetadata;   
         } 
     }
@@ -1024,9 +974,7 @@ export class GlobeMap implements IVisual {
         }
     }
 
-    public update(options: VisualUpdateOptions) {
-        console.log("Update triggered");
-        
+    public update(options: VisualUpdateOptions) {        
         if (options.dataViews === undefined || options.dataViews === null) {
             return;
         }
