@@ -44,7 +44,7 @@ module.exports = (config) => {
         frameworks: ["jasmine"],
         client: {
             jasmine: {
-                timeoutInterval: 60_000,
+                timeoutInterval: 60000,
                 random: false
             }
         },
