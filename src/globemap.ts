@@ -31,8 +31,6 @@ import isEmpty from "lodash.isempty";
 import first from "lodash.first";
 import last from "lodash.last";
 
-import "@babel/polyfill";
-
 import * as THREE from "three";
 import { OrbitControls } from "./lib/Three/OrbitControls";
 
@@ -59,6 +57,7 @@ import ITooltipService = powerbi.extensibility.ITooltipService;
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import IVisualEventService = powerbi.extensibility.IVisualEventService;
 
 import { GlobeMapSettings, GlobeMapSettingsModel } from "./settings";
 import { formattingSettings } from 'powerbi-visuals-utils-formattingmodel';
@@ -188,6 +187,8 @@ export class GlobeMap implements IVisual {
 
     private tooltipService: ITooltipService;
     private static datapointShiftPoint: number = 0.01;
+    private events: IVisualEventService;
+
     // eslint-disable-next-line max-lines-per-function
     public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
         const categorical: GlobeMapColumns<GlobeMapCategoricalColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
@@ -498,6 +499,7 @@ export class GlobeMap implements IVisual {
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageService;
         this.formattingSettingsService = new FormattingSettingsService();
+        this.events = options.host.eventService;
 
         this.root = options.element;
         this.root.setAttribute("drag-resize-disabled", "true");
@@ -974,7 +976,9 @@ export class GlobeMap implements IVisual {
         }
     }
 
-    public update(options: VisualUpdateOptions) {        
+    public update(options: VisualUpdateOptions) {     
+        this.events.renderingStarted(options);
+   
         if (options.dataViews === undefined || options.dataViews === null) {
             return;
         }
@@ -1020,6 +1024,7 @@ export class GlobeMap implements IVisual {
                         });
 
                         this.render();
+                        this.events.renderingFinished(options);
 
                         console.log("Coordinates: ", JSON.stringify(coordinates));
                         if (Object.keys(coordinates).length > 0) {
@@ -1028,6 +1033,7 @@ export class GlobeMap implements IVisual {
 
                     }).catch((e) => {
                         console.error("Error occured while loading coordinates", e);
+                        this.events.renderingFailed(options);
                     });
             }
         }
