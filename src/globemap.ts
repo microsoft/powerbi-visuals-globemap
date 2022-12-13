@@ -84,6 +84,11 @@ import { BingSettings } from "./settings";
 
 const WebGLHeatmap = require("./lib/WebGLHeatmap");
 
+import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import { Selection as d3Selection, select as d3Select } from "d3-selection";
+
+type Selection<T1, T2 = T1> = d3Selection<any, T1, any, T2>;
+
 interface GlobeMapHeatMapClass {
     display: () => void;
     blur: () => void;
@@ -188,6 +193,9 @@ export class GlobeMap implements IVisual {
     private tooltipService: ITooltipService;
     private static datapointShiftPoint: number = 0.01;
     private events: IVisualEventService;
+
+    private rootSelection: Selection<any>;
+    private selectionManager: ISelectionManager;
 
     // eslint-disable-next-line max-lines-per-function
     public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
@@ -505,9 +513,13 @@ export class GlobeMap implements IVisual {
         this.root.setAttribute("drag-resize-disabled", "true");
         this.root.style.position = "absolute";
 
+        this.rootSelection = d3Select(this.root);
+
         this.visualHost = options.host;
         this.visualHost.telemetry.trace(VisualEventType.Trace, 'bing load coordinates');
         this.tooltipService = this.visualHost.tooltipService;
+
+        this.selectionManager = this.visualHost.createSelectionManager();
 
         this.layout = new VisualLayout();
         this.readyToRender = false;
@@ -528,6 +540,7 @@ export class GlobeMap implements IVisual {
         this.initZoomControl();
         this.initHeatmap();
         this.initRayCaster();
+        this.handleContextMenu();
     }
     private static cameraFov: number = 35;
     private static cameraNear: number = 0.1;
@@ -1026,7 +1039,6 @@ export class GlobeMap implements IVisual {
                         this.render();
                         this.events.renderingFinished(options);
 
-                        console.log("Coordinates: ", JSON.stringify(coordinates));
                         if (Object.keys(coordinates).length > 0) {
                             this.cacheManager.saveCoordinates(coordinates);
                         }
@@ -1118,6 +1130,17 @@ export class GlobeMap implements IVisual {
                 this.render();
             }, 500);
         }
+    }
+
+    private handleContextMenu = () => {
+        this.rootSelection.on('contextmenu', (event) => {
+            const datapoint = d3Select(event.target).datum() as { identity: ISelectionId };
+            this.selectionManager.showContextMenu(datapoint ? datapoint.identity : {}, {
+                x: event.clientX,
+                y: event.clientY
+            });
+            event.preventDefault();
+        });
     }
 
     private handleMouseMove = (event: MouseEvent) => {

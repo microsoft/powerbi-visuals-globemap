@@ -21,7 +21,7 @@
     "url": "git+https://github.com/Microsoft/PowerBI-visuals-globemap.git"
   },
   "dependencies": {
-    "@babel/polyfill": "^7.0.0",
+    "d3-selection": "^3.0.0",
     "lodash.assign": "^4.2.0",
     "lodash.clone": "^4.5.0",
     "lodash.first": "^3.0.0",
@@ -41,6 +41,7 @@
     "three": "^0.146.0"
   },
   "devDependencies": {
+    "@types/d3-selection": "^3.0.3",
     "@types/jasmine": "^4.3.1",
     "@types/lodash.assign": "^4.2.7",
     "@types/lodash.clone": "^4.5.7",
