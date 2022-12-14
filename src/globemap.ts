@@ -468,12 +468,16 @@ export class GlobeMap implements IVisual {
 
         const category: string = `${converterHelper.getSeriesName(dataPointsParams.source)}`;
         const objects = categoryColumn && categoryColumn.objects;
-        const color: string =
+        let color: string =
             objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint 
                 ? objects[dataPointsParams.catIndex].dataPoint.fill["solid"].color 
                 : dataPointsParams.metaData && dataPointsParams.metaData.objects
                 ? dataPointsParams.colorHelper.getColorForMeasure(dataPointsParams.metaData.objects, "")
                 : dataPointsParams.colors.getColor(dataPointsParams.seriesIndex).value;
+
+        if (dataPointsParams.colorHelper.isHighContrast) {
+            color = dataPointsParams.colorHelper.getHighContrastColor("foreground", color);
+        }
 
         return {
             label: label,

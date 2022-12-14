@@ -297,5 +297,6 @@
   "sorting": {
     "custom": {}
   },
-  "supportsKeyboardFocus": true
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true
 }
