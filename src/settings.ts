@@ -46,7 +46,7 @@ export const BingSettings = {
     MaxBingRequest: 6,
 
     // Add your Bing key here
-    BingKey: "YzyBFJgUrMNy4UEJWNpt~3ia-8PWaplOLtxqAWUD9dQ~As3csOrjB7b4KJ7cY6vkaSZsJT4FsKjE0rvTYJPZx-xaFSvB5IV0u3-KJnM0zNon"
+    BingKey: process.env.BING_KEY
 };
 
 export class GlobeMapSettings extends DataViewObjectsParser {
