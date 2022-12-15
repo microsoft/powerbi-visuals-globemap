@@ -1,6 +1,8 @@
 const path = require('path');
 const webpack = require("webpack");
 
+const dotenvWebpackPlugin = require('dotenv-webpack');
+
 module.exports = {
     devtool: 'source-map',
     module: {
@@ -43,6 +45,7 @@ module.exports = {
     plugins: [
         new webpack.ProvidePlugin({
             'powerbi-visuals-api': null
-        })
+        }),
+        new dotenvWebpackPlugin()
     ]
 };
