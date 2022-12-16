@@ -26,7 +26,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
     - run: npm run lint
-    -run: |
+    - run: |
       touch .env
       echo BING_KEY=${{ secrets.BING_KEY }} >> .env
     - run: npm run test
