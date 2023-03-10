@@ -59,6 +59,8 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import IVisualEventService = powerbi.extensibility.IVisualEventService;
 
+import VisualUpdateType = powerbi.VisualUpdateType;
+
 import { GlobeMapSettings, GlobeMapSettingsModel } from "./settings";
 import { formattingSettings } from 'powerbi-visuals-utils-formattingmodel';
 import { VisualLayout } from "./visualLayout";
@@ -100,8 +102,7 @@ interface GlobeMapHeatMapClass {
 
 import { ILocationDictionary, IGeocodeCoordinate } from "./geocoder/interfaces/geocoderInterfaces";
 
-import { converterHelper as ch } from "powerbi-visuals-utils-dataviewutils";
-import converterHelper = ch.converterHelper;
+import { converterHelper } from "powerbi-visuals-utils-dataviewutils";
 
 import { ColorHelper } from "powerbi-visuals-utils-colorutils";
 
@@ -141,8 +142,7 @@ export class GlobeMap implements IVisual {
         cameraAnimDuration: 1000, // ms
         clickInterval: 200 // ms
     };
-    private static ChangeDataType: number = 2;
-    private static ChangeAllType: number = 62;
+    
     private static DataPointFillProperty: DataViewObjectPropertyIdentifier = {
         objectName: "dataPoint",
         propertyName: "fill"
@@ -1020,7 +1020,7 @@ export class GlobeMap implements IVisual {
             }
         }
 
-        if (options.type === GlobeMap.ChangeDataType || options.type === GlobeMap.ChangeAllType) {
+        if (options.type & VisualUpdateType.Data) {
             this.cleanHeatAndBar();
             const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
             if (data) {
