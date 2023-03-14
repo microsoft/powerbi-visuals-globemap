@@ -1,4 +1,16 @@
 {
+  "privileges": [
+    {
+      "name": "WebAccess",
+      "essential": true,
+      "parameters": [ "http://*.virtualearth.net" ]
+    },
+    {
+      "name": "LocalStorage",
+      "essential": false,
+      "parameters": []
+    }
+  ],
   "dataRoles": [
     {
       "name": "Location",
@@ -284,5 +296,7 @@
   },
   "sorting": {
     "custom": {}
-  }
+  },
+  "supportsKeyboardFocus": true,
+  "supportsMultiVisualSelection": true
 }

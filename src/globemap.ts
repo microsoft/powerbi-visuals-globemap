@@ -23,759 +23,729 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-class GlobeMapHeatMapClass {
-    constructor(properties: {}) { }
-    public display() { }
-    public blur() { }
-    public update() { }
-    public clear() { }
-    public addPoint(x: number, y: number, heatPointSize: number, heatIntensity: number) { }
+import "./../style/globemap.less";
+
+import powerbi from "powerbi-visuals-api";
+
+import isEmpty from "lodash.isempty";
+import first from "lodash.first";
+import last from "lodash.last";
+
+import * as THREE from "three";
+import { OrbitControls } from "./lib/Three/OrbitControls";
+
+import IPromise = powerbi.IPromise;
+import DataView = powerbi.DataView;
+import VisualEventType = powerbi.VisualEventType;
+import PrimitiveValue = powerbi.PrimitiveValue;
+import DataViewValueColumn = powerbi.DataViewValueColumn;
+import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
+import DataViewValueColumns = powerbi.DataViewValueColumns;
+import DataViewValueColumnGroup = powerbi.DataViewValueColumnGroup;
+import DataViewMetadataColumn = powerbi.DataViewMetadataColumn;
+import DataViewObjectPropertyIdentifier = powerbi.DataViewObjectPropertyIdentifier;
+
+import ISelectionId = powerbi.visuals.ISelectionId;
+
+import IVisual = powerbi.extensibility.IVisual;
+import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
+import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
+import IColorPalette = powerbi.extensibility.IColorPalette;
+import TooltipHideOptions = powerbi.extensibility.TooltipHideOptions;
+import TooltipShowOptions = powerbi.extensibility.TooltipShowOptions;
+import ITooltipService = powerbi.extensibility.ITooltipService;
+import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
+import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
+import IVisualHost = powerbi.extensibility.visual.IVisualHost;
+import IVisualEventService = powerbi.extensibility.IVisualEventService;
+
+import VisualUpdateType = powerbi.VisualUpdateType;
+
+import { GlobeMapSettings, GlobeMapSettingsModel } from "./settings";
+import { formattingSettings } from 'powerbi-visuals-utils-formattingmodel';
+import { VisualLayout } from "./visualLayout";
+import { GlobeMapCategoricalColumns, GlobeMapColumns } from "./columns";
+import {
+    GlobeMapData,
+    GlobeMapDataPoint,
+    GlobeMapSeriesDataPoint,
+    ITileGapObject,
+    TileMap,
+    IGlobeMapValueTypeDescriptor,
+    IGlobeMapObject3DWithToolTipData,
+    ICanvasCoordinate,
+    ILocationKeyDictionary
+} from "./interfaces/dataInterfaces";
+import {
+    BingResourceMetadata,
+    BingMetadata
+} from "./interfaces/bingInterfaces";
+import { CacheManager } from "./cache/CacheManager";
+import { Geometry as CustomGeometry } from "./lib/Three/Geometry";
+import { BingSettings } from "./settings";
+
+const WebGLHeatmap = require("./lib/WebGLHeatmap");
+
+import ISelectionManager = powerbi.extensibility.ISelectionManager;
+import { Selection as d3Selection, select as d3Select } from "d3-selection";
+
+type Selection<T1, T2 = T1> = d3Selection<any, T1, any, T2>;
+
+interface GlobeMapHeatMapClass {
+    display: () => void;
+    blur: () => void;
+    update: () => void;
+    clear: () => void;
+    addPoint: (x: number, y: number, heatPointSize: number, heatIntensity: number) => void;
     canvas: HTMLVideoElement;
 }
-let WebGLHeatmap = <typeof GlobeMapHeatMapClass>window["createWebGLHeatmap"];
 
-module powerbi.extensibility.visual {
-    // powerbi.extensibility.geocoder
-    import IGeocoder = powerbi.extensibility.geocoder.IGeocoder;
-    import IGeocodeCoordinate = powerbi.extensibility.geocoder.IGeocodeCoordinate;
-    import ILocation = powerbi.extensibility.geocoder.ILocation;
+import { ILocationDictionary, IGeocodeCoordinate } from "./geocoder/interfaces/geocoderInterfaces";
 
-    // powerbi.extensibility.utils.dataview
-    import converterHelper = powerbi.extensibility.utils.dataview.converterHelper;
+import { converterHelper } from "powerbi-visuals-utils-dataviewutils";
 
-    // powerbi.extensibility.utils.color
-    import ColorHelper = powerbi.extensibility.utils.color.ColorHelper;
+import { ColorHelper } from "powerbi-visuals-utils-colorutils";
 
-    // powerbi.visuals
-    import ISelectionId = powerbi.visuals.ISelectionId;
+import { IValueFormatter } from "powerbi-visuals-utils-formattingutils/lib/src/valueFormatter";
+import { valueFormatter } from "powerbi-visuals-utils-formattingutils";
 
-    // powerbi.extensibility.utils.formatting
-    import IValueFormatter = powerbi.extensibility.utils.formatting.IValueFormatter;
-    import valueFormatter = powerbi.extensibility.utils.formatting.valueFormatter;
+import { Geometry } from "./lib/Three/Geometry";
+import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel";
 
-    interface ExtendedPromise<T> extends IPromise<T> {
-        always(value: {}): void;
+export class GlobeMap implements IVisual {
+    private mouseDownTime: number;
+    private localStorageService: ILocalVisualStorageService;
+    public static MercatorSphere: CustomGeometry;
+    private GlobeSettings = {
+        autoRotate: false,
+        earthRadius: 30,
+        cameraRadius: 100,
+        earthSegments: 100,
+        heatmapSize: 1024,
+        heatIntensity: 10,
+        minHeatIntensity: 2,
+        maxHeatIntensity: 10,
+        heatPointSize: 7,
+        minHeatPointSize: 2,
+        maxHeatPointSize: 7,
+        heatmapScaleOnZoom: 0.95,
+        barWidth: 0.3,
+        minBarWidth: 0.01,
+        maxBarWidth: 0.3,
+        barWidthScaleOnZoom: 0.9,
+        barHeight: 5,
+        minBarHeight: 0.75,
+        maxBarHeight: 5,
+        barHeightScaleOnZoom: 0.9,
+        rotateSpeed: 0.5,
+        zoomSpeed: 0.8,
+        cameraAnimDuration: 1000, // ms
+        clickInterval: 200 // ms
+    };
+    
+    private static DataPointFillProperty: DataViewObjectPropertyIdentifier = {
+        objectName: "dataPoint",
+        propertyName: "fill"
+    };
+    private static CountTilesPerSegment: number = 4;
+    private layout: VisualLayout;
+    private root: HTMLElement;
+    private rendererContainer: HTMLElement;
+    private rendererCanvas: HTMLElement;
+    private camera: THREE.PerspectiveCamera;
+    private renderer: THREE.WebGLRenderer;
+    private scene: THREE.Scene;
+    private orbitControls: OrbitControls;
+    private earth: THREE.Mesh | { material };
+    private data: GlobeMapData;
+    private get settings(): GlobeMapSettings {
+        return this.data && this.data.settings;
     }
+    private heatmap: GlobeMapHeatMapClass;
+    private heatTexture: THREE.Texture;
+    private mapTextures: THREE.Texture[];
+    public barsGroup: THREE.Object3D;
+    private readyToRender: boolean;
+    private deferredRenderTimerId: number;
+    public cacheManager: CacheManager;
+    private locationsToLoad: number = 0;
+    private locationsLoaded: number = 0;
+    private initialLocationsLength: number = 0;
+    private renderLoopEnabled = true;
+    private needsRender = false;
+    private mousePosNormalized: THREE.Vector2;
+    private mousePos: THREE.Vector2;
+    private rayCaster: THREE.Raycaster;
+    private selectedBar: THREE.Object3D;
+    private hoveredBar: THREE.Object3D;
+    private averageBarVector: THREE.Vector3;
+    private controlContainer: HTMLElement;
+    public colors: IColorPalette;
+    private animationFrameId: number;
+    private cameraAnimationFrameId: number;
+    public visualHost: IVisualHost;
 
-    export class MercartorSphere extends THREE.Geometry {
-        radius: number;
-        widthSegments: number;
-        heightSegments: number;
-        t: number;
-        vertices: THREE.Vector3[];
-        prototype: {};
-        constructor(radius: number, widthSegments: number, heightSegments: number) {
-            super();
-            this.radius = radius;
-            this.widthSegments = widthSegments;
-            this.heightSegments = heightSegments;
+    private formattingSettingsService: FormattingSettingsService;
+    private formattingServiceModel: GlobeMapSettingsModel;
 
-            this.t = 0;
+    private isFirstLoad: boolean = true;
 
-            let x: number;
-            let y: number;
-            const vertices = [];
-            const uvs = [];
+    private tooltipService: ITooltipService;
+    private static datapointShiftPoint: number = 0.01;
+    private events: IVisualEventService;
 
-            function interplolate(a, b, t) {
-                return (1 - t) * a + t * b;
-            }
+    private rootSelection: Selection<any>;
+    private selectionManager: ISelectionManager;
 
-            // interpolates between sphere and plane
-            function interpolateVertex(u: number, v: number, t: number) {
-                const maxLng: number = Math.PI * 2;
-                const maxLat: number = Math.PI;
+    // eslint-disable-next-line max-lines-per-function
+    public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
+        const categorical: GlobeMapColumns<GlobeMapCategoricalColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
-                const sphereX: number = - this.radius * Math.cos(u * maxLng) * Math.sin(v * maxLat);
-                const sphereY: number = - this.radius * Math.cos(v * maxLat);
-                const sphereZ: number = this.radius * Math.sin(u * maxLng) * Math.sin(v * maxLat);
-
-                const planeX: number = u * this.radius * 2 - this.radius;
-                const planeY: number = v * this.radius * 2 - this.radius;
-                const planeZ: number = 0;
-
-                const x1: number = interplolate(sphereX, planeX, t);
-                const y1: number = interplolate(sphereY, planeY, t);
-                const z: number = interplolate(sphereZ, planeZ, t);
-
-                return new THREE.Vector3(x1, y1, z);
-            }
-
-            // http://mathworld.wolfram.com/MercatorProjection.html
-            // Mercator projection goes form +85.05 to -85.05 degrees
-            function interpolateUV(u: number, v: number, t: number) {
-                const lat: number = (v - 0.5) * 89.99 * 2 / 180 * Math.PI; // turn from 0-1 into lat in radians
-                const sin: number = Math.sin(lat);
-                const normalizedV: number = 0.5 + 0.25 * Math.log((1 + sin) / (1 - sin)) / Math.PI;
-                return new THREE.Vector2(u, normalizedV); // interplolate(normalizedV1, v, t))
-            }
-
-            for (y = 0; y <= heightSegments; y++) {
-
-                const verticesRow: number[] = [];
-                const uvsRow: number[] = [];
-
-                for (x = 0; x <= widthSegments; x++) {
-
-                    const u: number = x / widthSegments;
-                    const v: number = y / heightSegments;
-
-                    this.vertices.push(interpolateVertex.call(this, u, v, this.t));
-                    uvsRow.push(interpolateUV.call(this, u, v, this.t));
-                    verticesRow.push(this.vertices.length - 1);
-                }
-
-                vertices.push(verticesRow);
-                uvs.push(uvsRow);
-
-            }
-
-            for (y = 0; y < this.heightSegments; y++) {
-
-                for (x = 0; x < this.widthSegments; x++) {
-
-                    const v1: number = vertices[y][x + 1];
-                    const v2: number = vertices[y][x];
-                    const v3: number = vertices[y + 1][x];
-                    const v4: number = vertices[y + 1][x + 1];
-
-                    const n1: THREE.Vector3 = this.vertices[v1].clone().normalize();
-                    const n2: THREE.Vector3 = this.vertices[v2].clone().normalize();
-                    const n3: THREE.Vector3 = this.vertices[v3].clone().normalize();
-                    const n4: THREE.Vector3 = this.vertices[v4].clone().normalize();
-
-                    const uv1: THREE.Vector2 = uvs[y][x + 1];
-                    const uv2: THREE.Vector2 = uvs[y][x];
-                    const uv3: THREE.Vector2 = uvs[y + 1][x];
-                    const uv4: THREE.Vector2 = uvs[y + 1][x + 1];
-
-                    this.faces.push(new THREE.Face3(v1, v2, v3, [n1, n2, n3]));
-                    this.faces.push(new THREE.Face3(v1, v3, v4, [n1, n3, n4]));
-
-                    this.faceVertexUvs[0].push([uv1.clone(), uv2.clone(), uv3.clone()]);
-                    this.faceVertexUvs[0].push([uv1.clone(), uv3.clone(), uv4.clone()]);
-                }
-            }
-
-            this.computeFaceNormals();
-            this.computeVertexNormals();
-            this.computeBoundingSphere();
+        if (!categorical
+            || !categorical.Location
+            || isEmpty(categorical.Location.values) && !(categorical.X && categorical.Y)) {
+            return null;
         }
-    }
 
-    export class GlobeMap implements IVisual {
-        private localStorageService: ILocalVisualStorageService;
-        public static MercartorSphere: MercartorSphere;
-        private GlobeSettings = {
-            autoRotate: false,
-            earthRadius: 30,
-            cameraRadius: 100,
-            earthSegments: 100,
-            heatmapSize: 1024,
-            heatIntensity: 10,
-            minHeatIntensity: 2,
-            maxHeatIntensity: 10,
-            heatPointSize: 7,
-            minHeatPointSize: 2,
-            maxHeatPointSize: 7,
-            heatmapScaleOnZoom: 0.95,
-            barWidth: 0.3,
-            minBarWidth: 0.01,
-            maxBarWidth: 0.3,
-            barWidthScaleOnZoom: 0.9,
-            barHeight: 5,
-            minBarHeight: 0.75,
-            maxBarHeight: 5,
-            barHeightScaleOnZoom: 0.9,
-            rotateSpeed: 0.5,
-            zoomSpeed: 0.8,
-            cameraAnimDuration: 1000, // ms
-            clickInterval: 200 // ms
-        };
-        private static ChangeDataType: number = 2;
-        private static ChangeAllType: number = 62;
-        private static DataPointFillProperty: DataViewObjectPropertyIdentifier = {
-            objectName: "dataPoint",
-            propertyName: "fill"
-        };
-        private static CountTilesPerSegment: number = 4;
-        private layout: VisualLayout;
-        private root: JQuery;
-        private rendererContainer: JQuery;
-        private rendererCanvas: HTMLElement;
-        private camera: THREE.PerspectiveCamera;
-        private renderer: THREE.WebGLRenderer;
-        private scene: THREE.Scene;
-        private orbitControls: THREE.OrbitControls;
-        private earth: THREE.Mesh | { material };
-        private data: GlobeMapData;
-        private get settings(): GlobeMapSettings {
-            return this.data && this.data.settings;
+        const settings: GlobeMapSettings = GlobeMap.parseSettings(dataView);
+        const groupedColumns: GlobeMapColumns<DataViewValueColumn>[] = GlobeMapColumns.getGroupedValueColumns(dataView);
+        const dataPoints: GlobeMapDataPoint[] = [];
+        let seriesDataPoints: GlobeMapSeriesDataPoint[] = [];
+        let locations: PrimitiveValue[] = [];
+        const colorHelper: ColorHelper = new ColorHelper(colors, GlobeMap.DataPointFillProperty);
+        let locationType: string;
+        let heights: number[];
+        let heightsBySeries: number[] | number[][];
+        let toolTipDataBySeries: Record<string, unknown>[];
+        let heats: number[];
+
+        if (categorical.Location
+            && categorical.Location.values
+            && !Array.isArray(categorical.Location)
+            && categorical.Location.source
+        ) {
+            locations = categorical.Location.values;
+
+            const sourceType: IGlobeMapValueTypeDescriptor = <IGlobeMapValueTypeDescriptor>categorical.Location.source.type;
+
+            locationType = sourceType.category
+                ? `${sourceType.category}`.toLowerCase()
+                : "";
+        } else {
+            locations = [];
+            if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
+                locations = new Array(categorical.X.values.length);
+            }
         }
-        private heatmap: GlobeMapHeatMapClass;
-        private heatTexture: THREE.Texture;
-        private mapTextures: THREE.Texture[];
-        public barsGroup: THREE.Object3D;
-        private readyToRender: boolean;
-        private deferredRenderTimerId: number;
-        private globeMapLocationCache: { [i: string]: ILocation };
-        private locationsToLoad: number = 0;
-        private locationsLoaded: number = 0;
-        private initialLocationsLength: number = 0;
-        private renderLoopEnabled = true;
-        private needsRender = false;
-        private mousePosNormalized: THREE.Vector2;
-        private mousePos: THREE.Vector2;
-        private rayCaster: THREE.Raycaster;
-        private selectedBar: THREE.Object3D;
-        private hoveredBar: THREE.Object3D;
-        private averageBarVector: THREE.Vector3;
-        private controlContainer: HTMLElement;
-        public colors: IColorPalette;
-        private animationFrameId: number;
-        private cameraAnimationFrameId: number;
-        public visualHost: IVisualHost;
-
-        private isFirstLoad: boolean = true;
-
-        private tooltipService: ITooltipService;
-        private static datapointShiftPoint: number = 0.01;
-        public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
-            const categorical: GlobeMapColumns<GlobeMapCategoricalColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
-            if (!categorical
-                || !categorical.Location
-                || _.isEmpty(categorical.Location.values) && !(categorical.X && categorical.Y)) {
-                return null;
-            }
-
-            const settings: GlobeMapSettings = GlobeMap.parseSettings(dataView);
-            const groupedColumns: GlobeMapColumns<DataViewValueColumn>[] = GlobeMapColumns.getGroupedValueColumns(dataView);
-            const dataPoints: GlobeMapDataPoint[] = [];
-            let seriesDataPoints: GlobeMapSeriesDataPoint[] = [];
-            let locations: PrimitiveValue[] = [];
-            const colorHelper: ColorHelper = new ColorHelper(colors, GlobeMap.DataPointFillProperty);
-            let locationType: string;
-            let heights: number[];
-            let heightsBySeries: number[] | number[][];
-            let toolTipDataBySeries: {}[];
-            let heats: number[];
-
-            if (categorical.Location
-                && categorical.Location.values
-                && categorical.Location.source
-            ) {
-                locations = categorical.Location.values;
-
-                const sourceType: IGlobeMapValueTypeDescriptor = <IGlobeMapValueTypeDescriptor>categorical.Location.source.type;
-
-                locationType = sourceType.category
-                    ? `${sourceType.category}`.toLowerCase()
-                    : "";
-            } else {
-                locations = [];
-                if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
-                    locations = new Array(categorical.X.values.length);
-                }
-            }
-            if (!_.isEmpty(categorical.Height)) {
-                if (groupedColumns.length > 1) {
-                    heights = [];
-                    heightsBySeries = [];
-                    toolTipDataBySeries = [];
-                    seriesDataPoints = [];
-                    // creating a matrix for drawing values by series later.
-                    for (let i: number = 0; i < groupedColumns.length; i++) {
-                        const values: number[] = <number[]>groupedColumns[i].Height.values;
-                        let dataPointsParams = {
-                            dataView: dataView,
-                            source: groupedColumns[i].Height.source,
-                            seriesIndex: i,
-                            metaData: null,
-                            colorHelper: colorHelper,
-                            colors: colors,
-                            visualHost: visualHost,
-                            catIndex: null
-                        };
-                        seriesDataPoints[i] = GlobeMap.createDataPointForEnumeration(dataPointsParams);
-                        for (let j: number = 0; j < values.length; j++) {
-                            if (!heights[j]) {
-                                heights[j] = 0;
-                            }
-                            heights[j] += values[j] ? values[j] : 0;
-                            if (!heightsBySeries[j]) {
-                                heightsBySeries[j] = <number[]>[];
-                            }
-                            heightsBySeries[j][i] = values[j];
-                            if (!toolTipDataBySeries[j]) {
-                                toolTipDataBySeries[j] = [];
-                            }
-                            toolTipDataBySeries[j][i] = {
-                                displayName: categorical.Series && categorical.Series.source && categorical.Series.source.displayName,
-                                value: dataView.categorical.values.grouped()[i].name,
-                                dataPointValue: values[j]
-                            };
-                        }
-                    }
-                    for (let i: number = 0; i < groupedColumns.length; i++) {
-                        const values: number[] = <number[]>groupedColumns[i].Height.values;
-                        for (let j: number = 0; j < values.length; j++) {
-                            // calculating relative size of series
-                            heightsBySeries[j][i] = <number>values[j] / <number>heights[j];
-                        }
-                    }
-                } else {
-                    heights = <number[]>categorical.Height[0].values;
-                    heightsBySeries = [];
-                    heights.forEach((element, index) => {
-                        let displayName: PrimitiveValue;
-                        if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
-                            displayName = groupedColumns[0].Height.source.displayName + index;
-                        } else if (categorical.Location) {
-                            displayName = categorical.Location.values[index];
-                        }
-
-                        let dataPointsParams = {
-                            dataView: dataView,
-                            source: { ...groupedColumns[0].Height.source, displayName: displayName },
-                            seriesIndex: 0,
-                            metaData: dataView.metadata,
-                            colorHelper: colorHelper,
-                            colors: colors,
-                            visualHost: visualHost,
-                            catIndex: index
-                        };
-                        seriesDataPoints[index] = GlobeMap.createDataPointForEnumeration(dataPointsParams);
-                    });
-                }
-            } else {
-                heightsBySeries = [];
+        if (!isEmpty(categorical.Height)) {
+            if (groupedColumns.length > 1) {
                 heights = [];
-                if (categorical.Location && categorical.Location.values || categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
-                    let heightsLenght: number = 0;
-                    if (categorical.Location && categorical.Location.values) {
-                        heightsLenght = categorical.Location.values.length;
-                    } else if (categorical.X && categorical.X.values) {
-                        heightsLenght = categorical.X.values.length;
-                    }
-
-                    for (let i = 0; i < heightsLenght; i++) {
-                        heights.push(1);
-                    }
-                    const color: string = colorHelper.getColorForMeasure(dataView.metadata.objects, "");
-                    seriesDataPoints[0] = {
-                        label: "label",
-                        identity: "identity",
-                        category: "category",
-                        color: color,
-                        selected: null
+                heightsBySeries = [];
+                toolTipDataBySeries = [];
+                seriesDataPoints = [];
+                // creating a matrix for drawing values by series later.
+                for (let i: number = 0; i < groupedColumns.length; i++) {
+                    const values: number[] = <number[]>groupedColumns[i].Height.values;
+                    const dataPointsParams = {
+                        dataView: dataView,
+                        source: groupedColumns[i].Height.source,
+                        seriesIndex: i,
+                        metaData: null,
+                        colorHelper: colorHelper,
+                        colors: colors,
+                        visualHost: visualHost,
+                        catIndex: null
                     };
-                }
-            }
-            if (!_.isEmpty(categorical.Heat)) {
-                if (groupedColumns.length > 1) {
-                    heats = [];
-                    for (let i: number = 0; i < groupedColumns.length; i++) {
-                        const values: number[] = <number[]>groupedColumns[i].Heat.values;
-                        for (let j = 0; j < values.length; j++) {
-                            if (!heats[j]) {
-                                heats[j] = 0;
-                            }
-                            heats[j] += values[j] ? values[j] : 0;
+                    seriesDataPoints[i] = GlobeMap.createDataPointForEnumeration(dataPointsParams);
+                    for (let j: number = 0; j < values.length; j++) {
+                        if (!heights[j]) {
+                            heights[j] = 0;
                         }
-                    }
-                } else {
-                    heats = <number[]>categorical.Heat[0].values;
-                }
+                        heights[j] += values[j] ? values[j] : 0;
+                        if (!heightsBySeries[j]) {
+                            heightsBySeries[j] = <number[]>[];
+                        }
+                        heightsBySeries[j][i] = values[j];
+                        if (!toolTipDataBySeries[j]) {
+                            toolTipDataBySeries[j] = {};
+                        }
 
+                        const displayName = categorical.Series && "source" in categorical.Series ? categorical.Series.source.displayName : "";
+                        toolTipDataBySeries[j][i] = {
+                            displayName: displayName,
+                            value: dataView.categorical.values.grouped()[i].name,
+                            dataPointValue: values[j]
+                        };
+                    }
+                }
+                for (let i: number = 0; i < groupedColumns.length; i++) {
+                    const values: number[] = <number[]>groupedColumns[i].Height.values;
+                    for (let j: number = 0; j < values.length; j++) {
+                        // calculating relative size of series
+                        heightsBySeries[j][i] = <number>values[j] / <number>heights[j];
+                    }
+                }
             } else {
-                heats = [];
-            }
-            const maxHeight: number = Math.max.apply(null, heights) || 1;
-            const maxHeat: number = Math.max.apply(null, heats) || 1;
-            const heatFormatter: IValueFormatter = valueFormatter.create({
-                format: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.format,
-                value: heats[0],
-                value2: heats[1]
-            });
-            const heightFormatter = valueFormatter.create({
-                format: !_.isEmpty(categorical.Height) && categorical.Height[0].source.format,
-                value: heights[0],
-                value2: heights[1]
-            });
-            const len: number = locations.length;
-            for (let i: number = 0; i < len; ++i) {
-                if (typeof (locations[i]) === "string" || (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values)) {
-                    const height: number = <number>heights[i] / maxHeight;
-                    const heat: number = <number>heats[i] / maxHeat;
-                    let place: string;
-                    let placeKey: string;
-                    let toolTipDataLocationName: string;
-                    let toolTipDataLongName: string;
-                    let toolTipDataLatName: string;
-                    let location: ILocation;
-                    let locationValue: string;
-                    if (typeof (locations[i]) === "string") {
-                        place = `${locations[i]}`.toLowerCase();
-                        placeKey = `${place} / ${locationType}`;
-                        location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
-                            ? { longitude: <number>categorical.X[0].values[i] || 0, latitude: <number>categorical.Y[0].values[i] || 0 }
-                            : undefined;
-                        toolTipDataLocationName = categorical.Location && categorical.Location.source.displayName;
-                        locationValue = `${locations[i]}`;
-                    } else {
-                        place = `${categorical.X.values[i]} ${categorical.Y.values[i]}`;
-                        placeKey = categorical.X.values[i] + " " + categorical.Y.values[i];
-                        location = (!_.isEmpty(categorical.X) && !_.isEmpty(categorical.Y))
-                            ? { longitude: <number>categorical.X.values[i] || 0, latitude: <number>categorical.Y.values[i] || 0 }
-                            : undefined;
-                        toolTipDataLongName = categorical.X && categorical.X.source && categorical.X.source.displayName;
-                        toolTipDataLatName = categorical.Y && categorical.Y.source && categorical.Y.source.displayName;
-                        locationValue = "";
+                heights = <number[]>categorical.Height[0].values;
+                heightsBySeries = [];
+                heights.forEach((element, index) => {
+                    let displayName: PrimitiveValue;
+                    if (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
+                        displayName = groupedColumns[0].Height.source.displayName + index;
+                    } else if (categorical.Location) {
+                        displayName = categorical.Location.values[index];
                     }
 
-                    const longitudeValue: string = GlobeMap.getCategoricalValueByIndex(categorical.X, i);
-                    const latitudeValue: string = GlobeMap.getCategoricalValueByIndex(categorical.Y, i);
-
-                    let renderDatum: GlobeMapDataPoint = {
-                        location: location,
-                        placeKey: placeKey,
-                        place: place,
-                        locationType: locationType,
-                        height: height ? height || GlobeMap.datapointShiftPoint : undefined,
-                        heightBySeries: <number[]>heightsBySeries[i],
-                        seriesToolTipData: toolTipDataBySeries ? toolTipDataBySeries[i] : undefined,
-                        heat: heat || 0,
-                        toolTipData: {
-                            location: { displayName: !_.isEmpty(toolTipDataLocationName) && toolTipDataLocationName, value: locationValue },
-                            longitude: { displayName: !_.isEmpty(toolTipDataLongName) && toolTipDataLongName, value: longitudeValue },
-                            latitude: { displayName: !_.isEmpty(toolTipDataLatName) && toolTipDataLatName, value: latitudeValue },
-                            height: { displayName: !_.isEmpty(categorical.Height) && categorical.Height[0].source.displayName, value: heightFormatter.format(heights[i]) },
-                            heat: { displayName: !_.isEmpty(categorical.Heat) && categorical.Heat[0].source.displayName, value: heatFormatter.format(heats[i]) }
-                        }
+                    const dataPointsParams = {
+                        dataView: dataView,
+                        source: { ...groupedColumns[0].Height.source, displayName: displayName },
+                        seriesIndex: 0,
+                        metaData: dataView.metadata,
+                        colorHelper: colorHelper,
+                        colors: colors,
+                        visualHost: visualHost,
+                        catIndex: index
                     };
-                    dataPoints.push(renderDatum);
-                }
-            }
-            return {
-                dataView: dataView,
-                dataPoints: dataPoints,
-                seriesDataPoints: seriesDataPoints,
-                settings: settings
-            };
-        }
-
-        private static parseSettings(dataView: DataView): GlobeMapSettings {
-            return GlobeMapSettings.parse(dataView) as GlobeMapSettings;
-        }
-
-        private static createDataPointForEnumeration(dataPointsParams: { dataView, seriesIndex, source, visualHost, catIndex, metaData, colors, colorHelper }): GlobeMapSeriesDataPoint {
-            const columns: DataViewValueColumnGroup = dataPointsParams.dataView.categorical.values.grouped()[dataPointsParams.seriesIndex];
-            const values: DataViewValueColumns = <DataViewValueColumns>columns.values;
-            let sourceForFormat: DataViewMetadataColumn = dataPointsParams.source;
-            let nameForFormat: PrimitiveValue = dataPointsParams.source.displayName;
-
-            if (dataPointsParams.source.groupName !== undefined) {
-                sourceForFormat = values.source;
-                nameForFormat = dataPointsParams.source.groupName;
-            }
-
-            const label: string = valueFormatter.format(nameForFormat, valueFormatter.getFormatString(sourceForFormat, null));
-
-            const categoryColumn: DataViewCategoryColumn = dataPointsParams.dataView
-                && dataPointsParams.dataView.categorical
-                && dataPointsParams.dataView.categorical.categories
-                && dataPointsParams.dataView.categorical.categories[0];
-
-            const identity: ISelectionId =
-                dataPointsParams.visualHost.createSelectionIdBuilder()
-                    .withCategory(categoryColumn, dataPointsParams.catIndex)
-                    .createSelectionId();
-
-            const category: string = `${converterHelper.getSeriesName(dataPointsParams.source)}`;
-            const objects: {} = categoryColumn && categoryColumn.objects;
-            const color: string =
-                objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint ?
-                    objects[dataPointsParams.catIndex].dataPoint.fill.solid.color : dataPointsParams.metaData && dataPointsParams.metaData.objects
-                        ? dataPointsParams.colorHelper.getColorForMeasure(dataPointsParams.metaData.objects, "")
-                        : dataPointsParams.colors.getColor(dataPointsParams.seriesIndex).value;
-
-            return {
-                label: label,
-                identity: identity,
-                category: category,
-                color: color,
-                selected: null
-            };
-        }
-
-        private addAnInstanceToEnumeration(
-            instanceEnumeration: VisualObjectInstanceEnumeration,
-            instance: VisualObjectInstance): void {
-
-            if ((instanceEnumeration as VisualObjectInstanceEnumerationObject).instances) {
-                (instanceEnumeration as VisualObjectInstanceEnumerationObject)
-                    .instances
-                    .push(instance);
-            } else {
-                (instanceEnumeration as VisualObjectInstance[]).push(instance);
-            }
-        }
-
-        public enumerateObjectInstances(options: EnumerateVisualObjectInstancesOptions): VisualObjectInstance[] | VisualObjectInstanceEnumerationObject {
-            let instances: VisualObjectInstanceEnumeration = GlobeMapSettings.enumerateObjectInstances(this.settings || GlobeMapSettings.getDefault(), options);
-            switch (options.objectName) {
-                case "dataPoint": if (this.data && this.data.seriesDataPoints) {
-                    for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
-                        let dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
-                        this.addAnInstanceToEnumeration(instances, {
-                            objectName: "dataPoint",
-                            displayName: dataPoint.label,
-                            selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()),
-                            properties: {
-                                fill: { solid: { color: dataPoint.color } }
-                            }
-                        });
-                    }
-                }
-                    break;
-            }
-            return instances;
-        }
-
-        constructor(options: VisualConstructorOptions) {
-            this.currentLanguage = options.host.locale;
-            this.localStorageService = options.host.storageService;
-            this.root = $("<div>").appendTo(options.element)
-                .attr("drag-resize-disabled", "true")
-                .css({
-                    "position": "absolute"
+                    seriesDataPoints[index] = GlobeMap.createDataPointForEnumeration(dataPointsParams);
                 });
-
-            this.visualHost = options.host;
-            this.tooltipService = this.visualHost.tooltipService;
-
-            this.layout = new VisualLayout();
-            this.readyToRender = false;
-
-            if (!this.globeMapLocationCache) {
-                this.globeMapLocationCache = {};
             }
-
-            this.colors = options.host.colorPalette;
-
-            if (window["THREE"]) {
-                this.setup();
-            }
-        }
-
-        private setup(): void {
-            this.initScene();
-            this.initMercartorSphere();
-            this.initTextures().then(
-                () => {
-                    this.earth = this.createEarth();
-                    this.scene.add(<THREE.Mesh>this.earth);
-                    this.readyToRender = true;
-                });
-            this.initZoomControl();
-            this.initHeatmap();
-            this.initRayCaster();
-        }
-        private static cameraFov: number = 35;
-        private static cameraNear: number = 0.1;
-        private static cameraFar: number = 10000;
-        private static clearColor: number = 0xbac4d2;
-        private static ambientLight: number = 0x000000;
-        private static directionalLight: number = 0xffffff;
-        private static directionalLightIntensity: number = 0.4;
-        private static tileSize: number = 256;
-        private static initialResolutionLevel: number = 2;
-        private static maxResolutionLevel: number = 5;
-        private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&uriScheme=https&key=${powerbi.extensibility.geocoder.Settings.BingKey}`;
-        private static reserveBindMapsMetadata: BingResourceMetadata = {
-            imageUrl: "https://{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=0&mkt={culture}",
-            imageUrlSubdomains: [
-                "t1",
-                "t2",
-                "t3",
-                "t4",
-                "t5",
-                "t6",
-                "t7"
-            ],
-            imageHeight: 256,
-            imageWidth: 256
-        };
-        private currentLanguage: string = "en-GB";
-        private static TILE_STORAGE_KEY = "GLOBEMAP_TILES_STORAGE";
-
-        private initScene(): void {
-            this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-            this.rendererContainer = $("<div>").appendTo(this.root).addClass("globeMapView");
-
-            this.rendererContainer.append(this.renderer.domElement);
-            this.rendererCanvas = this.renderer.domElement;
-            this.camera = new THREE.PerspectiveCamera(
-                GlobeMap.cameraFov,
-                this.layout.viewportIn.width / this.layout.viewportIn.height,
-                GlobeMap.cameraNear,
-                GlobeMap.cameraFar);
-            this.orbitControls = new THREE.OrbitControls(this.camera, this.rendererCanvas);
-            this.orbitControls.enablePan = false;
-            this.scene = new THREE.Scene();
-
-            this.renderer.setSize(this.layout.viewportIn.width, this.layout.viewportIn.height);
-            this.renderer.setClearColor(GlobeMap.clearColor, 1);
-            this.camera.position.z = this.GlobeSettings.cameraRadius;
-            this.orbitControls.maxDistance = this.GlobeSettings.cameraRadius;
-            this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
-            this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed;
-            this.orbitControls.zoomSpeed = this.GlobeSettings.zoomSpeed;
-            this.orbitControls.autoRotate = this.GlobeSettings.autoRotate;
-
-            const ambientLight: THREE.AmbientLight = new THREE.AmbientLight(GlobeMap.ambientLight);
-            const light1: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
-            const light2: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
-
-            this.scene.add(ambientLight);
-            this.scene.add(light1);
-            this.scene.add(light2);
-
-            light1.position.set(20, 20, 20);
-            light2.position.set(0, 0, -20);
-
-            const render: FrameRequestCallback = () => {
-                try {
-                    if (this.renderLoopEnabled) {
-                        this.animationFrameId = requestAnimationFrame(render);
-                    }
-                    if (!this.shouldRender()) {
-                        return;
-                    }
-                    this.orbitControls.update();
-                    this.setEarthTexture();
-                    if (this.heatmap && this.heatmap.display) {
-                        this.heatmap.display(); // Needed for IE/Edge to behave nicely
-                    }
-                    this.renderer.render(this.scene, this.camera);
-                    this.intersectBars();
-                    this.needsRender = false;
-                } catch (e) {
-                    console.error(e);
+        } else {
+            heightsBySeries = [];
+            heights = [];
+            if (categorical.Location && categorical.Location.values || categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
+                let heightsLenght: number = 0;
+                if (categorical.Location && categorical.Location.values) {
+                    heightsLenght = categorical.Location.values.length;
+                } else if (categorical.X && categorical.X.values) {
+                    heightsLenght = categorical.X.values.length;
                 }
-            };
 
-            this.animationFrameId = requestAnimationFrame(render);
-        }
-
-        private shouldRender(): boolean {
-            return this.readyToRender && this.needsRender;
-        }
-
-        private createEarth(): THREE.Mesh {
-            const geometry: MercartorSphere = new MercartorSphere(
-                this.GlobeSettings.earthRadius,
-                this.GlobeSettings.earthSegments,
-                this.GlobeSettings.earthSegments);
-            const material: THREE.MeshPhongMaterial = new THREE.MeshPhongMaterial({
-                map: this.mapTextures[0],
-                side: THREE.DoubleSide,
-                shading: THREE.SmoothShading,
-                shininess: 1
-            });
-
-            const mesh: THREE.Mesh = new THREE.Mesh(geometry, material);
-            mesh.add(new THREE.AmbientLight(0xaaaaaa, 1));
-
-            return mesh;
-        }
-
-        private static dollyX: number = 0.95;
-        public zoomClicked(zoomDirection: number): void {
-            if (this.orbitControls.enabled === false) {
-                return;
-            }
-
-            if (zoomDirection === -1) {
-                this.orbitControls.dollyOut(Math.pow(GlobeMap.dollyX, this.GlobeSettings.zoomSpeed));
-            } else if (zoomDirection === 1) {
-                this.orbitControls.dollyIn(Math.pow(GlobeMap.dollyX, this.GlobeSettings.zoomSpeed));
-            }
-
-            this.updateBarsAndHeatMapByZoom(-zoomDirection);
-            this.orbitControls.update();
-            this.animateCamera(this.camera.position);
-        }
-
-        public rotateCam(deltaX: number, deltaY: number): void {
-            if (!this.orbitControls.enabled) {
-                return;
-            }
-            this.orbitControls.rotateLeft(2 * Math.PI * deltaX / this.rendererCanvas.offsetHeight * this.GlobeSettings.rotateSpeed);
-            this.orbitControls.rotateUp(2 * Math.PI * deltaY / this.rendererCanvas.offsetHeight * this.GlobeSettings.rotateSpeed);
-            this.orbitControls.update();
-            this.animateCamera(this.camera.position);
-        }
-
-        private static minimizeTiles(tileCacheArray: TileMap[]): ITileGapObject[] {
-            if (!tileCacheArray || !tileCacheArray.length) {
-                return [];
-            }
-
-            let result = [];
-            tileCacheArray.forEach(obj => {
-                let rank: number = 0, lastKey: number = Number(Object.keys(obj)[0]);
-                let gap: number[] = [lastKey];
-                let gaps = [];
-                for (let key in obj) {
-                    if (obj.hasOwnProperty(key)) {
-                        rank = key.length;
-                        const convertedKey: number = Number(key);
-                        if (Math.abs(convertedKey - lastKey) > 1) {
-                            gap.push(lastKey);
-                            gaps.push(gap);
-                            gap = [convertedKey];
-                        }
-                        lastKey = convertedKey;
-                    }
+                for (let i = 0; i < heightsLenght; i++) {
+                    heights.push(1);
                 }
-                gap.push(lastKey);
-                gaps.push(gap);
-                let currentZoomTiles: ITileGapObject = {
-                    gaps,
-                    rank
+                const color: string = colorHelper.getColorForMeasure(dataView.metadata.objects, "");
+                seriesDataPoints[0] = {
+                    label: "label",
+                    identity: "identity",
+                    category: "category",
+                    color: color,
+                    selected: null
                 };
-                result.push(currentZoomTiles);
-            });
+            }
+        }
+        if (!isEmpty(categorical.Heat)) {
+            if (groupedColumns.length > 1) {
+                heats = [];
+                for (let i: number = 0; i < groupedColumns.length; i++) {
+                    const values: number[] = <number[]>groupedColumns[i].Heat.values;
+                    for (let j = 0; j < values.length; j++) {
+                        if (!heats[j]) {
+                            heats[j] = 0;
+                        }
+                        heats[j] += values[j] ? values[j] : 0;
+                    }
+                }
+            } else {
+                heats = <number[]>categorical.Heat[0].values;
+            }
 
-            return result;
+        } else {
+            heats = [];
+        }
+        const maxHeight: number = Math.max.apply(null, heights) || 1;
+        const maxHeat: number = Math.max.apply(null, heats) || 1;
+        const heatFormatter: IValueFormatter = valueFormatter.create({
+            format: !isEmpty(categorical.Heat) && categorical.Heat[0].source.format,
+            value: heats[0],
+            value2: heats[1]
+        });
+        const heightFormatter = valueFormatter.create({
+            format: !isEmpty(categorical.Height) && categorical.Height[0].source.format,
+            value: heights[0],
+            value2: heights[1]
+        });
+        const len: number = locations.length;
+        for (let i: number = 0; i < len; ++i) {
+            if (typeof (locations[i]) === "string" || (categorical.X && categorical.Y && categorical.X.values && categorical.Y.values)) {
+                const height: number = <number>heights[i] / maxHeight;
+                const heat: number = <number>heats[i] / maxHeat;
+                let place: string;
+                let placeKey: string;
+                let toolTipDataLocationName: string;
+                let toolTipDataLongName: string;
+                let toolTipDataLatName: string;
+                let location: IGeocodeCoordinate;
+                let locationValue: string;
+
+                const tooltipLongitude = categorical.X && "source" in categorical.X && categorical.X.source && categorical.X.source.displayName;
+                const tooltipLatitiude = categorical.Y && "source" in categorical.Y && categorical.Y.source && categorical.Y.source.displayName;
+                const tooltipLocation = categorical.Location && "source" in categorical.Location && categorical.Location.source.displayName;
+
+                if (typeof (locations[i]) === "string") {
+                    place = `${locations[i]}`.toLowerCase();
+                    placeKey = `${place} / ${locationType}`;
+                    location = (!isEmpty(categorical.X) && !isEmpty(categorical.Y))
+                        ? { longitude: <number>categorical.X[0].values[i] || 0, latitude: <number>categorical.Y[0].values[i] || 0 }
+                        : undefined;
+                    toolTipDataLocationName = tooltipLocation;
+                    locationValue = `${locations[i]}`;
+                } else {
+                    location = (!isEmpty(categorical.X) && !isEmpty(categorical.Y))
+                        ? { longitude: <number>categorical.X.values[i] || 0, latitude: <number>categorical.Y.values[i] || 0 }
+                        : undefined;
+                    place = location ? `${categorical.X.values[i]} ${categorical.Y.values[i]}` : undefined;
+                    placeKey = location ? categorical.X.values[i] + " " + categorical.Y.values[i] : undefined;
+                    toolTipDataLongName = tooltipLongitude;
+                    toolTipDataLatName = tooltipLatitiude;
+                    locationValue = "";
+                }
+
+                let longitudeValue: string;
+                let latitudeValue: string;
+
+                if(!Array.isArray(categorical.X)) {
+                    longitudeValue = GlobeMap.getCategoricalValueByIndex(categorical.X, i);
+                }
+
+                if(!Array.isArray(categorical.Y)) {
+                    latitudeValue = GlobeMap.getCategoricalValueByIndex(categorical.Y, i);
+                }
+
+                const renderDatum: GlobeMapDataPoint = {
+                    location: location,
+                    placeKey: placeKey,
+                    place: place,
+                    locationType: locationType,
+                    height: height ? height || GlobeMap.datapointShiftPoint : undefined,
+                    heightBySeries: <number[]>heightsBySeries[i],
+                    seriesToolTipData: toolTipDataBySeries ? toolTipDataBySeries[i] : undefined,
+                    heat: heat || 0,
+                    toolTipData: {
+                        location: { displayName: !isEmpty(toolTipDataLocationName) && toolTipDataLocationName, value: locationValue },
+                        longitude: { displayName: !isEmpty(toolTipDataLongName) && toolTipDataLongName, value: longitudeValue },
+                        latitude: { displayName: !isEmpty(toolTipDataLatName) && toolTipDataLatName, value: latitudeValue },
+                        height: { displayName: !isEmpty(categorical.Height) && categorical.Height[0].source.displayName, value: heightFormatter.format(heights[i]) },
+                        heat: { displayName: !isEmpty(categorical.Heat) && categorical.Heat[0].source.displayName, value: heatFormatter.format(heats[i]) }
+                    }
+                };
+                dataPoints.push(renderDatum);
+            }
+        }
+        return {
+            dataView: dataView,
+            dataPoints: dataPoints,
+            seriesDataPoints: seriesDataPoints,
+            settings: settings
+        };
+    }
+
+    private static parseSettings(dataView: DataView): GlobeMapSettings {
+        return GlobeMapSettings.parse(dataView) as GlobeMapSettings;
+    }
+
+    private static createDataPointForEnumeration(dataPointsParams: { dataView, seriesIndex, source, visualHost, catIndex, metaData, colors, colorHelper }): GlobeMapSeriesDataPoint {
+        const columns: DataViewValueColumnGroup = dataPointsParams.dataView.categorical.values.grouped()[dataPointsParams.seriesIndex];
+        const values: DataViewValueColumns = <DataViewValueColumns>columns.values;
+        let sourceForFormat: DataViewMetadataColumn = dataPointsParams.source;
+        let nameForFormat: PrimitiveValue = dataPointsParams.source.displayName;
+
+        if (dataPointsParams.source.groupName !== undefined) {
+            sourceForFormat = values.source;
+            nameForFormat = dataPointsParams.source.groupName;
         }
 
-        private static extendTiles(tileCacheData: string, language: string, deferred: JQueryDeferred<{}>) {
-            let result = [];
+        const label: string = valueFormatter.format(nameForFormat, valueFormatter.getFormatString(sourceForFormat, null));
 
+        const categoryColumn: DataViewCategoryColumn = dataPointsParams.dataView
+            && dataPointsParams.dataView.categorical
+            && dataPointsParams.dataView.categorical.categories
+            && dataPointsParams.dataView.categorical.categories[0];
+
+        const identity: ISelectionId =
+            dataPointsParams.visualHost.createSelectionIdBuilder()
+                .withCategory(categoryColumn, dataPointsParams.catIndex)
+                .createSelectionId();
+
+        const category: string = `${converterHelper.getSeriesName(dataPointsParams.source)}`;
+        const objects = categoryColumn && categoryColumn.objects;
+        let color: string =
+            objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint 
+                ? objects[dataPointsParams.catIndex].dataPoint.fill["solid"].color 
+                : dataPointsParams.metaData && dataPointsParams.metaData.objects
+                ? dataPointsParams.colorHelper.getColorForMeasure(dataPointsParams.metaData.objects, "")
+                : dataPointsParams.colors.getColor(dataPointsParams.seriesIndex).value;
+
+        if (dataPointsParams.colorHelper.isHighContrast) {
+            color = dataPointsParams.colorHelper.getHighContrastColor("foreground", color);
+        }
+
+        return {
+            label: label,
+            identity: identity,
+            category: category,
+            color: color,
+            selected: null
+        };
+    }
+
+    public getFormattingModel(): powerbi.visuals.FormattingModel { 
+        if (this.data && this.data.seriesDataPoints) {
+            for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
+                const dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
+
+                this.formattingServiceModel.dataPoint.slices.push(new formattingSettings.ColorPicker({                    
+                    name: "fill",
+                    displayName: dataPoint.label,
+                    selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()),
+                    value: { value: dataPoint.color },
+                }));
+            }
+        }
+
+        const model = this.formattingSettingsService.buildFormattingModel(this.formattingServiceModel);
+
+        return model;
+    }
+
+    constructor(options: VisualConstructorOptions) {        
+        this.currentLanguage = options.host.locale;
+        this.localStorageService = options.host.storageService;
+        this.formattingSettingsService = new FormattingSettingsService();
+        this.events = options.host.eventService;
+
+        this.root = options.element;
+        this.root.setAttribute("drag-resize-disabled", "true");
+        this.root.style.position = "absolute";
+
+        this.rootSelection = d3Select(this.root);
+
+        this.visualHost = options.host;
+        this.visualHost.telemetry.trace(VisualEventType.Trace, 'bing load coordinates');
+        this.tooltipService = this.visualHost.tooltipService;
+
+        this.selectionManager = this.visualHost.createSelectionManager();
+
+        this.layout = new VisualLayout();
+        this.readyToRender = false;
+        this.cacheManager = new CacheManager(this.localStorageService);
+        this.colors = options.host.colorPalette;
+        this.setup();
+    }
+
+    private setup(): void {
+        this.initScene();
+        this.initMercartorSphere();
+        this.initTextures().then(
+            () => {
+                this.earth = this.createEarth();
+                this.scene.add(<THREE.Mesh>this.earth);
+                this.readyToRender = true;
+            });
+        this.initZoomControl();
+        this.initHeatmap();
+        this.initRayCaster();
+        this.handleContextMenu();
+    }
+    private static cameraFov: number = 35;
+    private static cameraNear: number = 0.1;
+    private static cameraFar: number = 10000;
+    private static clearColor: number = 0xbac4d2;
+    private static ambientLight: number = 0x000000;
+    private static directionalLight: number = 0xffffff;
+    private static directionalLightIntensity: number = 0.4;
+    private static tileSize: number = 256;
+    private static initialResolutionLevel: number = 2;
+    private static maxResolutionLevel: number = 5;
+    private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&key=${BingSettings.BingKey}`;
+    private static reserveBindMapsMetadata: BingResourceMetadata = {
+        imageUrl: "https://{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=0&mkt={culture}",
+        imageUrlSubdomains: [
+            "t1",
+            "t2",
+            "t3",
+            "t4",
+            "t5",
+            "t6",
+            "t7"
+        ],
+        imageHeight: 256,
+        imageWidth: 256
+    };
+    private currentLanguage: string = "en-GB";
+    private static TILE_STORAGE_KEY = "GLOBEMAP_TILES_STORAGE";
+
+    private initScene(): void {
+        this.renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+        
+        this.rendererContainer = document.createElement("div");
+        this.rendererContainer.classList.add("globeMapView");
+
+        this.root.append(this.rendererContainer);
+
+        this.rendererContainer.append(this.renderer.domElement);
+        this.rendererCanvas = this.renderer.domElement;
+        this.camera = new THREE.PerspectiveCamera(
+            GlobeMap.cameraFov,
+            this.layout.viewportIn.width / this.layout.viewportIn.height,
+            GlobeMap.cameraNear,
+            GlobeMap.cameraFar);
+        this.orbitControls = new OrbitControls(this.camera, this.rendererCanvas);
+        this.orbitControls.enablePan = false;
+        this.scene = new THREE.Scene();
+
+        this.renderer.setSize(this.layout.viewportIn.width, this.layout.viewportIn.height);
+        this.renderer.setClearColor(GlobeMap.clearColor, 1);
+        this.camera.position.z = this.GlobeSettings.cameraRadius;
+        this.orbitControls.maxDistance = this.GlobeSettings.cameraRadius;
+        this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
+        this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed;
+        this.orbitControls.zoomSpeed = this.GlobeSettings.zoomSpeed;
+        this.orbitControls.autoRotate = this.GlobeSettings.autoRotate;
+
+        const ambientLight: THREE.AmbientLight = new THREE.AmbientLight(GlobeMap.ambientLight);
+        const light1: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
+        const light2: THREE.DirectionalLight = new THREE.DirectionalLight(GlobeMap.directionalLight, GlobeMap.directionalLightIntensity);
+
+        this.scene.add(ambientLight);
+        this.scene.add(light1);
+        this.scene.add(light2);
+
+        light1.position.set(20, 20, 20);
+        light2.position.set(0, 0, -20);
+
+        const render: FrameRequestCallback = () => {
+            try {
+                if (this.renderLoopEnabled) {
+                    this.animationFrameId = requestAnimationFrame(render);
+                }
+                if (!this.shouldRender()) {
+                    return;
+                }
+                this.orbitControls.update();
+                this.setEarthTexture();
+                if (this.heatmap && this.heatmap.display) {
+                    this.heatmap.display(); // Needed for IE/Edge to behave nicely
+                }
+                this.renderer.render(this.scene, this.camera);
+                this.intersectBars();
+                this.needsRender = false;
+            } catch (e) {
+                console.error(`Render error: ${e}`);
+            }
+        };
+
+        this.animationFrameId = requestAnimationFrame(render);
+    }
+
+    private shouldRender(): boolean {
+        return this.readyToRender && this.needsRender;
+    }
+
+    private createEarth(): THREE.Mesh {
+        const geometry: CustomGeometry = new CustomGeometry(
+            this.GlobeSettings.earthRadius,
+            this.GlobeSettings.earthSegments,
+            this.GlobeSettings.earthSegments);
+        const material: THREE.MeshPhongMaterial = new THREE.MeshPhongMaterial({
+            map: this.mapTextures[0],
+            side: THREE.DoubleSide,
+            flatShading: false,
+            shininess: 1
+        });
+
+        const mesh: THREE.Mesh = new THREE.Mesh(geometry.toBufferGeometry(), material);
+        mesh.add(new THREE.AmbientLight(0xaaaaaa, 1));
+
+        return mesh;
+    }
+
+    private static dollyX: number = 0.95;
+    public zoomClicked(zoomDirection: number): void {
+        if (this.orbitControls.enabled === false) {
+            return;
+        }
+
+        if (zoomDirection === 1) {
+            this.orbitControls.dollyOut(Math.pow(GlobeMap.dollyX, this.GlobeSettings.zoomSpeed));
+        } else if (zoomDirection === -1) {
+            this.orbitControls.dollyIn(Math.pow(GlobeMap.dollyX, this.GlobeSettings.zoomSpeed));
+        }
+
+        this.updateBarsAndHeatMapByZoom(-zoomDirection);
+        this.orbitControls.update();
+        this.animateCamera(this.camera.position);
+    }
+
+    public rotateCam(deltaX: number, deltaY: number): void {
+        if (!this.orbitControls.enabled) {
+            return;
+        }
+        this.orbitControls.rotateLeft(2 * Math.PI * deltaX / this.rendererCanvas.offsetHeight * this.GlobeSettings.rotateSpeed);
+        this.orbitControls.rotateUp(2 * Math.PI * deltaY / this.rendererCanvas.offsetHeight * this.GlobeSettings.rotateSpeed);
+        this.orbitControls.update();
+        this.animateCamera(this.camera.position);
+    }
+
+    public static minimizeTiles(tileCacheArray: TileMap[]): ITileGapObject[] {
+        if (!tileCacheArray || !tileCacheArray.length) {
+            return [];
+        }
+
+        const result = [];
+        tileCacheArray.forEach(obj => {
+            let rank: number = 0, lastKey: number = Number(Object.keys(obj)[0]);
+            let gap: number[] = [lastKey];
+            const gaps = [];
+            for (const key in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                    rank = key.length;
+                    const convertedKey: number = Number(key);
+                    if (Math.abs(convertedKey - lastKey) > 1) {
+                        gap.push(lastKey);
+                        gaps.push(gap);
+                        gap = [convertedKey];
+                    }
+                    lastKey = convertedKey;
+                }
+            }
+            gap.push(lastKey);
+            gaps.push(gap);
+            const currentZoomTiles: ITileGapObject = {
+                gaps,
+                rank
+            };
+            result.push(currentZoomTiles);
+        });
+
+        return result;
+    }
+
+    public extendTiles(tileCacheData: string, language: string): Promise<TileMap[]> {
+        const result: TileMap[] = [];
+    
+        return new Promise<TileMap[]>((resolve, reject) => {
             if (!tileCacheData || !tileCacheData.length) {
-                deferred.resolve(result);
+                resolve(result);
                 return;
             }
 
-            let tileCacheArray: ITileGapObject[] = JSON.parse(tileCacheData);
-            if (!Array.isArray(tileCacheArray) || !tileCacheArray.length) {
-                deferred.resolve(result);
+            const tileCacheArray: ITileGapObject[] = JSON.parse(tileCacheData);
+            if (!tileCacheArray || !Array.isArray(tileCacheArray) || !tileCacheArray.length) {
+                resolve(result);
                 return;
             }
 
-            GlobeMap.getBingMapsServerMetadata()
+            this.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
-                    let urlTemplate = metadata.imageUrl.replace("{culture}", language);
+                    const urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     const subdomains = metadata.imageUrlSubdomains;
 
-                    tileCacheArray.forEach((zoomArray: ITileGapObject, level) => {
+                    tileCacheArray?.forEach((zoomArray: ITileGapObject, level) => {
                         const rank: number = zoomArray.rank;
                         const gaps = zoomArray.gaps;
-                        let resultForCurrentZoom = {};
-                        gaps.forEach((gap: number[]) => {
-                            for (let gapItem = _.first(gap); gapItem <= _.last(gap); gapItem++) {
+                        const resultForCurrentZoom = {};
+                        gaps?.forEach((gap: number[]) => {
+                            for (let gapItem = first(gap); gapItem <= last(gap); gapItem++) {
                                 let stringGap: string = gapItem.toString();
                                 while (stringGap.length < rank) {
                                     stringGap = `0${stringGap}`;
@@ -786,614 +756,670 @@ module powerbi.extensibility.visual {
                         result.push(resultForCurrentZoom);
                     });
 
-                    deferred.resolve(result);
+                    resolve(result);
+                })
+                .catch(() => {
+                    reject("Bing Map service metadata loading error");
                 });
-        }
+        });
+    }
 
-        private loadFromBing(language: string, deferred: JQueryDeferred<{}>): JQueryPromise<void> {
-            let tileCacheValue = [];
-            return GlobeMap.getBingMapsServerMetadata()
+    private loadFromBing(language: string): Promise<TileMap[]> {
+        const tileCacheValue: TileMap[] = [];
+
+        return this.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
-
-                    let urlTemplate = metadata.imageUrl.replace("{culture}", language);
+                    const urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                        let levelTiles = GlobeMap.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
+                        const levelTiles = GlobeMap.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
                         tileCacheValue.push(levelTiles);
                     }
 
                     const minimizedTileCacheData: string = JSON.stringify(GlobeMap.minimizeTiles(tileCacheValue));
                     this.localStorageService.set(`${GlobeMap.TILE_STORAGE_KEY}_${language}`, minimizedTileCacheData);
 
-                    deferred.resolve(tileCacheValue);
-                }).fail(() => {
-                    deferred.resolve(tileCacheValue);
+                    return tileCacheValue;
+                }).catch(() => {                    
+                    return tileCacheValue;
                 });
-        }
+    }
 
-        private getTilesData(language: string): JQueryPromise<{}> {
-            let deferred = $.Deferred();
-            let tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
+    private getTilesData(language: string): Promise<Record<string, unknown>[] | TileMap[]> {
+        return new Promise<Record<string, unknown>[] | TileMap[]>((resolve, reject) => {
+            const tileCachePromise: IPromise<string> = this.localStorageService.get(`${GlobeMap.TILE_STORAGE_KEY}_${language}`);
 
-            tileCachePromise.then(data => GlobeMap.extendTiles(data, this.currentLanguage, deferred))
-                .catch(() => this.loadFromBing(language, deferred));
-
-            return deferred;
-        }
-
-        private initTextures(): JQueryPromise<{}> {
-            this.mapTextures = [];
-            let deferred = $.Deferred();
-
-            this.getTilesData(this.currentLanguage).then((tiles: TileMap[]) => {
-                for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
-                    this.mapTextures.push(this.createTexture(level, tiles[level - GlobeMap.initialResolutionLevel]));
-                }
-                deferred.resolve("success");
-            });
-
-            return deferred;
-        }
-
-
-
-        private static getBingMapsServerMetadata(): JQueryPromise<BingResourceMetadata> {
-            return $.ajax(GlobeMap.metadataUrl)
-                .then((data: BingMetadata) => {
-                    if (data.resourceSets.length) {
-                        let resourceSet = data.resourceSets[0];
-                        if (resourceSet && resourceSet.resources.length) {
-                            return resourceSet.resources[0];
+            tileCachePromise.then(data => {
+                this.extendTiles(data, this.currentLanguage)
+                    .then((tilesData) => {
+                        if (!tilesData || tilesData.length === 0) {
+                            throw "No tiles in cache, will try to load from Bing"; 
                         }
+                        resolve(tilesData);
+                    })
+                    .catch(() => {
+                        this.loadFromBing(language)
+                            .then((bingData) => resolve(bingData))
+                            .catch((e) => reject(`Tiles loading from Bing error: ${e}`));
+                    })
+            }).catch(() => {
+                this.loadFromBing(language)
+                    .then((bingData) => resolve(bingData))
+                    .catch((e) => reject(`Tiles loading from Bing error: ${e}`));
+            });
+        })
+    }
+
+    private initTextures(): Promise<string> {
+        this.mapTextures = [];
+        
+        return this.getTilesData(this.currentLanguage)
+                .then((tiles: TileMap[]) => {                    
+                    for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
+                        this.mapTextures.push(this.createTexture(level, tiles[level - GlobeMap.initialResolutionLevel]));
                     }
-                    throw "Bing Maps API response was changed. Please update code for new version";
+                    return "success";
                 })
-                .fail((error: JQueryPromise<{}>) => {
-                    console.error(JSON.stringify(error));
-                    return GlobeMap.reserveBindMapsMetadata;
+                .catch(() => {                    
+                    return "Get tiles error" ;
                 });
-        }
 
-        /**
-         * Generate Bing tile object by map level
-         * @see https://msdn.microsoft.com/en-us/library/bb259689.aspx
-         * @private
-         * @param {number} level map lavel
-         * @param {string} urlTemplate url template
-         * @example https://ecn.{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=5691&mkt={culture}&shading=hill
-         * @param {string[]} subdomains list of subdomauns
-         * @returns {{ [quadKey: string]: string }} Object <quadKey> : <image url>
-         * @memberOf GlobeMap
-         */
-        private static generateQuadsByLevel(level: number, urlTemplate: string, subdomains: string[]): TileMap {
-            const result: TileMap = {};
-            let currentSubDomainNumber: number = 0;
-            const generateQuard = (currentLevel: number = 0, quadKey: string = ""): void => {
-                if (currentLevel < level) {
-                    for (let i = 0; i < GlobeMap.CountTilesPerSegment; i++) {
-                        generateQuard(currentLevel + 1, `${quadKey}${i}`);
-                    }
-                } else if (currentLevel === level) {
-                    result[quadKey] = urlTemplate.replace("{subdomain}", subdomains[currentSubDomainNumber]).replace("{quadkey}", quadKey);
-                    currentSubDomainNumber++;
-                    currentSubDomainNumber = currentSubDomainNumber < subdomains.length ? currentSubDomainNumber : 0;
+    }
+
+    private async getBingMapsServerMetadata(): Promise<BingResourceMetadata> {
+        let metaData: BingMetadata = {} as BingMetadata;
+
+        try {
+            const response = await fetch(GlobeMap.metadataUrl);
+            metaData = await response.json();
+            if (metaData.resourceSets.length) {
+                const resourceSet = metaData.resourceSets[0];
+                
+                if (resourceSet && resourceSet.resources.length) {
+                    return resourceSet.resources[0];
                 }
-            };
-            generateQuard();
-            return result;
+            }
+            throw "Bing Maps API response was changed. Please update code for new version";
         }
+        catch(e) {
+            console.error(`Error occured while retrieving metadata from Bing: ${e}`);  
+            return GlobeMap.reserveBindMapsMetadata;   
+        } 
+    }
 
-        private createTexture(level: number, tiles: TileMap): THREE.Texture {
-            const numSegments: number = Math.pow(2, level);
-            const canvasSize: number = GlobeMap.tileSize * numSegments;
-            const canvas: HTMLCanvasElement = document.createElement("canvas");
-            canvas.width = canvasSize;
-            canvas.height = canvasSize;
-            const texture: THREE.Texture = new THREE.Texture(canvas);
+    /**
+     * Generate Bing tile object by map level
+     * @see https://msdn.microsoft.com/en-us/library/bb259689.aspx
+     * @private
+     * @param {number} level map lavel
+     * @param {string} urlTemplate url template
+     * @example https://ecn.{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=5691&mkt={culture}&shading=hill
+     * @param {string[]} subdomains list of subdomauns
+     * @returns {{ [quadKey: string]: string }} Object <quadKey> : <image url>
+     * @memberOf GlobeMap
+     */
+    private static generateQuadsByLevel(level: number, urlTemplate: string, subdomains: string[]): TileMap {
+        const result: TileMap = {};
+        let currentSubDomainNumber: number = 0;
+        const generateQuard = (currentLevel: number = 0, quadKey: string = ""): void => {
+            if (currentLevel < level) {
+                for (let i = 0; i < GlobeMap.CountTilesPerSegment; i++) {
+                    generateQuard(currentLevel + 1, `${quadKey}${i}`);
+                }
+            } else if (currentLevel === level) {
+                result[quadKey] = urlTemplate.replace("{subdomain}", subdomains[currentSubDomainNumber]).replace("{quadkey}", quadKey);
+                currentSubDomainNumber++;
+                currentSubDomainNumber = currentSubDomainNumber < subdomains.length ? currentSubDomainNumber : 0;
+            }
+        };
+        generateQuard();
+        return result;
+    }
+
+    private createTexture(level: number, tiles: TileMap): THREE.Texture {
+        const numSegments: number = Math.pow(2, level);
+        const canvasSize: number = GlobeMap.tileSize * numSegments;
+        const canvas: HTMLCanvasElement = document.createElement("canvas");
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+        const texture: THREE.Texture = new THREE.Texture(canvas);
+        texture.needsUpdate = true;
+        this.loadTiles(canvas, tiles, () => {
             texture.needsUpdate = true;
-            this.loadTiles(canvas, tiles, () => {
-                texture.needsUpdate = true;
-                this.needsRender = true;
-            });
-            return texture;
-        }
-
-        /**
-         * Load tiles of Bing Maps
-         * @param jCanvas jQuery convas object
-         * @param tiles map of tiles
-         * @param successCallback call this function when all tiles of the map are successfully loaded
-         */
-        private loadTiles(canvasEl: HTMLCanvasElement, tiles: TileMap, successCallback: Function): void {
-            let tilesLoaded: number = 0;
-            const countTiles: number = Object.keys(tiles).length;
-            const canvasContext: CanvasRenderingContext2D = canvasEl.getContext("2d");
-            for (let quadKey in tiles) {
-                if (tiles.hasOwnProperty(quadKey)) {
-                    const coords: ICanvasCoordinate = this.getCoordByQuadKey(quadKey);
-                    const tile: HTMLImageElement = new Image();
-                    tile.onload = (event: Event) => {
-                        tilesLoaded++;
-                        canvasContext.drawImage(tile, coords.x * GlobeMap.tileSize, coords.y * GlobeMap.tileSize, GlobeMap.tileSize, GlobeMap.tileSize);
-                        if (tilesLoaded === countTiles) {
-                            successCallback();
-                        }
-                    };
-                    // So the canvas doesn't get tainted
-                    tile.crossOrigin = "";
-                    tile.src = tiles[quadKey];
-                }
-            }
-        }
-
-        /**
-         * Get coordinates by Bing Maps quard name
-         * @private
-         * @param {string} quard Bing Maps quard name
-         * @returns {CanvasCoordinate} image coordinate
-         * @memberOf GlobeMap
-         */
-        private getCoordByQuadKey(quard: string): ICanvasCoordinate {
-            const last: number = quard.length - 1;
-            let x: number = 0;
-            let y: number = 0;
-
-            for (let i: number = last; i >= 0; i--) {
-                const chr: string = quard.charAt(i);
-                const pow: number = Math.pow(2, last - i);
-                switch (chr) {
-                    case "1": x += pow; break;
-                    case "2": y += pow; break;
-                    case "3": x += pow; y += pow; break;
-                }
-            }
-
-            return { x: x, y: y };
-        }
-
-        private initHeatmap() {
-            let heatmap: GlobeMapHeatMapClass;
-            try {
-                heatmap = this.heatmap = new WebGLHeatmap({ width: this.GlobeSettings.heatmapSize, height: this.GlobeSettings.heatmapSize, intensityToAlpha: true });
-            } catch (e) {
-                // IE & Edge will throw an error about texImage2D, we need to ignore it
-                console.error(e);
-            }
-
-            // canvas contents will be used for a texture
-            const texture: THREE.Texture = this.heatTexture = new THREE.Texture(heatmap.canvas);
-            texture.needsUpdate = true;
-
-            const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
-            const geometry: THREE.SphereGeometry = new THREE.SphereGeometry(this.GlobeSettings.earthRadius + 0.01, this.GlobeSettings.earthSegments, this.GlobeSettings.earthSegments);
-            const mesh: THREE.Mesh = new THREE.Mesh(geometry, material);
-
-            window["heatmap"] = heatmap;
-            window["heatmapTexture"] = texture;
-
-            this.scene.add(mesh);
-        }
-
-        private setEarthTexture(): void {
-            // get distance as arbitrary value from 0-1
-            if (!this.camera) {
-                return;
-            }
-            const maxDistance: number = this.GlobeSettings.cameraRadius - this.GlobeSettings.earthRadius;
-            const distance: number = (this.camera.position.length() - this.GlobeSettings.earthRadius) / maxDistance;
-            let texture: THREE.Texture = this.mapTextures[0];
-            for (let divider: number = GlobeMap.initialResolutionLevel; divider <= GlobeMap.maxResolutionLevel; divider++) {
-                if (distance <= divider / GlobeMap.maxResolutionLevel) {
-                    texture = this.mapTextures[GlobeMap.maxResolutionLevel - divider];
-                    break;
-                }
-            }
-
-            if (this.earth.material.map !== texture) {
-                this.earth.material.map = texture;
-            }
-
-            if (this.selectedBar) {
-                this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed;
-            } else {
-                this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed * distance;
-            }
-        }
-
-        public update(options: VisualUpdateOptions): void {
-            if (options.dataViews === undefined || options.dataViews === null) {
-                return;
-            }
-            this.layout.viewport = options.viewport;
-            this.root.css(this.layout.viewportIn);
-            this.controlContainer.setAttribute("style",
-                `display: ${this.layout.viewportIn.height > GlobeMap.ZoomControlSettings.height
-                    && this.layout.viewportIn.width > GlobeMap.ZoomControlSettings.width
-                    ? null : "none"}`);
-
-            if (this.layout.viewportChanged) {
-                if (this.camera && this.renderer) {
-                    this.camera.aspect = this.layout.viewportIn.width / this.layout.viewportIn.height;
-                    this.camera.updateProjectionMatrix();
-                    this.renderer.setSize(this.layout.viewportIn.width, this.layout.viewportIn.height);
-                    this.renderer.render(this.scene, this.camera);
-                }
-            }
-
-            if (options.type === GlobeMap.ChangeDataType || options.type === GlobeMap.ChangeAllType) {
-                this.cleanHeatAndBar();
-                const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
-                if (data) {
-                    this.data = data;
-                    this.renderMagic();
-                }
-            }
-        }
-
-        public cleanHeatAndBar(): void {
-            this.heatmap.clear();
-            this.heatTexture.needsUpdate = true;
-            if (this.barsGroup) {
-                this.scene.remove(this.barsGroup);
-            }
-        }
-
-        private renderMagic(): void {
-            if (!this.data) {
-                return;
-            }
-            this.data.dataPoints.forEach(d => this.geocodeRenderDatum(d)); // all coordinates (latitude/longitude) will be gained here
-            this.data.dataPoints.forEach((d) => {
-                return d.location = this.globeMapLocationCache[d.placeKey] || d.location;
-            });
-            if (!this.readyToRender) {
-                this.defferedRender();
-                return;
-            }
-
-            this.updateBarsAndHeatMapByZoom();
-
-            if (this.barsGroup.children.length > 0 && this.camera && (this.initialLocationsLength !== this.barsGroup.children.length || this.barsGroup.children.length === 1)) {
-                this.averageBarVector.multiplyScalar(1 / this.barsGroup.children.length);
-                if (this.locationsLoaded === this.locationsToLoad) {
-                    this.initialLocationsLength = this.barsGroup.children.length;
-
-                    const maxDistance: number = this.GlobeSettings.cameraRadius - this.GlobeSettings.earthRadius;
-                    const distance: number = (this.camera.position.length() - this.GlobeSettings.earthRadius) / maxDistance;
-
-                    let angleRate: number = 12;
-
-                    if (distance < 0.5) {
-                        angleRate = 36;
-                    } else if (distance < 0.25) {
-                        angleRate = 60;
-                    } else if (distance < 0.15) {
-                        angleRate = 0;
-                    }
-
-                    if (angleRate > 0) {
-                        const axisY = new THREE.Vector3(0, 1, 0);
-                        const axisZ = new THREE.Vector3(0, 0, 1);
-                        const angle = Math.PI / angleRate;
-                        this.averageBarVector.applyAxisAngle(axisY, angle);
-                        this.averageBarVector.applyAxisAngle(axisZ, angle);
-                    }
-
-                    this.isFirstLoad ? this.setCameraPosition(this.averageBarVector) : this.animateCamera(this.averageBarVector);
-                }
-            }
-
-            this.heatmap.blur();
-            this.heatTexture.needsUpdate = true;
             this.needsRender = true;
+        });
+        return texture;
+    }
 
-            if (this.isFirstLoad === true) {
-                this.isFirstLoad = false;
+    /**
+     * Load tiles of Bing Maps
+     * @param canvasEl HTML canvas object
+     * @param tiles map of tiles
+     * @param successCallback call this function when all tiles of the map are successfully loaded
+     */
+    private loadTiles(canvasEl: HTMLCanvasElement, tiles: TileMap, successCallback: () => void): void {
+        let tilesLoaded: number = 0;
+        const countTiles: number = tiles && Object.keys(tiles).length;
+        const canvasContext: CanvasRenderingContext2D = canvasEl.getContext("2d");
+        
+        for (const quadKey in tiles) {
+            if (Object.prototype.hasOwnProperty.call(tiles, quadKey)) {
+                const coords: ICanvasCoordinate = this.getCoordByQuadKey(quadKey);
+                const tile: HTMLImageElement = new Image();
+                tile.onload = (event: Event) => {
+                    tilesLoaded++;
+                    canvasContext.drawImage(tile, coords.x * GlobeMap.tileSize, coords.y * GlobeMap.tileSize, GlobeMap.tileSize, GlobeMap.tileSize);
+                    if (tilesLoaded === countTiles) {
+                        successCallback();
+                    }
+                };
+                // So the canvas doesn't get tainted
+                tile.crossOrigin = "";
+                tile.src = tiles[quadKey];
+            }
+        }
+    }
+
+    /**
+     * Get coordinates by Bing Maps quard name
+     * @private
+     * @param {string} quard Bing Maps quard name
+     * @returns {CanvasCoordinate} image coordinate
+     * @memberOf GlobeMap
+     */
+    private getCoordByQuadKey(quard: string): ICanvasCoordinate {
+        const last: number = quard.length - 1;
+        let x: number = 0;
+        let y: number = 0;
+
+        for (let i: number = last; i >= 0; i--) {
+            const chr: string = quard.charAt(i);
+            const pow: number = Math.pow(2, last - i);
+            switch (chr) {
+                case "1": x += pow; break;
+                case "2": y += pow; break;
+                case "3": x += pow; y += pow; break;
             }
         }
 
-        private getBarMaterialByIndex(index: number): THREE.MeshPhongMaterial {
-            return new THREE.MeshPhongMaterial({ color: this.data.seriesDataPoints[index] ? this.data.seriesDataPoints[index].color : this.data.seriesDataPoints[0].color });
+        return { x: x, y: y };
+    }
+
+    private initHeatmap() {
+        let heatmap: GlobeMapHeatMapClass;
+        try {
+            heatmap = this.heatmap = new WebGLHeatmap({ width: this.GlobeSettings.heatmapSize, height: this.GlobeSettings.heatmapSize, intensityToAlpha: true });
+        } catch (e) {
+            // IE & Edge will throw an error about texImage2D, we need to ignore it
+            console.error(e);
         }
 
-        private getToolTipDataForSeries(toolTipData, dataPointToolTip): {} {
-            const result: { height } = jQuery.extend(true, {
-                series: { displayName: dataPointToolTip.displayName, value: dataPointToolTip.value }
-            }, toolTipData);
-            result.height.value = dataPointToolTip.dataPointValue;
-            return result;
-        }
+        // canvas contents will be used for a texture
+        const texture: THREE.Texture = this.heatTexture = new THREE.Texture(heatmap.canvas);
+        texture.needsUpdate = true;
 
-        private geocodeRenderDatum(renderDatum: GlobeMapDataPoint) {
-            // zero valued locations should be updated
-            if ((renderDatum.location && renderDatum.location.longitude !== 0 && renderDatum.location.latitude !== 0) || this.globeMapLocationCache[renderDatum.placeKey]) {
-                return;
+        const material: THREE.MeshBasicMaterial = new THREE.MeshBasicMaterial({ map: texture, transparent: true });
+        const geometry: THREE.SphereGeometry = new THREE.SphereGeometry(this.GlobeSettings.earthRadius + 0.01, this.GlobeSettings.earthSegments, this.GlobeSettings.earthSegments);
+        const mesh: THREE.Mesh = new THREE.Mesh(geometry, material);
+
+        window["heatmap"] = heatmap;
+        window["heatmapTexture"] = texture;
+
+        this.scene.add(mesh);
+    }
+
+    private setEarthTexture(): void {
+        // get distance as arbitrary value from 0-1
+        if (!this.camera) {
+            return;
+        }
+        const maxDistance: number = this.GlobeSettings.cameraRadius - this.GlobeSettings.earthRadius;
+        const distance: number = (this.camera.position.length() - this.GlobeSettings.earthRadius) / maxDistance;
+        let texture: THREE.Texture = this.mapTextures[0];
+        for (let divider: number = GlobeMap.initialResolutionLevel; divider <= GlobeMap.maxResolutionLevel; divider++) {
+            if (distance <= divider / GlobeMap.maxResolutionLevel) {
+                texture = this.mapTextures[GlobeMap.maxResolutionLevel - divider];
+                break;
             }
+        }
 
-            const location: ILocation = { latitude: null, longitude: null };
-            let geocoder: IGeocoder;
-            this.globeMapLocationCache[renderDatum.placeKey] = location; // store empty object so we don't send AJAX request again
-            this.locationsToLoad++;
+        if (this.earth.material.map !== texture) {
+            this.earth.material.map = texture;
+        }
 
-            geocoder = powerbi.extensibility.geocoder.createGeocoder(this.localStorageService);
-            if (geocoder) {
-                (geocoder.geocode(
-                    renderDatum.place,
-                    renderDatum.locationType) as ExtendedPromise<IGeocodeCoordinate>).always((l: ILocation) => {
-                        // we use always because we want to cache unknown values.
-                        // No point asking bing again and again when it tells us it doesn't know about a location
-                        if (l) {
-                            location.latitude = l.latitude;
-                            location.longitude = l.longitude;
+        if (this.selectedBar) {
+            this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed;
+        } else {
+            this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed * distance;
+        }
+    }
+
+    public update(options: VisualUpdateOptions) {     
+        this.events.renderingStarted(options);
+   
+        if (options.dataViews === undefined || options.dataViews === null) {
+            return;
+        }
+        this.layout.viewport = options.viewport;
+
+        this.root.style.height = this.layout.viewportIn.height.toString();
+        this.root.style.width = this.layout.viewportIn.width.toString();
+
+        this.formattingServiceModel = this.formattingSettingsService.populateFormattingSettingsModel(GlobeMapSettingsModel, options.dataViews)
+
+        this.controlContainer.setAttribute("style",
+            `display: ${this.layout.viewportIn.height > GlobeMap.ZoomControlSettings.height
+                && this.layout.viewportIn.width > GlobeMap.ZoomControlSettings.width
+                ? null : "none"}`);
+
+        if (this.layout.viewportChanged) {
+            if (this.camera && this.renderer) {
+                this.camera.aspect = this.layout.viewportIn.width / this.layout.viewportIn.height;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(this.layout.viewportIn.width, this.layout.viewportIn.height);
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+
+        if (options.type & VisualUpdateType.Data) {
+            this.cleanHeatAndBar();
+            const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
+            if (data) {
+                this.data = data;
+
+                const locationsNeedToBeLoaded: ILocationKeyDictionary = {};
+                data.dataPoints.forEach((d: GlobeMapDataPoint) => {
+                    if (!d.location && d.place)
+                        locationsNeedToBeLoaded[d.place] = {
+                            place: d.place, locationType: d.locationType
+                        };
+                });
+
+                this.cacheManager.loadCoordinates(locationsNeedToBeLoaded)
+                    .then((coordinates: ILocationDictionary) => {
+                        this.data.dataPoints.forEach((d: GlobeMapDataPoint) => {
+                            d.location = coordinates[d.place] || d.location;
+                        });
+
+                        this.render();
+                        this.events.renderingFinished(options);
+
+                        if (Object.keys(coordinates).length > 0) {
+                            this.cacheManager.saveCoordinates(coordinates);
                         }
 
-                        this.locationsLoaded++;
-
-                        this.defferedRender();
+                    }).catch((e) => {
+                        console.error("Error occured while loading coordinates", e);
+                        this.events.renderingFailed(options);
                     });
             }
         }
+    }
 
-        private defferedRender() {
-            if (!this.deferredRenderTimerId) {
-                // tslint:disable-next-line
-                this.deferredRenderTimerId = <any>setTimeout(() => {
-                    this.deferredRenderTimerId = null;
-                    this.renderMagic();
-                }, 500);
+    public cleanHeatAndBar(): void {
+        this.heatmap.clear();
+        this.heatTexture.needsUpdate = true;
+        if (this.barsGroup) {
+            this.scene.remove(this.barsGroup);
+        }
+    }
+
+    private render(): void {
+        if (!this.data) {
+            return;
+        }
+
+        if (!this.readyToRender) {
+            this.defferedRender();
+            return;
+        }
+
+        this.updateBarsAndHeatMapByZoom();
+
+        if (this.barsGroup.children.length > 0 && this.camera && (this.initialLocationsLength !== this.barsGroup.children.length || this.barsGroup.children.length === 1)) {
+            this.averageBarVector.multiplyScalar(1 / this.barsGroup.children.length);
+            if (this.locationsLoaded === this.locationsToLoad) {
+                this.initialLocationsLength = this.barsGroup.children.length;
+
+                const maxDistance: number = this.GlobeSettings.cameraRadius - this.GlobeSettings.earthRadius;
+                const distance: number = (this.camera.position.length() - this.GlobeSettings.earthRadius) / maxDistance;
+
+                let angleRate: number = 12;
+
+                if (distance < 0.5) {
+                    angleRate = 36;
+                } else if (distance < 0.25) {
+                    angleRate = 60;
+                } else if (distance < 0.15) {
+                    angleRate = 0;
+                }
+
+                if (angleRate > 0) {
+                    const axisY = new THREE.Vector3(0, 1, 0);
+                    const axisZ = new THREE.Vector3(0, 0, 1);
+                    const angle = Math.PI / angleRate;
+                    this.averageBarVector.applyAxisAngle(axisY, angle);
+                    this.averageBarVector.applyAxisAngle(axisZ, angle);
+                }
+
+                this.isFirstLoad ? this.setCameraPosition(this.averageBarVector) : this.animateCamera(this.averageBarVector);
             }
         }
 
-        private initRayCaster() {
-            this.rayCaster = new THREE.Raycaster();
+        this.heatmap.blur();
+        this.heatTexture.needsUpdate = true;
+        this.needsRender = true;
 
-            const element: HTMLElement = this.root.get(0);
-            let mouseDownTime: number;
-            const elementStyle: CSSStyleDeclaration = window.getComputedStyle(element);
+        if (this.isFirstLoad === true) {
+            this.isFirstLoad = false;
+        }
+    }
 
-            $(this.rendererCanvas).on("mousemove", (event: JQueryEventObject) => {
-                const elementViewHeight: number = element.offsetHeight - element.offsetTop
-                    - parseFloat(elementStyle.paddingTop)
-                    - parseFloat(elementStyle.paddingBottom);
+    private getBarMaterialByIndex(index: number): THREE.MeshPhongMaterial {
+        return new THREE.MeshPhongMaterial({ color: this.data.seriesDataPoints[index] ? this.data.seriesDataPoints[index].color : this.data.seriesDataPoints[0].color });
+    }
 
-                const elementViewWidth: number = element.offsetWidth - element.offsetLeft
-                    - parseFloat(elementStyle.paddingLeft)
-                    - parseFloat(elementStyle.paddingRight);
+    private getToolTipDataForSeries(toolTipData, dataPointToolTip): { height } {
+        const result: { height } = Object.assign({}, {
+            series: { displayName: dataPointToolTip.displayName, value: dataPointToolTip.value }
+        }, toolTipData);
+        result.height.value = dataPointToolTip.dataPointValue;
+        return result;
+    }
 
-                const fractionalPositionX: number = event.offsetX / elementViewWidth;
-                const fractionalPositionY: number = event.offsetY / elementViewHeight;
+    private defferedRender() {
+        if (!this.deferredRenderTimerId) {
+            // tslint:disable-next-line
+            this.deferredRenderTimerId = <any>setTimeout(() => {
+                this.deferredRenderTimerId = null;
+                this.render();
+            }, 500);
+        }
+    }
 
-                this.mousePos = new THREE.Vector2(event.clientX, event.clientY);
-
-                // get coordinates in -1 to +1 space
-                this.mousePosNormalized = new THREE.Vector2(fractionalPositionX * 2 - 1, -fractionalPositionY * 2 + 1);
-
-                this.needsRender = true;
-            }).on("mousedown", (event: JQueryEventObject) => {
-                cancelAnimationFrame(this.cameraAnimationFrameId);
-                mouseDownTime = Date.now();
-            }).on("mouseup", (event: JQueryEventObject) => {
-
-                // Debounce slow clicks
-                if ((Date.now() - mouseDownTime) > this.GlobeSettings.clickInterval) {
-                    return;
-                }
-
-                if (this.hoveredBar && event.shiftKey) {
-                    this.selectedBar = this.hoveredBar;
-                    this.animateCamera(this.selectedBar.position, () => {
-                        if (!this.selectedBar) return;
-                        this.orbitControls.target.copy(this.selectedBar.position.clone().normalize().multiplyScalar(this.GlobeSettings.earthRadius));
-                        this.orbitControls.minDistance = 1;
-                    });
-                } else {
-                    if (this.selectedBar) {
-                        this.animateCamera(this.selectedBar.position, () => {
-                            this.orbitControls.target.set(0, 0, 0);
-                            this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
-                        });
-                        this.selectedBar = null;
-                    }
-                }
-            }).on("mousewheel DOMMouseScroll", (e: { originalEvent }) => {
-                this.needsRender = true;
-                if (this.orbitControls.enabled && this.orbitControls.enableZoom) {
-                    cancelAnimationFrame(this.cameraAnimationFrameId);
-                    this.heatTexture.needsUpdate = true;
-                    let event: { wheelDelta, detail } = e.originalEvent;
-                    const delta: number = event.wheelDelta > 0 || event.detail < 0 ? 1 : -1;
-                    this.updateBarsAndHeatMapByZoom(delta);
-                }
+    private handleContextMenu = () => {
+        this.rootSelection.on('contextmenu', (event) => {
+            const datapoint = d3Select(event.target).datum() as { identity: ISelectionId };
+            this.selectionManager.showContextMenu(datapoint ? datapoint.identity : {}, {
+                x: event.clientX,
+                y: event.clientY
             });
+            event.preventDefault();
+        });
+    }
+
+    private handleMouseMove = (event: MouseEvent) => {
+        const element = this.root;
+        const elementStyle: CSSStyleDeclaration = window.getComputedStyle(element);
+
+        const elementViewHeight: number = element.offsetHeight - element.offsetTop
+            - parseFloat(elementStyle.paddingTop)
+            - parseFloat(elementStyle.paddingBottom);
+    
+        const elementViewWidth: number = element.offsetWidth - element.offsetLeft
+            - parseFloat(elementStyle.paddingLeft)
+            - parseFloat(elementStyle.paddingRight);
+    
+        const fractionalPositionX: number = event.offsetX / elementViewWidth;
+        const fractionalPositionY: number = event.offsetY / elementViewHeight;
+    
+        this.mousePos = new THREE.Vector2(event.clientX, event.clientY);
+    
+        // get coordinates in -1 to +1 space
+        this.mousePosNormalized = new THREE.Vector2(fractionalPositionX * 2 - 1, -fractionalPositionY * 2 + 1);
+    
+        this.needsRender = true;
+    }
+
+    private handleMouseDown = (event: MouseEvent) => {
+        cancelAnimationFrame(this.cameraAnimationFrameId);
+        this.mouseDownTime = Date.now();
+    };
+
+    private handleMouseUp = (event: MouseEvent) => {
+        // Debounce slow clicks
+        if ((Date.now() - this.mouseDownTime) > this.GlobeSettings.clickInterval) {
+            return;
         }
 
-        private intersectBars() {
-            if (!this.rayCaster
-                || !this.barsGroup
-                || !this.mousePosNormalized
-                || !this.mousePos) {
+        if (this.hoveredBar && event.shiftKey) {
+            this.selectedBar = this.hoveredBar;
+            this.animateCamera(this.selectedBar.position, () => {
+                if (!this.selectedBar) return;
+                this.orbitControls.target.copy(this.selectedBar.position.clone().normalize().multiplyScalar(this.GlobeSettings.earthRadius));
+                this.orbitControls.minDistance = 1;
+            });
+        } else {
+            if (this.selectedBar) {
+                this.animateCamera(this.selectedBar.position, () => {
+                    this.orbitControls.target.set(0, 0, 0);
+                    this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
+                });
+                this.selectedBar = null;
+            }
+        }
+    }
 
+    private handleWheel = (e: WheelEvent) => {
+        e.preventDefault();
+        this.needsRender = true;
+        if (this.orbitControls.enabled && this.orbitControls.enableZoom) {
+            cancelAnimationFrame(this.cameraAnimationFrameId);
+            this.heatTexture.needsUpdate = true;
+            const event: { deltaY, detail } = e;
+            const delta: number = event.deltaY < 0 || event.detail < 0 ? 1 : -1;
+            this.updateBarsAndHeatMapByZoom(delta);
+        }
+    }
+
+    private initRayCaster() {
+        this.rayCaster = new THREE.Raycaster();
+
+        this.rendererCanvas.addEventListener("pointermove", this.handleMouseMove);
+        
+        this.rendererCanvas.addEventListener("pointerdown", this.handleMouseDown);
+        
+        this.rendererCanvas.addEventListener("pointerup", this.handleMouseUp);
+        
+        this.rendererCanvas.addEventListener("wheel", this.handleWheel, { passive: false });
+    }
+
+    private intersectBars() {
+        if (!this.rayCaster
+            || !this.barsGroup
+            || !this.mousePosNormalized
+            || !this.mousePos) {
+
+            return;
+        }
+
+        const rayCaster: THREE.Raycaster = this.rayCaster;
+
+        rayCaster.setFromCamera(this.mousePosNormalized, this.camera);
+        const intersects: THREE.Intersection[] = rayCaster.intersectObjects(this.barsGroup.children);
+
+        if (intersects && intersects.length > 0) {
+            const object: IGlobeMapObject3DWithToolTipData = <IGlobeMapObject3DWithToolTipData>intersects[0].object;
+
+            if (!object || !(object).toolTipData) {
                 return;
             }
 
-            const rayCaster: THREE.Raycaster = this.rayCaster;
+            const toolTipData: { location, longitude, latitude, series, height, heat } = (object).toolTipData;
+            const toolTipItems: VisualTooltipDataItem[] = [];
 
-            rayCaster.setFromCamera(this.mousePosNormalized, this.camera);
-            const intersects: THREE.Intersection[] = rayCaster.intersectObjects(this.barsGroup.children);
-
-            if (intersects && intersects.length > 0) {
-                const object: IGlobeMapObject3DWithToolTipData = <IGlobeMapObject3DWithToolTipData>intersects[0].object;
-
-                if (!object || !(object).toolTipData) {
-                    return;
-                }
-
-                const toolTipData: { location, longitude, latitude, series, height, heat } = (object).toolTipData;
-                const toolTipItems: VisualTooltipDataItem[] = [];
-
-                if (toolTipData.location.displayName) {
-                    toolTipItems.push(toolTipData.location);
-                }
-
-                if (toolTipData.longitude.displayName) {
-                    toolTipItems.push(toolTipData.longitude);
-                }
-
-                if (toolTipData.latitude.displayName) {
-                    toolTipItems.push(toolTipData.latitude);
-                }
-
-                if (toolTipData.series) {
-                    toolTipItems.push(toolTipData.series);
-                }
-
-                if (toolTipData.height.displayName) {
-                    toolTipItems.push(toolTipData.height);
-                }
-
-                if (toolTipData.heat.displayName) {
-                    toolTipItems.push(toolTipData.heat);
-                }
-
-                this.hoveredBar = object;
-
-                const tooltipShowOptions: TooltipShowOptions = {
-                    coordinates: [
-                        this.mousePos.x,
-                        this.mousePos.y
-                    ],
-                    isTouchEvent: false,
-                    dataItems: toolTipItems,
-                    identities: []
-                };
-
-                this.visualHost.tooltipService.show(tooltipShowOptions);
-            } else {
-                this.hoveredBar = null;
-                this.hideTooltip();
+            if (toolTipData.location.displayName) {
+                toolTipItems.push(toolTipData.location);
             }
-        }
 
-        private hideTooltip(): void {
-            const tooltipHideOptions: TooltipHideOptions = {
-                immediately: true,
-                isTouchEvent: false
+            if (toolTipData.longitude.displayName) {
+                toolTipItems.push(toolTipData.longitude);
+            }
+
+            if (toolTipData.latitude.displayName) {
+                toolTipItems.push(toolTipData.latitude);
+            }
+
+            if (toolTipData.series) {
+                toolTipItems.push(toolTipData.series);
+            }
+
+            if (toolTipData.height.displayName) {
+                toolTipItems.push(toolTipData.height);
+            }
+
+            if (toolTipData.heat.displayName) {
+                toolTipItems.push(toolTipData.heat);
+            }
+
+            this.hoveredBar = object;
+
+            const tooltipShowOptions: TooltipShowOptions = {
+                coordinates: [
+                    this.mousePos.x,
+                    this.mousePos.y
+                ],
+                isTouchEvent: false,
+                dataItems: toolTipItems,
+                identities: []
             };
 
-            this.tooltipService.hide(tooltipHideOptions);
+            this.visualHost.tooltipService.show(tooltipShowOptions);
+        } else {
+            this.hoveredBar = null;
+            this.hideTooltip();
+        }
+    }
+
+    private hideTooltip(): void {
+        const tooltipHideOptions: TooltipHideOptions = {
+            immediately: true,
+            isTouchEvent: false
+        };
+
+        this.tooltipService.hide(tooltipHideOptions);
+    }
+
+    private setCameraPosition(to: THREE.Vector3) {
+        this.hideTooltip();
+
+        if (!this.camera) {
+            return;
         }
 
-        private setCameraPosition(to: THREE.Vector3) {
-            this.hideTooltip();
+        const endPos: THREE.Vector3 = to.clone().normalize();
+        const length: number = this.camera.position.length();
+        const pos: THREE.Vector3 = new THREE.Vector3()
+            .add(endPos.clone().multiplyScalar(2))
+            .normalize()
+            .multiplyScalar(length);
 
-            if (!this.camera) {
-                return;
+        this.camera.position.set(pos.x, pos.y, pos.z);
+    }
+
+    private animateCamera(to: THREE.Vector3, done?: () => void) {
+        this.hideTooltip();
+
+        if (!this.camera) {
+            return;
+        }
+
+        cancelAnimationFrame(this.cameraAnimationFrameId);
+        const startTime: number = Date.now();
+        const duration: number = this.GlobeSettings.cameraAnimDuration;
+        const endTime: number = startTime + duration;
+        const startPos: THREE.Vector3 = this.camera.position.clone().normalize();
+        const endPos: THREE.Vector3 = to.clone().normalize();
+        const length: number = this.camera.position.length();
+        const alpha: number = 2;
+        const beta: number = 1.9;
+        const easeInOutQuint = (t) => {
+            if (t < alpha) {
+                return beta * t * t * t * t * t;
             }
+            return 1 + beta * (--t) * t * t * t * t;
+        };
 
-            const endPos: THREE.Vector3 = to.clone().normalize();
-            const length: number = this.camera.position.length();
+        const onUpdate: FrameRequestCallback = () => {
+            const now: number = Date.now();
+            let t: number = (now - startTime) / duration;
+            if (t > alpha) {
+                t = alpha;
+            }
+            t = easeInOutQuint(t);
+
             const pos: THREE.Vector3 = new THREE.Vector3()
-                .add(endPos.clone().multiplyScalar(2))
+                .add(startPos.clone().multiplyScalar(alpha - t))
+                .add(endPos.clone().multiplyScalar(t))
                 .normalize()
                 .multiplyScalar(length);
 
             this.camera.position.set(pos.x, pos.y, pos.z);
+
+            if (now < endTime) {
+                this.cameraAnimationFrameId = requestAnimationFrame(onUpdate);
+            } else if (done) {
+                done();
+            }
+
+            this.needsRender = true;
+        };
+
+        this.cameraAnimationFrameId = requestAnimationFrame(onUpdate);
+    }
+
+    public destroy() {
+        cancelAnimationFrame(this.animationFrameId);
+        cancelAnimationFrame(this.cameraAnimationFrameId);
+        clearTimeout(this.deferredRenderTimerId);
+        this.renderLoopEnabled = false;
+        this.scene = null;
+        this.heatmap = null;
+        this.heatTexture = null;
+        this.camera = null;
+        if (this.renderer) {
+            const context = this.renderer.getContext();
+            if (context) {
+                const extension: { loseContext } = context.getExtension("WEBGL_lose_context");
+                if (extension) {
+                    extension.loseContext();
+                }
+                this.renderer.dispose();
+                this.renderer.forceContextLoss();
+            }
+            this.renderer.domElement = null;
+        }
+        this.renderer = null;
+        this.data = null;
+        this.barsGroup = null;
+        if (this.orbitControls) {
+            this.orbitControls.dispose();
         }
 
-        private animateCamera(to: THREE.Vector3, done?: Function) {
-            this.hideTooltip();
+        this.orbitControls = null;
 
-            if (!this.camera) {
-                return;
-            }
+        if (this.rendererCanvas) {
 
-            cancelAnimationFrame(this.cameraAnimationFrameId);
-            const startTime: number = Date.now();
-            const duration: number = this.GlobeSettings.cameraAnimDuration;
-            const endTime: number = startTime + duration;
-            const startPos: THREE.Vector3 = this.camera.position.clone().normalize();
-            const endPos: THREE.Vector3 = to.clone().normalize();
-            const length: number = this.camera.position.length();
-            const alpha: number = 2;
-            const beta: number = 1.9;
-            const easeInOutQuint = (t) => {
-                if (t < alpha) {
-                    return beta * t * t * t * t * t;
-                }
-                return 1 + beta * (--t) * t * t * t * t;
-            };
+            this.rendererCanvas.removeEventListener("pointermove", this.handleMouseMove); 
 
-            const onUpdate: FrameRequestCallback = () => {
-                const now: number = Date.now();
-                let t: number = (now - startTime) / duration;
-                if (t > alpha) {
-                    t = alpha;
-                }
-                t = easeInOutQuint(t);
+            this.rendererCanvas.removeEventListener("pointerdown", this.handleMouseDown); 
 
-                const pos: THREE.Vector3 = new THREE.Vector3()
-                    .add(startPos.clone().multiplyScalar(alpha - t))
-                    .add(endPos.clone().multiplyScalar(t))
-                    .normalize()
-                    .multiplyScalar(length);
+            this.rendererCanvas.removeEventListener("pointerup", this.handleMouseUp); 
 
-                this.camera.position.set(pos.x, pos.y, pos.z);
-
-                if (now < endTime) {
-                    this.cameraAnimationFrameId = requestAnimationFrame(onUpdate);
-                } else if (done) {
-                    done();
-                }
-
-                this.needsRender = true;
-            };
-
-            this.cameraAnimationFrameId = requestAnimationFrame(onUpdate);
+            this.rendererCanvas.removeEventListener("wheel", this.handleWheel);  
         }
 
-        public destroy() {
-            cancelAnimationFrame(this.animationFrameId);
-            cancelAnimationFrame(this.cameraAnimationFrameId);
-            clearTimeout(this.deferredRenderTimerId);
-            this.renderLoopEnabled = false;
-            this.scene = null;
-            this.heatmap = null;
-            this.heatTexture = null;
-            this.camera = null;
-            if (this.renderer) {
-                if (this.renderer.context) {
-                    const extension: { loseContext } = this.renderer.context.getExtension("WEBGL_lose_context");
-                    if (extension) {
-                        extension.loseContext();
-                    }
-                    this.renderer.context = null;
-                }
-                this.renderer.domElement = null;
-            }
-            this.renderer = null;
-            this.data = null;
-            this.barsGroup = null;
-            if (this.orbitControls) {
-                this.orbitControls.dispose();
-            }
+        this.rendererCanvas = null;
 
-            this.orbitControls = null;
-            if (this.rendererCanvas) {
-                $(this.rendererCanvas)
-                    .off("mousemove mouseup mousedown mousewheel DOMMouseScroll");
-            }
-
-            this.rendererCanvas = null;
-
-            if (this.root) {
-                this.root.empty();
-            }
-
-            this.hideTooltip();
+        if (this.root) {
+            this.root.replaceChildren();
         }
-        private static ZoomControlSettings = {
-            height: 145,
-            width: 145,
-            markup: `
+
+        this.hideTooltip();
+    }
+    private static ZoomControlSettings = {
+        height: 145,
+        width: 145,
+        markup: `
             <svg width="145" height="145" class="controls">
                 <g class="control js-control--move-up">
                     <circle cx="85" cy="20" r="17" />
@@ -1422,243 +1448,252 @@ module powerbi.extensibility.visual {
                 </g>
             </svg>
             `,
-            zoomStep: 1,
-            angleOfRotation: 5
-        };
-        private initZoomControl() {
-            this.controlContainer = document.createElement("div");
-            this.controlContainer.className = "controls-container";
-            this.controlContainer.appendChild(this.createControlElements());
-            this.root.append(this.controlContainer);
-            let allG = this.controlContainer.querySelectorAll("g");
+        zoomStep: 1,
+        angleOfRotation: 5
+    };
+    private initZoomControl() {
+        this.controlContainer = document.createElement("div");
+        this.controlContainer.className = "controls-container";
+        this.controlContainer.appendChild(this.createControlElements());
+        this.root.append(this.controlContainer);
+        const allG = this.controlContainer.querySelectorAll("g");
 
-            for (let i = 0; i < allG.length; ++i) {
-                allG[i].onmousedown = (event) => {
-                    event.stopPropagation();
-                    if (event.button === 0) {
-                        const controlType = (<{ className }>(event.currentTarget as HTMLHtmlElement)).className.baseVal.toString().split(" ").filter(className => className.search("js-") !== -1)[0];
-                        switch (controlType) {
-                            case "js-control--move-up": this.rotateCam(0, GlobeMap.ZoomControlSettings.angleOfRotation); break;
-                            case "js-control--move-down": this.rotateCam(0, -GlobeMap.ZoomControlSettings.angleOfRotation); break;
-                            case "js-control--move-left": this.rotateCam(GlobeMap.ZoomControlSettings.angleOfRotation, 0); break;
-                            case "js-control--move-right": this.rotateCam(-GlobeMap.ZoomControlSettings.angleOfRotation, 0); break;
-                            case "js-control--zoom-up": this.zoomClicked(-GlobeMap.ZoomControlSettings.zoomStep); break;
-                            case "js-control--zoom-down": this.zoomClicked(GlobeMap.ZoomControlSettings.zoomStep); break;
-                        }
+        for (let i = 0; i < allG.length; ++i) {
+            allG[i].onmousedown = (event) => {
+                event.stopPropagation();
+                if (event.button === 0) {
+                    const controlType = (<{ className }>(event.currentTarget as HTMLHtmlElement)).className.baseVal.toString().split(" ").filter(className => className.search("js-") !== -1)[0];
+                    switch (controlType) {
+                        case "js-control--move-up": this.rotateCam(0, GlobeMap.ZoomControlSettings.angleOfRotation); break;
+                        case "js-control--move-down": this.rotateCam(0, -GlobeMap.ZoomControlSettings.angleOfRotation); break;
+                        case "js-control--move-left": this.rotateCam(GlobeMap.ZoomControlSettings.angleOfRotation, 0); break;
+                        case "js-control--move-right": this.rotateCam(-GlobeMap.ZoomControlSettings.angleOfRotation, 0); break;
+                        case "js-control--zoom-up": this.zoomClicked(-GlobeMap.ZoomControlSettings.zoomStep); break;
+                        case "js-control--zoom-down": this.zoomClicked(GlobeMap.ZoomControlSettings.zoomStep); break;
                     }
-                };
-            }
-        }
-        private initMercartorSphere() {
-            if (GlobeMap.MercartorSphere) return;
-
-            let ms = new MercartorSphere(
-                this.GlobeSettings.earthRadius,
-                this.GlobeSettings.earthSegments,
-                this.GlobeSettings.earthSegments);
-            ms.prototype = Object.create(THREE.Geometry.prototype);
-
-            GlobeMap.MercartorSphere = ms;
-        }
-
-        private updateBarsAndHeatMapByZoom(delta: number = 0): void {
-            if (!this.data) {
-                return;
-            }
-            // delta > 0 ? Zoom increased
-            // delta < 0 ? Zoom decreased
-            let heatSizeScale: number = delta > 0 ? this.GlobeSettings.heatmapScaleOnZoom : (1 / this.GlobeSettings.heatmapScaleOnZoom);
-            let barHeightScale: number = delta > 0 ? this.GlobeSettings.barHeightScaleOnZoom : (1 / this.GlobeSettings.barHeightScaleOnZoom);
-            let barWidthtScale: number = delta > 0 ? this.GlobeSettings.barWidthScaleOnZoom : (1 / this.GlobeSettings.barWidthScaleOnZoom);
-
-            if (delta === 0) {
-                heatSizeScale = 1;
-                barHeightScale = 1;
-                barWidthtScale = 1;
-            }
-
-            // Calculate new bar and heat sizes by zool level
-            this.GlobeSettings.heatPointSize = this.calculateNewSizeOfShape(this.GlobeSettings.heatPointSize, heatSizeScale, this.GlobeSettings.minHeatPointSize, this.GlobeSettings.maxHeatPointSize);
-            this.GlobeSettings.heatIntensity = this.calculateNewSizeOfShape(this.GlobeSettings.heatIntensity, heatSizeScale, this.GlobeSettings.minHeatIntensity, this.GlobeSettings.maxHeatIntensity);
-            this.GlobeSettings.barHeight = this.calculateNewSizeOfShape(this.GlobeSettings.barHeight, barHeightScale, this.GlobeSettings.minBarHeight, this.GlobeSettings.maxBarHeight);
-            this.GlobeSettings.barWidth = this.calculateNewSizeOfShape(this.GlobeSettings.barWidth, barWidthtScale, this.GlobeSettings.minBarWidth, this.GlobeSettings.maxBarWidth);
-
-            this.cleanHeatAndBar();
-            this.barsGroup = new THREE.Object3D();
-            this.scene.add(this.barsGroup);
-            this.averageBarVector = new THREE.Vector3();
-            const len: number = this.data.dataPoints.length;
-            for (let i: number = 0; i < len; ++i) {
-                const renderDatum: GlobeMapDataPoint = this.data.dataPoints[i];
-
-                if (!renderDatum.location || renderDatum.location.longitude === undefined || renderDatum.location.latitude === undefined
-                    || (renderDatum.location.longitude === 0 && renderDatum.location.latitude === 0)
-                ) {
-                    continue;
                 }
+            };
+        }
+    }
+    private initMercartorSphere() {
+        if (GlobeMap.MercatorSphere) return;
 
-                if (renderDatum.heat > 0.001) {
-                    if (renderDatum.heat < 0.1) renderDatum.heat = 0.1;
-                    const x: number = (180 + renderDatum.location.longitude) / 360 * this.GlobeSettings.heatmapSize;
-                    const y: number = (1 - ((90 + renderDatum.location.latitude) / 180)) * this.GlobeSettings.heatmapSize;
+        const ms = new CustomGeometry(
+            this.GlobeSettings.earthRadius,
+            this.GlobeSettings.earthSegments,
+            this.GlobeSettings.earthSegments);
+        ms.prototype = Object.create(Geometry.prototype);
 
-                    this.heatmap.addPoint(x, y, this.GlobeSettings.heatPointSize, renderDatum.heat * this.GlobeSettings.heatIntensity);
-                }
+        GlobeMap.MercatorSphere = ms;
+    }
 
-                if (renderDatum.height >= 0) {
-                    if (renderDatum.height < 0.01) renderDatum.height = 0.01;
-                    const latRadians: number = renderDatum.location.latitude / 180 * Math.PI; // radians
-                    const lngRadians: number = renderDatum.location.longitude / 180 * Math.PI;
+    private updateBarsAndHeatMapByZoom(delta: number = 0): void {
+        if (!this.data) {
+            return;
+        }
+        // delta > 0 ? Zoom increased
+        // delta < 0 ? Zoom decreased
+        let heatSizeScale: number = delta > 0 ? this.GlobeSettings.heatmapScaleOnZoom : (1 / this.GlobeSettings.heatmapScaleOnZoom);
+        let barHeightScale: number = delta > 0 ? this.GlobeSettings.barHeightScaleOnZoom : (1 / this.GlobeSettings.barHeightScaleOnZoom);
+        let barWidthtScale: number = delta > 0 ? this.GlobeSettings.barWidthScaleOnZoom : (1 / this.GlobeSettings.barWidthScaleOnZoom);
 
-                    const x: number = Math.cos(lngRadians) * Math.cos(latRadians);
-                    const z: number = -Math.sin(lngRadians) * Math.cos(latRadians);
-                    const y: number = Math.sin(latRadians);
-                    const vector: THREE.Vector3 = new THREE.Vector3(x, y, z);
+        if (delta === 0) {
+            heatSizeScale = 1;
+            barHeightScale = 1;
+            barWidthtScale = 1;
+        }
 
-                    this.averageBarVector.add(vector);
+        // Calculate new bar and heat sizes by zool level
+        this.GlobeSettings.heatPointSize = this.calculateNewSizeOfShape(this.GlobeSettings.heatPointSize, heatSizeScale, this.GlobeSettings.minHeatPointSize, this.GlobeSettings.maxHeatPointSize);
+        this.GlobeSettings.heatIntensity = this.calculateNewSizeOfShape(this.GlobeSettings.heatIntensity, heatSizeScale, this.GlobeSettings.minHeatIntensity, this.GlobeSettings.maxHeatIntensity);
+        this.GlobeSettings.barHeight = this.calculateNewSizeOfShape(this.GlobeSettings.barHeight, barHeightScale, this.GlobeSettings.minBarHeight, this.GlobeSettings.maxBarHeight);
+        this.GlobeSettings.barWidth = this.calculateNewSizeOfShape(this.GlobeSettings.barWidth, barWidthtScale, this.GlobeSettings.minBarWidth, this.GlobeSettings.maxBarWidth);
 
-                    const barHeight: number = this.GlobeSettings.barHeight * renderDatum.height;
-                    // this array holds the relative series values to the actual measure for example [0.2,0.3,0.5]
-                    // this is how we draw the vectors relativly to the complete value one on top of another.
-                    const measuresBySeries: number[] = [];
-                    // this array holds the original values of the series for the tool tips
-                    const dataPointToolTip: string[] = [];
-                    if (renderDatum.heightBySeries) {
-                        for (let c: number = 0; c < renderDatum.heightBySeries.length; c++) {
-                            if (renderDatum.heightBySeries[c] || renderDatum.heightBySeries[c] === 0) {
-                                measuresBySeries.push(renderDatum.heightBySeries[c]);
+        this.cleanHeatAndBar();
+        this.barsGroup = new THREE.Object3D();
+        this.scene.add(this.barsGroup);
+        this.averageBarVector = new THREE.Vector3();
+        const len: number = this.data.dataPoints.length;
+        for (let i: number = 0; i < len; ++i) {
+            const renderDatum: GlobeMapDataPoint = this.data.dataPoints[i];
+
+            if (!renderDatum.location || renderDatum.location.longitude === undefined || renderDatum.location.latitude === undefined
+                || (renderDatum.location.longitude === 0 && renderDatum.location.latitude === 0)
+            ) {
+                continue;
+            }
+
+            if (renderDatum.heat > 0.001) {
+                if (renderDatum.heat < 0.1) renderDatum.heat = 0.1;
+                const x: number = (180 + renderDatum.location.longitude) / 360 * this.GlobeSettings.heatmapSize;
+                const y: number = (1 - ((90 + renderDatum.location.latitude) / 180)) * this.GlobeSettings.heatmapSize;
+
+                this.heatmap.addPoint(x, y, this.GlobeSettings.heatPointSize, renderDatum.heat * this.GlobeSettings.heatIntensity);
+            }
+
+            if (renderDatum.height >= 0) {
+                if (renderDatum.height < 0.01) renderDatum.height = 0.01;
+                const latRadians: number = renderDatum.location.latitude / 180 * Math.PI; // radians
+                const lngRadians: number = renderDatum.location.longitude / 180 * Math.PI;
+
+                const x: number = Math.cos(lngRadians) * Math.cos(latRadians);
+                const z: number = -Math.sin(lngRadians) * Math.cos(latRadians);
+                const y: number = Math.sin(latRadians);
+                const vector: THREE.Vector3 = new THREE.Vector3(x, y, z);
+
+                this.averageBarVector.add(vector);
+
+                const barHeight: number = this.GlobeSettings.barHeight * renderDatum.height;
+                // this array holds the relative series values to the actual measure for example [0.2,0.3,0.5]
+                // this is how we draw the vectors relativly to the complete value one on top of another.
+                const measuresBySeries: number[] = [];
+                // this array holds the original values of the series for the tool tips
+                const dataPointToolTip: string[] = [];
+                if (renderDatum.heightBySeries) {
+                    for (let c: number = 0; c < renderDatum.heightBySeries.length; c++) {
+
+                        if (renderDatum.heightBySeries[c] || renderDatum.heightBySeries[c] === 0) {
+                            measuresBySeries.push(renderDatum.heightBySeries[c]);
+                        }
+
+                        let seriesToolTipData = "";
+
+                        if (renderDatum.seriesToolTipData
+                            && renderDatum.seriesToolTipData[c] 
+                            && typeof renderDatum.seriesToolTipData[c] === "string") {
+                                seriesToolTipData = renderDatum.seriesToolTipData[c] as string;
                             }
-                            dataPointToolTip.push(renderDatum.seriesToolTipData && renderDatum.seriesToolTipData[c] ? renderDatum.seriesToolTipData[c] : "");
-                        }
-                    } else {
-                        // no category series so we'll just draw one value
-                        measuresBySeries.push(1);
+
+                        dataPointToolTip.push(seriesToolTipData);
                     }
+                } else {
+                    // no category series so we'll just draw one value
+                    measuresBySeries.push(1);
+                }
 
-                    let previousMeasureValue = 0;
-                    for (let j: number = 0; j < measuresBySeries.length; j++) {
-                        previousMeasureValue += measuresBySeries[j];
-                        const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(this.GlobeSettings.barWidth, this.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
-                        const bar: THREE.Mesh & { toolTipData } = <THREE.Mesh & { toolTipData }>new THREE.Mesh(geometry, this.getBarMaterialByIndex(i));
-                        const position: THREE.Vector3 = vector.clone().multiplyScalar(this.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
-                        bar.position.set(position.x, position.y, position.z);
-                        bar.lookAt(vector);
-                        bar.toolTipData = dataPointToolTip.length === 0
-                            ? renderDatum.toolTipData
-                            : this.getToolTipDataForSeries(renderDatum.toolTipData, dataPointToolTip[j]);
+                let previousMeasureValue = 0;
+                for (let j: number = 0; j < measuresBySeries.length; j++) {
+                    previousMeasureValue += measuresBySeries[j];
+                    const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(this.GlobeSettings.barWidth, this.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
+                    const bar: THREE.Mesh & {toolTipData?} = new THREE.Mesh(geometry, this.getBarMaterialByIndex(i));
+                    const position: THREE.Vector3 = vector.clone().multiplyScalar(this.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
+                    bar.position.set(position.x, position.y, position.z);
+                    bar.lookAt(vector);
+                    bar.toolTipData = dataPointToolTip.length === 0
+                        ? renderDatum.toolTipData
+                        : this.getToolTipDataForSeries(renderDatum.toolTipData, dataPointToolTip[j]);
 
-                        this.barsGroup.add(bar);
+                    this.barsGroup.add(bar);
 
-                        previousMeasureValue += measuresBySeries[j];
-                    }
+                    previousMeasureValue += measuresBySeries[j];
                 }
             }
-
-            this.heatmap.update();
         }
 
-        private calculateNewSizeOfShape(size: number, scale: number, minSize: number, maxSize: number): number {
-            size *= scale;
-            if (size > maxSize) {
-                size = maxSize;
-            } else if (size < minSize) {
-                size = minSize;
+        this.heatmap.update();
+    }
+
+    private calculateNewSizeOfShape(size: number, scale: number, minSize: number, maxSize: number): number {
+        size *= scale;
+        if (size > maxSize) {
+            size = maxSize;
+        } else if (size < minSize) {
+            size = minSize;
+        }
+
+        return size;
+    }
+
+    private createControlElements(): Element {
+        const protocol: string = "http";
+        const svgNS: string = `${protocol}://www.w3.org/2000/svg`;
+
+        const circle = (cx: number, cy: number, r: number, classNames?: string) => {
+            const c = document.createElementNS(svgNS, "circle");
+            c.setAttribute("cx", cx.toString());
+            c.setAttribute("cy", cy.toString());
+            c.setAttribute("r", r.toString());
+            if (classNames) {
+                (<{ className }>c).className.baseVal = classNames;
             }
+            return c;
+        };
 
-            return size;
-        }
-
-        private createControlElements(): Element {
-            const protocol: string = "http";
-            let svgNS: string = `${protocol}://www.w3.org/2000/svg`;
-
-            const circle = (cx: number, cy: number, r: number, classNames?: string) => {
-                let c = document.createElementNS(svgNS, "circle");
-                c.setAttribute("cx", cx.toString());
-                c.setAttribute("cy", cy.toString());
-                c.setAttribute("r", r.toString());
-                if (classNames) {
-                    (<{ className }>c).className.baseVal = classNames;
-                }
-                return c;
-            };
-
-            const path = (d: string, classNames?: string) => {
-                let p = document.createElementNS(svgNS, "path");
-                p.setAttribute("d", d);
-                if (classNames) {
-                    (<{ className }>p).className.baseVal = classNames;
-                }
-                return p;
-            };
-
-            const rect = (x: number, y: number, width: number, height: number, classNames?: string) => {
-                let r = document.createElementNS(svgNS, "rect");
-                r.setAttribute("x", x.toString());
-                r.setAttribute("y", y.toString());
-                r.setAttribute("width", width.toString());
-                r.setAttribute("height", height.toString());
-                if (classNames) {
-                    (<{ className }>r).className.baseVal = classNames;
-                }
-                return r;
-            };
-
-            const g = (classNames: string) => {
-                let g = document.createElementNS(svgNS, "g");
-                if (classNames) {
-                    (<{ className }>g).className.baseVal = classNames;
-                }
-                return g;
-            };
-
-            let moveUpButton = g("control js-control--move-up");
-            moveUpButton.appendChild(circle(85, 20, 17));
-            moveUpButton.appendChild(path("M85 8 l12 20 a40,70 0 0,0 -24,0z"));
-
-            let moveRightButton = g("control js-control--move-right");
-            moveRightButton.appendChild(circle(119, 54, 17, "zoomControlCircle"));
-            moveRightButton.appendChild(path("M130.9 54 l-20 -12 a70,40 0 0,1 0,24z", "zoomControlPath"));
-
-            let moveDownButton = g("control js-control--move-down");
-            moveDownButton.appendChild(circle(85, 88, 17));
-            moveDownButton.appendChild(path("M 85 100 l12 -20 a40,70 0 0,1 -24,0z"));
-
-            let moveLeftButton = g("control js-control--move-left");
-            moveLeftButton.appendChild(circle(51, 54, 17));
-            moveLeftButton.appendChild(path("M39 54 l20 -12 a70,40 0 0,0 0,24z"));
-
-            let zoomDownButton = g("control js-control--zoom-down");
-            zoomDownButton.appendChild(circle(51, 122, 17));
-            zoomDownButton.appendChild(rect(42, 120, 17, 6, "zoomControlPath"));
-
-            let zoomUpButton = g("control js-control--zoom-up");
-            zoomUpButton.appendChild(circle(119, 122, 17));
-            zoomUpButton.appendChild(rect(110.5, 120, 17, 6));
-            zoomUpButton.appendChild(rect(116, 114, 6, 17));
-
-            let controlsContainerSVG = document.createElementNS(svgNS, "svg");
-            (<{ className }>controlsContainerSVG).className.baseVal = "controls";
-            controlsContainerSVG.setAttribute("width", "145");
-            controlsContainerSVG.setAttribute("height", "145");
-
-            controlsContainerSVG.appendChild(moveUpButton);
-            controlsContainerSVG.appendChild(moveRightButton);
-            controlsContainerSVG.appendChild(moveDownButton);
-            controlsContainerSVG.appendChild(moveLeftButton);
-            controlsContainerSVG.appendChild(zoomDownButton);
-            controlsContainerSVG.appendChild(zoomUpButton);
-
-            return controlsContainerSVG;
-        }
-
-        public static getCategoricalValueByIndex(category: DataViewCategoryColumn | DataViewValueColumn, index: number): string {
-            if (!category ||
-                !Array.isArray(category.values) ||
-                category.values.length <= index) {
-                return "";
+        const path = (d: string, classNames?: string) => {
+            const p = document.createElementNS(svgNS, "path");
+            p.setAttribute("d", d);
+            if (classNames) {
+                (<{ className }>p).className.baseVal = classNames;
             }
-            return `${category.values[index]}`;
+            return p;
+        };
+
+        const rect = (x: number, y: number, width: number, height: number, classNames?: string) => {
+            const r = document.createElementNS(svgNS, "rect");
+            r.setAttribute("x", x.toString());
+            r.setAttribute("y", y.toString());
+            r.setAttribute("width", width.toString());
+            r.setAttribute("height", height.toString());
+            if (classNames) {
+                (<{ className }>r).className.baseVal = classNames;
+            }
+            return r;
+        };
+
+        const g = (classNames: string) => {
+            const g = document.createElementNS(svgNS, "g");
+            if (classNames) {
+                (<{ className }>g).className.baseVal = classNames;
+            }
+            return g;
+        };
+
+        const moveUpButton = g("control js-control--move-up");
+        moveUpButton.appendChild(circle(85, 20, 17));
+        moveUpButton.appendChild(path("M85 8 l12 20 a40,70 0 0,0 -24,0z"));
+
+        const moveRightButton = g("control js-control--move-right");
+        moveRightButton.appendChild(circle(119, 54, 17, "zoomControlCircle"));
+        moveRightButton.appendChild(path("M130.9 54 l-20 -12 a70,40 0 0,1 0,24z", "zoomControlPath"));
+
+        const moveDownButton = g("control js-control--move-down");
+        moveDownButton.appendChild(circle(85, 88, 17));
+        moveDownButton.appendChild(path("M 85 100 l12 -20 a40,70 0 0,1 -24,0z"));
+
+        const moveLeftButton = g("control js-control--move-left");
+        moveLeftButton.appendChild(circle(51, 54, 17));
+        moveLeftButton.appendChild(path("M39 54 l20 -12 a70,40 0 0,0 0,24z"));
+
+        const zoomDownButton = g("control js-control--zoom-down");
+        zoomDownButton.appendChild(circle(51, 122, 17));
+        zoomDownButton.appendChild(rect(42, 120, 17, 6, "zoomControlPath"));
+
+        const zoomUpButton = g("control js-control--zoom-up");
+        zoomUpButton.appendChild(circle(119, 122, 17));
+        zoomUpButton.appendChild(rect(110.5, 120, 17, 6));
+        zoomUpButton.appendChild(rect(116, 114, 6, 17));
+
+        const controlsContainerSVG = document.createElementNS(svgNS, "svg");
+        (<{ className }>controlsContainerSVG).className.baseVal = "controls";
+        controlsContainerSVG.setAttribute("width", "145");
+        controlsContainerSVG.setAttribute("height", "145");
+
+        controlsContainerSVG.appendChild(moveUpButton);
+        controlsContainerSVG.appendChild(moveRightButton);
+        controlsContainerSVG.appendChild(moveDownButton);
+        controlsContainerSVG.appendChild(moveLeftButton);
+        controlsContainerSVG.appendChild(zoomDownButton);
+        controlsContainerSVG.appendChild(zoomUpButton);
+
+        return controlsContainerSVG;
+    }
+
+    public static getCategoricalValueByIndex(category: DataViewCategoryColumn | DataViewValueColumn, index: number): string {
+        if (!category ||
+            !Array.isArray(category.values) ||
+            category.values.length <= index) {
+            return "";
         }
+        return `${category.values[index]}`;
     }
 }
