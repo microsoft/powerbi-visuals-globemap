@@ -1,5 +1,5 @@
 # GlobeMap
-[![Build Status](https://travis-ci.org/Microsoft/powerbi-visuals-globemap.svg?branch=master)](https://travis-ci.org/Microsoft/powerbi-visuals-globemap) [![Coverage Status](https://coveralls.io/repos/github/Microsoft/powerbi-visuals-globemap/badge.svg?branch=master)](https://coveralls.io/github/Microsoft/powerbi-visuals-globemap?branch=master)
+[Coverage Status](https://coveralls.io/repos/github/Microsoft/powerbi-visuals-globemap/badge.svg?branch=master)](https://coveralls.io/github/Microsoft/powerbi-visuals-globemap?branch=master)
 
 > A 3D visual using WebGL for plotting locations, with category values displayed as bar heights and heat maps. Shift+Click on bar to change center point. Slicing data points will animate to average location. 
 
