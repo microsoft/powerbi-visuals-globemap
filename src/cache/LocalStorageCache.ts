@@ -34,7 +34,7 @@ export class LocalStorageCache {
             return;
         }
 
-        return new Promise<ILocationDictionary>((resolve, reject) => {
+        return new Promise<ILocationDictionary>((resolve) => {
             return this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS)
                 .catch(() => {
                     console.log("Did not get any data from local storage service");
