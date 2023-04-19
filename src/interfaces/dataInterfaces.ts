@@ -35,6 +35,7 @@ import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 
 import { GlobeMapSettings } from "../settings";
 import { IGeocodeCoordinate } from "../geocoder/interfaces/geocoderInterfaces";
+import { HexColorString } from "three";
 
 export interface GlobeMapData {
     dataView: DataView;
@@ -57,7 +58,7 @@ export interface GlobeMapDataPoint {
 
 export interface GlobeMapSeriesDataPoint extends SelectableDataPoint {
     label: string;
-    color: string;
+    color: HexColorString;
     category?: string;
 }
 
