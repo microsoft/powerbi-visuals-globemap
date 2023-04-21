@@ -1,4 +1,4 @@
-import { ILocationDictionary, ILocationCoordinateRecord, IGeocodeCoordinate } from "../geocoder/interfaces/geocoderInterfaces";
+import { ILocationDictionary, IGeocodeCoordinate, ILocationCoordinateRecord } from "../interfaces/locationInterfaces";
 
 interface GeocodeCacheEntry {
     coordinate: IGeocodeCoordinate;

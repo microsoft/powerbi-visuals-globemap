@@ -1,3 +1,12 @@
+## 3.1.0
+* Updated all dependencies
+* Got rid of vulnerabilities
+* Fixed issue with visual not displaying bars when only Latitide and Longitude buckets are selected
+
+## 3.0.0
+* Major refactoring
+* Removed obsolete packages and APIs
+
 ## 2.5.2
 * Webpack integration
 * UPD: using StorageService for localStorage logic
