@@ -26,7 +26,7 @@
 
 import { ILocationDictionary } from "./interfaces/locationInterfaces";
 import { BingSettings } from "./settings";
-import { BingGeocodeResponse, BingGeocodeResourceSet, BingGeocodeQuery, BingGeocodeEntity } from "./interfaces/bingInterfaces";
+import { BingGeocodeResponse, BingGeocodeResourceSet, BingGeocodeEntity } from "./interfaces/bingInterfaces";
 
 export class BingGeocoder {
     private contentType: string = "application/json";
