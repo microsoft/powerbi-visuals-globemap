@@ -74,7 +74,6 @@ import {
     IGlobeMapValueTypeDescriptor,
     IGlobeMapObject3DWithToolTipData,
     ICanvasCoordinate,
-    ILocationKeyDictionary
 } from "./interfaces/dataInterfaces";
 import {
     BingResourceMetadata,
@@ -100,7 +99,7 @@ interface GlobeMapHeatMapClass {
     canvas: HTMLVideoElement;
 }
 
-import { ILocationDictionary, IGeocodeCoordinate } from "./geocoder/interfaces/geocoderInterfaces";
+import { ILocationDictionary, IGeocodeCoordinate, ILocationKeyDictionary } from "./interfaces/locationInterfaces";
 
 import { converterHelper } from "powerbi-visuals-utils-dataviewutils";
 
@@ -158,9 +157,6 @@ export class GlobeMap implements IVisual {
     private orbitControls: OrbitControls;
     private earth: THREE.Mesh | { material };
     private data: GlobeMapData;
-    private get settings(): GlobeMapSettings {
-        return this.data && this.data.settings;
-    }
     private heatmap: GlobeMapHeatMapClass;
     private heatTexture: THREE.Texture;
     private mapTextures: THREE.Texture[];

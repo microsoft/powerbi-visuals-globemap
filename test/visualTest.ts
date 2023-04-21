@@ -23,7 +23,7 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
-// powerbi
+
 import powerbi from "powerbi-visuals-api";
 
 import DataView = powerbi.DataView;
@@ -37,10 +37,11 @@ import { GlobeMapData as GlobeMapDataViewBuilder } from "./visualData";
 import { GlobeMap as VisualClass } from "../src/globemap";
 import { GlobeMapColumns } from "../src/columns";
 
-import { TileMap, ITileGapObject, ILocationKeyDictionary } from "../src/interfaces/dataInterfaces";
+import { TileMap, ITileGapObject } from "../src/interfaces/dataInterfaces";
 
 import capabilities from '../capabilities.json';
 import PrimitiveValue = powerbi.PrimitiveValue;
+import { ILocationKeyDictionary } from "../src/interfaces/locationInterfaces";
 
 describe("GlobeMap", () => {
     let visualBuilder: GlobeMapBuilder,
@@ -89,8 +90,7 @@ describe("GlobeMap", () => {
 
             visualBuilder.updateRenderTimeout(dataView, () => {
                 expect(visualBuilder.element.querySelectorAll("canvas")).toBeTruthy();
-                //await Promise.resolve();
-                console.log("dom test passed");                
+                console.log("dom test passed");           
             });
         });
     });

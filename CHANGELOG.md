@@ -1,7 +1,7 @@
 ## 3.1.0
 * Updated all dependencies
 * Got rid of vulnerabilities
-* Fixed issue when visual did not display data correctly when selecting only Latitude and Longitude buckets
+* Fixed issue with visual not displaying bars when only Latitide and Longitude buckets are selected
 
 ## 3.0.0
 * Major refactoring
