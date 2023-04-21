@@ -1,28 +1,24 @@
 import powerbi from "powerbi-visuals-api";
 import IPromise2 = powerbi.IPromise2;
-
-import isEmpty from "lodash.isempty";
-
 import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
-
-import { ILocationDictionary } from "../geocoder/interfaces/geocoderInterfaces";
+import isEmpty from "lodash.isempty";
+import { ILocationDictionary, ILocationKeyDictionary } from "../interfaces/locationInterfaces";
 import { MemoryCache } from "./MemoryCache";
 import { LocalStorageCache } from "./LocalStorageCache";
-import { Bing } from "./bing";
 import { CacheSettings } from "./../settings";
-import { ILocationKeyDictionary } from "../interfaces/dataInterfaces";
+import { BingGeocoder } from "../geocoder";
 
 export class CacheManager {
     private memoryCache: MemoryCache;
     private localStorageCache: LocalStorageCache;
-    private bing: Bing;
+    private bingGeocoder: BingGeocoder;
     private coordsInLocalStorage: ILocationDictionary;
     private localStorageService: ILocalVisualStorageService;
 
     constructor(localStorageService: ILocalVisualStorageService) {
         this.memoryCache = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
         this.localStorageService = localStorageService;
-        this.bing = new Bing();
+        this.bingGeocoder = new BingGeocoder();
         this.coordsInLocalStorage = {};
     }
 
@@ -43,7 +39,7 @@ export class CacheManager {
         locationsDictionary = locations
             .reduce((obj, key) => ({ ...obj, [key]: locationsDictionary[key] }), {});
 
-        const coordinatesFromBing = await this.bing.loadCoordinates(locations);
+        const coordinatesFromBing = await this.bingGeocoder.geocode(locations);
         const resultObject = Object.assign({}, locationsInMemory, this.coordsInLocalStorage, coordinatesFromBing);
         
         return resultObject;
