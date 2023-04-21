@@ -1,4 +1,4 @@
-## 3.1.0
+## 3.1.0.0
 * Updated all dependencies
 * Got rid of vulnerabilities
 * Fixed issue with visual not displaying bars when only Latitide and Longitude buckets are selected
