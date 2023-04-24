@@ -72,7 +72,7 @@ export class BingGeocoder {
                 }
             }));
         } catch (e) {
-            console.log("Geocode request failed", e);
+            console.error("Geocode request failed", e);
         }
 
         return result;
@@ -80,7 +80,7 @@ export class BingGeocoder {
 
     private getBatches(locations: string[]): string[][] {
         const batches: string[][] = [];
-        const maxBatchSize = 30;
+        const maxBatchSize = 30; // this limit is set by API endpoint
 
         for(let i = 0; i < locations.length; i += maxBatchSize) {
             const batch = locations.slice(i, i + maxBatchSize);
