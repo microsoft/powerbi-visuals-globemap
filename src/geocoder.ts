@@ -37,54 +37,56 @@ export class BingGeocoder {
             return;
         }
 
-        const maxBatchSize = 30;
+        const batches: string[][] = this.getBatches(locations);
+        const result: ILocationDictionary = {};
+
+        try {
+            await Promise.all(batches.map(async (batch: string[]) => {
+                const geocodeEntities: BingGeocodeEntity[] = batch.map(location => {
+                    return {
+                        query: location
+                    };
+                });
+              
+                const response = await fetch(this.apiUrl, {
+                    headers: {
+                        'Accept': this.contentType,
+                        'Content-Type': this.contentType
+                    },
+                    method: "POST",
+                    body: JSON.stringify({ geocodeEntities })
+                });
+        
+                const responseJson: BingGeocodeResponse = await response.json();
+    
+                for (let i = 0; i < responseJson.resourceSets.length; i++) {
+                    const currentSet: BingGeocodeResourceSet = responseJson.resourceSets[i];
+                    
+                    const coordinates: number[] = currentSet.resources[0].point.coordinates;
+                    
+                    const latitude: number = coordinates[0];
+                    const longitude: number = coordinates[1];
+    
+                    const name: string = batch[i];
+                    result[name] = { latitude, longitude };
+                }
+            }));
+        } catch (e) {
+            console.log("Geocode request failed", e);
+        }
+
+        return result;
+    }
+
+    private getBatches(locations: string[]): string[][] {
         const batches: string[][] = [];
+        const maxBatchSize = 30;
 
         for(let i = 0; i < locations.length; i += maxBatchSize) {
             const batch = locations.slice(i, i + maxBatchSize);
             batches.push(batch);    
         }
 
-        const result: ILocationDictionary = {};
-
-        await Promise.all(batches.map(async (batch: string[]) => {
-
-            const geocodeEntities: BingGeocodeEntity[] = batch.map(location => {
-                return {
-                    query: location
-                };
-            });
-    
-            const jsonBody = {
-                geocodeEntities
-            }
-    
-            console.log("JSON", JSON.stringify(jsonBody));
-        
-            const response = await fetch(this.apiUrl, {
-                headers: {
-                    'Accept': this.contentType,
-                    'Content-Type': this.contentType
-                },
-                method: "POST",
-                body: JSON.stringify({ geocodeEntities })
-            });
-    
-            const responseJson: BingGeocodeResponse = await response.json();
-
-            for (let i = 0; i < responseJson.resourceSets.length; i++) {
-                const currentSet: BingGeocodeResourceSet = responseJson.resourceSets[i];
-                
-                const coordinates: number[] = currentSet.resources[0].point.coordinates;
-                
-                const latitude: number = coordinates[0];
-                const longitude: number = coordinates[1];
-
-                const name: string = batch[i];
-                result[name] = { latitude, longitude };
-            }
-        }));
-
-        return result;
+        return batches;
     }
 }
