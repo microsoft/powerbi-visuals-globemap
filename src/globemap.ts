@@ -74,7 +74,6 @@ import {
     IGlobeMapValueTypeDescriptor,
     IGlobeMapObject3DWithToolTipData,
     ICanvasCoordinate,
-    ILocationKeyDictionary
 } from "./interfaces/dataInterfaces";
 import {
     BingResourceMetadata,
@@ -100,7 +99,7 @@ interface GlobeMapHeatMapClass {
     canvas: HTMLVideoElement;
 }
 
-import { ILocationDictionary, IGeocodeCoordinate } from "./geocoder/interfaces/geocoderInterfaces";
+import { ILocationDictionary, IGeocodeCoordinate, ILocationKeyDictionary } from "./interfaces/locationInterfaces";
 
 import { converterHelper } from "powerbi-visuals-utils-dataviewutils";
 
@@ -158,9 +157,6 @@ export class GlobeMap implements IVisual {
     private orbitControls: OrbitControls;
     private earth: THREE.Mesh | { material };
     private data: GlobeMapData;
-    private get settings(): GlobeMapSettings {
-        return this.data && this.data.settings;
-    }
     private heatmap: GlobeMapHeatMapClass;
     private heatTexture: THREE.Texture;
     private mapTextures: THREE.Texture[];
@@ -313,17 +309,17 @@ export class GlobeMap implements IVisual {
             heightsBySeries = [];
             heights = [];
             if (categorical.Location && categorical.Location.values || categorical.X && categorical.Y && categorical.X.values && categorical.Y.values) {
-                let heightsLenght: number = 0;
-                if (categorical.Location && categorical.Location.values) {
-                    heightsLenght = categorical.Location.values.length;
-                } else if (categorical.X && categorical.X.values) {
-                    heightsLenght = categorical.X.values.length;
+                let heightsLength: number = 0;
+                if (categorical.Location && categorical.Location.values?.length > 0) {
+                    heightsLength = categorical.Location.values.length;
+                } else if (categorical.X && categorical.X.values?.length > 0) {
+                    heightsLength = categorical.X.values.length;
                 }
 
-                for (let i = 0; i < heightsLenght; i++) {
+                for (let i = 0; i < heightsLength; i++) {
                     heights.push(1);
                 }
-                const color: string = colorHelper.getColorForMeasure(dataView.metadata.objects, "");
+                const color = <THREE.HexColorString>colorHelper.getColorForMeasure(dataView.metadata.objects, "");
                 seriesDataPoints[0] = {
                     label: "label",
                     identity: "identity",
@@ -468,12 +464,12 @@ export class GlobeMap implements IVisual {
 
         const category: string = `${converterHelper.getSeriesName(dataPointsParams.source)}`;
         const objects = categoryColumn && categoryColumn.objects;
-        let color: string =
+        let color = <THREE.HexColorString>(
             objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint 
                 ? objects[dataPointsParams.catIndex].dataPoint.fill["solid"].color 
                 : dataPointsParams.metaData && dataPointsParams.metaData.objects
                 ? dataPointsParams.colorHelper.getColorForMeasure(dataPointsParams.metaData.objects, "")
-                : dataPointsParams.colors.getColor(dataPointsParams.seriesIndex).value;
+                : dataPointsParams.colors.getColor(dataPointsParams.seriesIndex).value);
 
         if (dataPointsParams.colorHelper.isHighContrast) {
             color = dataPointsParams.colorHelper.getHighContrastColor("foreground", color);

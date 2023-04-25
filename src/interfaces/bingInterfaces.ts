@@ -1,18 +1,13 @@
-// what we care about in the Bing geocoding and geospatial responses
 export interface BingGeocodeResponse {
-    resourceSets: { resources: BingLocation[] }[];
-}
-
-export interface BingJobStatusResponse {
-    resourceSets: { resources: BingJobStatus[] }[];
+    resourceSets: BingGeocodeResourceSet[];
     statusCode: number;
 }
 
-export interface BingJobStatus {
-    status: string;
+export interface BingGeocodeResourceSet {
+    resources: BingGeocodeResource[];
 }
 
-export interface BingLocation {
+export interface BingGeocodeResource {
     name?: string;
     entityType?: string;
     address?: BingAddress;
@@ -32,25 +27,21 @@ export interface BingAddress {
     landmark?: string;
 }
 
-export interface BingGeoboundaryResponse {
-    d?: { results?: BingGeoboundary[] };
+export interface BingGeocodeQuery {
+    geocodeEntities: BingGeocodeEntity[];
 }
 
-export interface BingGeoboundary {
-    Primitives?: BingGeoboundaryPrimitive[];
-}
-
-export interface BingGeoboundaryPrimitive {
-    Shape: string;
+export interface BingGeocodeEntity {
+    query: string;
 }
 
 export interface BingMetadata {
-    resourceSets: ResourceSet[];
+    resourceSets: BingMetadataResourceSet[];
     statusCode: string;
     statusDescription: string;
 }
 
-export interface ResourceSet {
+export interface BingMetadataResourceSet {
     resources: BingResourceMetadata[];
 }
 

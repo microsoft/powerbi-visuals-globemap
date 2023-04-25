@@ -5,7 +5,7 @@ import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageSer
 import LocalStorageStatus = powerbi.PrivilegeStatus;
 import IPromise2 = powerbi.IPromise2;
 
-import { ILocationDictionary } from "../geocoder/interfaces/geocoderInterfaces";
+import { ILocationDictionary } from "../interfaces/locationInterfaces";
 
 export class LocalStorageCache {
     private static TILE_LOCATIONS = "GLOBEMAP_TILE_LOCATIONS";
@@ -34,7 +34,7 @@ export class LocalStorageCache {
             return;
         }
 
-        return new Promise<ILocationDictionary>((resolve, reject) => {
+        return new Promise<ILocationDictionary>((resolve) => {
             return this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS)
                 .catch(() => {
                     console.log("Did not get any data from local storage service");

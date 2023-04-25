@@ -34,7 +34,8 @@ import { interactivitySelectionService } from "powerbi-visuals-utils-interactivi
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
 
 import { GlobeMapSettings } from "../settings";
-import { IGeocodeCoordinate } from "../geocoder/interfaces/geocoderInterfaces";
+import { IGeocodeCoordinate } from "./locationInterfaces";
+import { HexColorString } from "three";
 
 export interface GlobeMapData {
     dataView: DataView;
@@ -57,18 +58,12 @@ export interface GlobeMapDataPoint {
 
 export interface GlobeMapSeriesDataPoint extends SelectableDataPoint {
     label: string;
-    color: string;
+    color: HexColorString;
     category?: string;
 }
 
 export interface TileMap {
     [quadKey: string]: string;
-}
-
-export interface ILocationKeyDictionary {
-    [placeKey: string]: {
-        place: string; locationType: string;
-    };
 }
 
 export interface ICanvasCoordinate {
