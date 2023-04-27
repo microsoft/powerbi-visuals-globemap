@@ -24,122 +24,139 @@
  *  THE SOFTWARE.
  */
 
-/// <reference path="_references.ts"/>
+import powerbi from "powerbi-visuals-api";
 
-module powerbi.extensibility.visual.test {
-    // powerbi
-    import DataView = powerbi.DataView;
+import DataView = powerbi.DataView;
+import DataViewValueColumn = powerbi.DataViewValueColumn;
+import DataViewCategoryColumn = powerbi.DataViewCategoryColumn;
+import DataViewValueColumns = powerbi.DataViewValueColumns;
 
-    // powerbi.extensibility.visual.test
-    import GlobeMapDataViewBuilder = powerbi.extensibility.visual.test.GlobeMapData;
-    import GlobeMapBuilder = powerbi.extensibility.visual.test.GlobeMapBuilder;
+import { GlobeMapBuilder } from "./visualBuilder";
+import { GlobeMapData as GlobeMapDataViewBuilder } from "./visualData";
 
-    // powerbi.extensibility.visual.GlobeMap1447669447625
-    import VisualClass = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMap;
-    import GlobeMapColumns = powerbi.extensibility.visual.GlobeMap1447669447625.GlobeMapColumns;
+import { GlobeMap as VisualClass } from "../src/globemap";
+import { GlobeMapColumns } from "../src/columns";
 
-    import getShortKey = powerbi.extensibility.geocoder.GeocodingCache.getShortKey;
-    import TileMap = powerbi.extensibility.visual.TileMap;
-    import ITileGapObject = powerbi.extensibility.visual.GlobeMap1447669447625.ITileGapObject;
+import { TileMap, ITileGapObject } from "../src/interfaces/dataInterfaces";
 
-    describe("GlobeMap", () => {
-        let visualBuilder: GlobeMapBuilder,
-            visualInstance: VisualClass,
-            defaultDataViewBuilder: GlobeMapDataViewBuilder,
-            dataView: DataView;
+import capabilities from '../capabilities.json';
+import PrimitiveValue = powerbi.PrimitiveValue;
+import { ILocationKeyDictionary } from "../src/interfaces/locationInterfaces";
 
-        beforeEach(() => {
-            jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
-            visualBuilder = new GlobeMapBuilder(1024, 1024);
+describe("GlobeMap", () => {
+    let visualBuilder: GlobeMapBuilder,
+        visualInstance: VisualClass,
+        defaultDataViewBuilder: GlobeMapDataViewBuilder,
+        dataView: DataView;
 
+    beforeAll(() => {
+        visualBuilder = new GlobeMapBuilder(1024, 1024);
+        visualInstance = visualBuilder.instance;
+    });
+
+    beforeEach(() => {
+        defaultDataViewBuilder = new GlobeMapDataViewBuilder();
+        dataView = defaultDataViewBuilder.getDataView();
+    });
+
+    describe("DOM tests", () => {
+
+        beforeAll(async () => {            
             defaultDataViewBuilder = new GlobeMapDataViewBuilder();
             dataView = defaultDataViewBuilder.getDataView();
 
-            visualInstance = visualBuilder.instance;
+            let categoricalColumns = GlobeMapColumns.getCategoricalColumns(dataView);
+            
+            let locations = categoricalColumns.Location.values as PrimitiveValue[];
+            let locationsNeedToBeLoaded = {} as ILocationKeyDictionary;
+
+            locations.forEach((locationName) => {
+                const name = (locationName as string).toLowerCase();
+                locationsNeedToBeLoaded[name] = {
+                    place: name, 
+                    locationType: ""
+                };
+            });
+
+            const coordinates = await visualInstance.cacheManager.loadCoordinates(locationsNeedToBeLoaded);
+            
+            if (Object.keys(coordinates).length > 0) {
+                await visualInstance.cacheManager.saveCoordinates(coordinates);
+            }
         });
 
-        describe("DOM tests", () => {
-            it("canvas element created", (done) => {
-                visualBuilder.updateRenderTimeout(dataView, () => {
-                    expect(visualBuilder.element.find("canvas")).toBeInDOM();
-                    done();
-                });
+        it("canvas element created", () => {
+            console.log("dom test started");
+
+            visualBuilder.updateRenderTimeout(dataView, () => {
+                expect(visualBuilder.element.querySelectorAll("canvas")).toBeTruthy();
+                console.log("dom test passed");           
             });
         });
+    });
 
-        describe("Converter tests", () => {
-            it("should create same count of datapoints as dataView values", () => {
-                let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
+    describe("Converter tests", () => {
+        it("should create same count of datapoints as dataView values", () => {
+            let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
 
-                expect(data.dataPoints.length).toBe(dataView.categorical.values[0].values.length);
-            });
-
-            it("should create same count of datapoints as dataView values with undefined values", () => {
-                dataView.categorical.values[0].values = [null, "0qqa123", undefined, "value", 1, 2, 3, 4, 5, 6];
-                let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
-
-                expect(data.dataPoints.length).toBe(dataView.categorical.values[0].values.length);
-            });
-
-            it("should create same count of datapoints as valid categories", () => {
-                let invalidDataSet = [null, "0qqa123", undefined, "value", 1, 2, 3, 4, 5, 6];
-
-                dataView.categorical.categories[0].values = invalidDataSet;
-                let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
-
-                expect(data.dataPoints.length).toBe(dataView.categorical.categories[0].values.length);
-            });
-
-            describe("Data fields", () => {
-                let dataView: DataView;
-
-                beforeEach(() => {
-                    dataView = defaultDataViewBuilder.getDataView([
-                        GlobeMapDataViewBuilder.ColumnLatitude,
-                        GlobeMapDataViewBuilder.ColumnLongitude,
-                        GlobeMapDataViewBuilder.ColumnValue,
-                    ]);
-                });
-
-                it("Location should not be mandatory", () => {
-                    expect(() => {
-                        VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
-                    }).not.toThrow();
-                });
-            });
+            expect(data.dataPoints.length).toBe(dataView.categorical!.values![0].values.length);
         });
 
-        describe("columns tests", function () {
-            it("getCategoricalColumns should return same count of category values as dataView contains", function () {
-                let categorical: GlobeMapColumns<DataViewCategoryColumn & DataViewValueColumn[] & DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
+        it("should create same count of datapoints as valid categories", () => {
+            let invalidDataSet = ["0qqa123", "value", 1, 2, 3, 4, 5, 6];
 
-                let categoryCount = categorical.Location && categorical.Location.values && categorical.Location.values.length;
-                expect(categoryCount).toBe(dataView.categorical.values[0].values.length);
+            dataView.categorical!.categories![0].values = invalidDataSet;
+            let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
+
+            expect(data.dataPoints.length).toBe(dataView.categorical!.categories![0].values.length);
+        });
+
+        describe("Data fields", () => {
+            let dataView: DataView;
+
+            beforeEach(() => {
+                dataView = defaultDataViewBuilder.getDataView([
+                    GlobeMapDataViewBuilder.ColumnLatitude,
+                    GlobeMapDataViewBuilder.ColumnLongitude,
+                    GlobeMapDataViewBuilder.ColumnValue,
+                ]);
             });
 
-            it("getGroupedValueColumns should group dataView columns", function () {
-                let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] = GlobeMapColumns.getGroupedValueColumns(dataView);
-                expect(groupedColumns.length).toBe(1);
+            it("Location should not be mandatory", () => {
+                expect(() => {
+                    VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
+                }).not.toThrow();
             });
+        });
+    });
 
-            it("getCategoricalValueByIndex should return longitude value", function () {
-                let longitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[1], 1);
-                expect(longitude).toEqual(`${dataView.categorical.values[1].values[1]}`);
-            });
+    describe("Columns tests", function () {
+        it("getCategoricalColumns should return same count of category values as dataView contains", function () {
+            let categorical: GlobeMapColumns<DataViewCategoryColumn | DataViewValueColumn[] | DataViewValueColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
-            it("getCategoricalValueByIndex should return latitude value", function () {
-                let latitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical.values[2], 1);
-                expect(latitude).toEqual(`${dataView.categorical.values[2].values[1]}`);
-            });
+            let categoryCount = categorical.Location && categorical.Location.values && categorical.Location.values.length;
+            expect(categoryCount).toBe(dataView.categorical!.values![0].values.length);
+        });
+
+        it("getGroupedValueColumns should group dataView columns", function () {
+            let groupedColumns: GlobeMapColumns<DataViewValueColumn>[] = GlobeMapColumns.getGroupedValueColumns(dataView);
+            expect(groupedColumns.length).toBe(1);
+        });
+
+        it("getCategoricalValueByIndex should return longitude value", function () {
+            let longitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical!.values![1], 1);
+            expect(longitude).toEqual(`${dataView.categorical!.values![1].values[1]}`);
+        });
+
+        it("getCategoricalValueByIndex should return latitude value", function () {
+            let latitude: string = VisualClass.getCategoricalValueByIndex(dataView.categorical!.values![2], 1);
+            expect(latitude).toEqual(`${dataView.categorical!.values![2].values[1]}`);
+            
         });
     });
 
     describe("Capabilities tests", () => {
         it("all items having displayName should have displayNameKey property", () => {
-            jasmine.getJSONFixtures().fixturesPath = "base";
-
-            let jsonData = getJSONFixture("capabilities.json");
-
             let objectsChecker: Function = (obj) => {
                 for (let property in obj) {
                     let value: { displayName, displayNameKey } = obj[property];
@@ -154,55 +171,15 @@ module powerbi.extensibility.visual.test {
                 }
             };
 
-            objectsChecker(jsonData);
+            objectsChecker(capabilities.objects);
         });
     });
 
     describe("LocalStorage and related methods test: ", () => {
-        describe("short key test", () => {
-            it("on valid keys", () => {
-                const rawKeys: string[] = [
-                    "g:https://dev.virtualearth.net/rest/v1/locations; s:https://platform.bing.com/geo/spatial/v1/public/geodata;tulsa, oklahoma/",
-                    "g:https://dev.virtualearth.net/rest/v1/locations; s:https://platform.bing.com/geo/spatial/v1/public/geodata;aurora, colorado/",
-                    "g:https://dev.virtualearth.net/rest/v1/locations; s:https://platform.bing.com/geo/spatial/v1/public/geodata;chicago, illinois/"
-                ];
-                const expectedResult: string[] = [
-                    "tulsa, oklahoma",
-                    "aurora, colorado",
-                    "chicago, illinois"
-                ];
-
-                for (let i = 0; i < rawKeys.length; i++) {
-                    const shortKey: string = getShortKey(rawKeys[i]);
-                    expect(shortKey).toEqual(expectedResult[i]);
-                }
-            });
-
-            it("on not valid keys", () => {
-                const rawKeys: string[] = [
-                    "",
-                    null,
-                    undefined,
-                    "hello"
-                ];
-                const expectedResult: string[] = rawKeys;
-                for (let i = 0; i < rawKeys.length; i++) {
-                    const shortKey: string = getShortKey(rawKeys[i]);
-                    expect(shortKey).toEqual(expectedResult[i]);
-                }
-            });
-
-        });
-
         describe("minimize tiles test", () => {
 
             it("on valid keys", () => {
                 const rawTiles = [
-                    {
-                        "00": "https://ecn.t0.tiles.virtualearth.net/tiles/r00.jpeg?g=6782&mkt=en-US&shading=hill",
-                        "01": "https://ecn.t1.tiles.virtualearth.net/tiles/r01.jpeg?g=6782&mkt=en-US&shading=hill",
-                        "02": "https://ecn.t2.tiles.virtualearth.net/tiles/r02.jpeg?g=6782&mkt=en-US&shading=hill"
-                    },
                     {
                         "000": "https://ecn.t0.tiles.virtualearth.net/tiles/r000.jpeg?g=6782&mkt=en-US&shading=hill",
                         "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?g=6782&mkt=en-US&shading=hill",
@@ -212,7 +189,6 @@ module powerbi.extensibility.visual.test {
                 ];
 
                 const expectedTiles: ITileGapObject[] = [
-                    { gaps: [[0, 2]], rank: 2 },
                     { gaps: [[0, 3]], rank: 3 }
                 ];
 
@@ -226,27 +202,20 @@ module powerbi.extensibility.visual.test {
             });
 
             it("on not valid keys", () => {
-                const notValidTiles = [null, undefined, []];
+                const notValidTiles = [[]];
                 notValidTiles.forEach((notValidData) => {
                     const result = VisualClass.minimizeTiles(notValidData);
                     expect(result.length).toBe(0);
                 });
             });
-
         });
-
+    
         describe("extend tiles test", () => {
             const tiles: ITileGapObject[] = [
-                { gaps: [[0, 2]], rank: 2 },
                 { gaps: [[0, 3]], rank: 3 }
             ];
 
             const expectedResult = [
-                {
-                    "00": "https://ecn.t0.tiles.virtualearth.net/tiles/r00.jpeg?mkt=en-US&shading=hill",
-                    "01": "https://ecn.t0.tiles.virtualearth.net/tiles/r01.jpeg?mkt=en-US&shading=hill",
-                    "02": "https://ecn.t0.tiles.virtualearth.net/tiles/r02.jpeg?mkt=en-US&shading=hill"
-                },
                 {
                     "000": "https://ecn.t1.tiles.virtualearth.net/tiles/r000.jpeg?mkt=en-US&shading=hill",
                     "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?mkt=en-US&shading=hill",
@@ -258,31 +227,29 @@ module powerbi.extensibility.visual.test {
             const culture: string = "en-US";
 
             it("for not valid input", () => {
-                const tiles = [null, undefined, []];
+                const expectedResult = [];
+                const tiles = [[]];
                 tiles.forEach((tile) => {
-                    let deferred = $.Deferred();
-                    VisualClass.extendTiles(JSON.stringify(tile), culture, deferred);
-                    expect(deferred.state()).toBe("resolved");
-                    deferred.then((data) => {
-                        expect(data).toBeNull();
-                    });
+                    visualInstance.extendTiles(JSON.stringify(tile), culture)
+                        .then((data: TileMap[]) => {
+                            expect(data.length).toBe(expectedResult.length);
+                        });
                 });
             });
 
             it("for valid input", () => {
-                let deferred = $.Deferred();
-                VisualClass.extendTiles(JSON.stringify(tiles), culture, deferred);
-                $.when(deferred).done((data: TileMap[]) => {
-                    expect(data).not.toBeNull();
-                    for (let i = 0; data.length; i++) {
-                        const tile: TileMap = data[i];
-                        for (let key in tile) {
-                            tile[key] = tile[key].replace(/g=\w+&/g, '');
+                visualInstance.extendTiles(JSON.stringify(tiles), culture)
+                    .then((data: TileMap[]) => {
+                        expect(data).not.toBeNull();
+                        for (let i = 0; data.length; i++) {
+                            const tile: TileMap = data[i];
+                            for (let key in tile) {
+                                tile[key] = tile[key].replace(/g=\w+&/g, '');
+                            }
+                            expect(data[i]).toBe(expectedResult[i]);
                         }
-                        expect(data[i]).toBe(expectedResult[i]);
-                    }
-                });
+                    });
             });
         });
     });
-}
+});

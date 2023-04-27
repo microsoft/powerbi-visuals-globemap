@@ -1,9 +1,9 @@
 # GlobeMap
-[![Build Status](https://travis-ci.org/Microsoft/powerbi-visuals-globemap.svg?branch=master)](https://travis-ci.org/Microsoft/powerbi-visuals-globemap) [![Coverage Status](https://coveralls.io/repos/github/Microsoft/powerbi-visuals-globemap/badge.svg?branch=master)](https://coveralls.io/github/Microsoft/powerbi-visuals-globemap?branch=master)
+[![Coverage Status](https://coveralls.io/repos/github/Microsoft/powerbi-visuals-globemap/badge.svg?branch=master)](https://coveralls.io/github/Microsoft/powerbi-visuals-globemap?branch=master)
 
 > A 3D visual using WebGL for plotting locations, with category values displayed as bar heights and heat maps. Shift+Click on bar to change center point. Slicing data points will animate to average location. 
 
-![GlobeMap screenshot](https://az158878.vo.msecnd.net/marketing/Partner_21474836617/Product_42949680586/Asset_87f58068-9b83-4a54-8889-66617065ec5a/GlobeMapscreenshot2.png)
+![GlobeMap screenshot](assets/screenshot.png)
 
 # Overview
 Globe Map is a 3D Map that makes the map exploration experience more immersive and magical. It provide the sense of connection to the data with the physical world. This, combined with our spatial ability, brings a new perspective to the data when presented as 3D objects.
