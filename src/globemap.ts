@@ -319,7 +319,7 @@ export class GlobeMap implements IVisual {
                 for (let i = 0; i < heightsLength; i++) {
                     heights.push(1);
                 }
-                const color = <THREE.HexColorString>colorHelper.getColorForMeasure(dataView.metadata.objects, "");
+                const color: string = colorHelper.getColorForMeasure(dataView.metadata.objects, "");
                 seriesDataPoints[0] = {
                     label: "label",
                     identity: "identity",
@@ -464,7 +464,7 @@ export class GlobeMap implements IVisual {
 
         const category: string = `${converterHelper.getSeriesName(dataPointsParams.source)}`;
         const objects = categoryColumn && categoryColumn.objects;
-        let color = <THREE.HexColorString>(
+        let color: string = (
             objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint 
                 ? objects[dataPointsParams.catIndex].dataPoint.fill["solid"].color 
                 : dataPointsParams.metaData && dataPointsParams.metaData.objects
