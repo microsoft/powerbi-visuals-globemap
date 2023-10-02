@@ -551,18 +551,15 @@ export class GlobeMap implements IVisual {
     private static directionalLightIntensity: number = 0.4;
     private static tileSize: number = 256;
     private static initialResolutionLevel: number = 2;
-    private static maxResolutionLevel: number = 5;
-    private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&key=${BingSettings.BingKey}`;
+    private static maxResolutionLevel: number = 6;
+    private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/RoadOnDemand?output=json&uriScheme=https&key=${BingSettings.BingKey}`;
     private static reserveBindMapsMetadata: BingResourceMetadata = {
-        imageUrl: "https://{subdomain}.tiles.virtualearth.net/tiles/r{quadkey}.jpeg?g=0&mkt={culture}",
+        imageUrl: "https://{subdomain}.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/{quadkey}?mkt={culture}&it=G,L&shading=hill&og=2310&n=z",
         imageUrlSubdomains: [
+            "t0",
             "t1",
             "t2",
-            "t3",
-            "t4",
-            "t5",
-            "t6",
-            "t7"
+            "t3"
         ],
         imageHeight: 256,
         imageWidth: 256
@@ -736,17 +733,19 @@ export class GlobeMap implements IVisual {
                     const urlTemplate = metadata.imageUrl.replace("{culture}", language);
                     const subdomains = metadata.imageUrlSubdomains;
 
-                    tileCacheArray?.forEach((zoomArray: ITileGapObject, level) => {
+                    tileCacheArray?.forEach((zoomArray: ITileGapObject) => {
                         const rank: number = zoomArray.rank;
                         const gaps = zoomArray.gaps;
                         const resultForCurrentZoom = {};
                         gaps?.forEach((gap: number[]) => {
                             for (let gapItem = first(gap); gapItem <= last(gap); gapItem++) {
+                                // last number in current gapItem is used as its subdomain index
+                                const subdomainIndex: number = gapItem % 10; 
                                 let stringGap: string = gapItem.toString();
                                 while (stringGap.length < rank) {
                                     stringGap = `0${stringGap}`;
                                 }
-                                resultForCurrentZoom[stringGap] = urlTemplate.replace("{subdomain}", subdomains[level]).replace("{quadkey}", stringGap);
+                                resultForCurrentZoom[stringGap] = urlTemplate.replace("{subdomain}", subdomains[subdomainIndex]).replace("{quadkey}", stringGap);
                             }
                         });
                         result.push(resultForCurrentZoom);
