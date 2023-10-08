@@ -125,17 +125,17 @@ export class GlobeMap implements IVisual {
         minHeatIntensity: 2,
         maxHeatIntensity: 10,
         heatPointSize: 7,
-        minHeatPointSize: 2,
+        minHeatPointSize: 2.8,
         maxHeatPointSize: 7,
-        heatmapScaleOnZoom: 0.95,
+        heatmapScaleOnZoom: 0.96,
         barWidth: 0.3,
-        minBarWidth: 0.01,
+        minBarWidth: 0.12,
         maxBarWidth: 0.3,
-        barWidthScaleOnZoom: 0.9,
+        barWidthScaleOnZoom: 0.96,
         barHeight: 5,
-        minBarHeight: 0.75,
+        minBarHeight: 2,
         maxBarHeight: 5,
-        barHeightScaleOnZoom: 0.9,
+        barHeightScaleOnZoom: 0.96,
         rotateSpeed: 0.5,
         zoomSpeed: 0.8,
         cameraAnimDuration: 1000, // ms
@@ -546,12 +546,12 @@ export class GlobeMap implements IVisual {
     private static cameraNear: number = 0.1;
     private static cameraFar: number = 10000;
     private static clearColor: number = 0xbac4d2;
-    private static ambientLight: number = 0x000000;
+    private static ambientLight: number = 0xffffff;
     private static directionalLight: number = 0xffffff;
-    private static directionalLightIntensity: number = 0.4;
+    private static directionalLightIntensity: number = 2;
     private static tileSize: number = 256;
     private static initialResolutionLevel: number = 2;
-    private static maxResolutionLevel: number = 6;
+    private static maxResolutionLevel: number = 5;
     private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/RoadOnDemand?output=json&uriScheme=https&key=${BingSettings.BingKey}`;
     private static reserveBindMapsMetadata: BingResourceMetadata = {
         imageUrl: "https://{subdomain}.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/{quadkey}?mkt={culture}&it=G,L&shading=hill&og=2310&n=z",
@@ -590,7 +590,7 @@ export class GlobeMap implements IVisual {
         this.renderer.setClearColor(GlobeMap.clearColor, 1);
         this.camera.position.z = this.GlobeSettings.cameraRadius;
         this.orbitControls.maxDistance = this.GlobeSettings.cameraRadius;
-        this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
+        this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 10;
         this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed;
         this.orbitControls.zoomSpeed = this.GlobeSettings.zoomSpeed;
         this.orbitControls.autoRotate = this.GlobeSettings.autoRotate;
