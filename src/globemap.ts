@@ -28,8 +28,6 @@ import "./../style/globemap.less";
 import powerbi from "powerbi-visuals-api";
 
 import isEmpty from "lodash.isempty";
-import first from "lodash.first";
-import last from "lodash.last";
 
 import * as THREE from "three";
 import { OrbitControls } from "./lib/Three/OrbitControls";
@@ -738,7 +736,7 @@ export class GlobeMap implements IVisual {
                         const gaps = zoomArray.gaps;
                         const resultForCurrentZoom = {};
                         gaps?.forEach((gap: number[]) => {
-                            for (let gapItem = first(gap); gapItem <= last(gap); gapItem++) {
+                            for (let gapItem = gap[0]; gapItem <= gap[gap.length-1]; gapItem++) {
                                 // last number in current gapItem is used as its subdomain index
                                 const subdomainIndex: number = gapItem % 10; 
                                 let stringGap: string = gapItem.toString();

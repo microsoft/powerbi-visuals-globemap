@@ -24,7 +24,6 @@
  *  THE SOFTWARE.
  */
 
-import keys from "lodash.keys";
 import clone from "lodash.clone";
 
 import powerbi from "powerbi-visuals-api";
@@ -127,7 +126,7 @@ export class VisualLayout {
 
     private static createNotifyChangedObject<T>(object: T, objectChanged: (o?: T, key?: string) => void): T {
         const result: T = <T>{};
-        keys(object).forEach(key => Object.defineProperty(result, key, {
+        Object.keys(object).forEach(key => Object.defineProperty(result, key, {
             get: () => object[key],
             set: (value) => { object[key] = value; objectChanged(object, key); },
             enumerable: true,
@@ -137,7 +136,7 @@ export class VisualLayout {
     }
 
     private static restrictToMinMax<T>(value: T, minValue?: T): T {
-        keys(value).forEach(x => value[x] = Math.max(minValue && minValue[x] || 0, value[x]));
+        Object.keys(value).forEach(x => value[x] = Math.max(minValue && minValue[x] || 0, value[x]));
         return value;
     }
 }
