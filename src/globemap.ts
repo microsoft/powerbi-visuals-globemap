@@ -878,6 +878,7 @@ export class GlobeMap implements IVisual {
         canvas.height = canvasSize;
         const texture: THREE.Texture = new THREE.Texture(canvas);
         texture.needsUpdate = true;
+        texture.colorSpace = THREE.SRGBColorSpace;
         this.loadTiles(canvas, tiles, () => {
             texture.needsUpdate = true;
             this.needsRender = true;
