@@ -901,7 +901,7 @@ export class GlobeMap implements IVisual {
             if (Object.prototype.hasOwnProperty.call(tiles, quadKey)) {
                 const coords: ICanvasCoordinate = this.getCoordByQuadKey(quadKey);
                 const tile: HTMLImageElement = new Image();
-                tile.onload = (event: Event) => {
+                tile.onload = () => {
                     tilesLoaded++;
                     canvasContext.drawImage(tile, coords.x * GlobeMap.tileSize, coords.y * GlobeMap.tileSize, GlobeMap.tileSize, GlobeMap.tileSize);
                     if (tilesLoaded === countTiles) {
@@ -1166,7 +1166,7 @@ export class GlobeMap implements IVisual {
         this.needsRender = true;
     }
 
-    private handleMouseDown = (event: MouseEvent) => {
+    private handleMouseDown = () => {
         cancelAnimationFrame(this.cameraAnimationFrameId);
         this.mouseDownTime = Date.now();
     };
