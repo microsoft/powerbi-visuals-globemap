@@ -252,43 +252,14 @@
   ],
   "objects": {
     "dataPoint": {
-      "displayName": "Data colors",
-      "displayNameKey": "Visual_DataPoint",
       "properties": {
-        "defaultColor": {
-          "displayName": "Default color",
-          "displayNameKey": "Visual_DefaultColor",
-          "type": {
-            "fill": {
-              "solid": {
-                "color": true
-              }
-            }
-          }
-        },
-        "showAllDataPoints": {
-          "displayName": "Show all",
-          "displayNameKey": "Visual_DataPoint_Show_All",
-          "type": {
-            "bool": true
-          }
-        },
         "fill": {
-          "displayName": "Fill",
-          "displayNameKey": "Visual_Fill",
           "type": {
             "fill": {
               "solid": {
                 "color": true
               }
             }
-          }
-        },
-        "fillRule": {
-          "displayName": "Color saturation",
-          "displayNameKey": "Visual_Gradient",
-          "type": {
-            "fill": {}
           }
         }
       }

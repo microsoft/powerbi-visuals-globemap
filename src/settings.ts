@@ -84,37 +84,15 @@ export class GlobeMapSettingsModel extends FormattingSettingsModel {
 
 export class DataPointSettings extends FormattingSettingsCard {
     
-    defaultColor = new formattingSettings.ColorPicker({
-        name: "defaultColor",
-        displayName: "Default color",
-        displayNameKey: "Visual_DefaultColor",
-        value: { value: "#000000" }
-    });
-
-    showAllDataPoints = new formattingSettings.ToggleSwitch({
-        name: "showAllDataPoints",
-        displayName: "Show all",
-        displayNameKey: "Visual_DataPoint_Show_All",
-        value: true,
-        topLevelToggle: true
-    });
-
     fill = new formattingSettings.ColorPicker({
         name: "fill",
         displayName: "Fill",
         displayNameKey: "Visual_Fill",
-        value: { value: "#000000" }
-    });
-
-    fillRule = new formattingSettings.ColorPicker({
-        name: "fillRule",
-        displayName: "Color saturation",
-        displayNameKey: "Visual_Gradient",
-        value: { value: "" }
+        value: { value: "#118DFF" }
     });
 
     name = "dataPoint";
     displayName = "Data colors";
     displayNameKey = "Visual_DataPoint";
-    slices = [this.defaultColor, this.showAllDataPoints, this.fill, this.fillRule];
+    slices = [this.fill];
 }
