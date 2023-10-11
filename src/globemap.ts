@@ -483,22 +483,8 @@ export class GlobeMap implements IVisual {
     }
 
     public getFormattingModel(): powerbi.visuals.FormattingModel { 
-        if (this.data && this.data.seriesDataPoints) {
-            for (let i: number = 0; i < this.data.seriesDataPoints.length; i++) {
-                const dataPoint: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
-
-                this.formattingServiceModel.dataPoint.slices.push(new formattingSettings.ColorPicker({                    
-                    name: "fill",
-                    displayName: dataPoint.label,
-                    selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector()),
-                    value: { value: dataPoint.color },
-                }));
-            }
-        }
-
-        const model = this.formattingSettingsService.buildFormattingModel(this.formattingServiceModel);
-
-        return model;
+        this.formattingServiceModel.populateDataPointColorSelector(this.data);
+        return this.formattingSettingsService.buildFormattingModel(this.formattingServiceModel);
     }
 
     constructor(options: VisualConstructorOptions) {        

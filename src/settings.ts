@@ -31,7 +31,14 @@ import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
 
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
 import FormattingSettingsCard = formattingSettings.Card;
+import FormattingSettingsSlice = formattingSettings.Slice;
 import FormattingSettingsModel = formattingSettings.Model;
+import { GlobeMapData } from "./interfaces/dataInterfaces";
+
+import { ColorHelper } from "powerbi-visuals-utils-colorutils";
+
+import powerbi from "powerbi-visuals-api";
+import ISelectionId = powerbi.visuals.ISelectionId
 
 export const CacheSettings = {
     /** Maximum cache size of cached geocode data. */
@@ -56,6 +63,23 @@ export class GlobeMapSettings extends DataViewObjectsParser {
 export class GlobeMapSettingsModel extends FormattingSettingsModel {
     dataPoint = new DataPointSettings();
     cards = [this.dataPoint];
+
+    populateDataPointColorSelector(globeMapData: GlobeMapData) {
+        const slices: FormattingSettingsSlice[] = this.dataPoint.slices;
+        if (slices && globeMapData && globeMapData.seriesDataPoints) {
+            globeMapData.seriesDataPoints.forEach(dataPoint => {
+                if(slices.some((dataPointColorSelector: FormattingSettingsSlice) => dataPointColorSelector.displayName === dataPoint.label)){
+                    return;
+                }
+                slices.push(new formattingSettings.ColorPicker({
+                    name: "fill",
+                    displayName: dataPoint.label,
+                    value: { value: dataPoint.color },
+                    selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector())
+                }));
+            });
+        }
+    }
 }
 
 export class DataPointSettings extends FormattingSettingsCard {
