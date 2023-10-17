@@ -110,8 +110,8 @@ export class CacheManager {
         }
     }
 
-    public async saveCoordinates(coordinates: ILocationDictionary): Promise<void> {
-        await this.memoryCache.saveCoordinates(coordinates);
+    public saveCoordinates(coordinates: ILocationDictionary): IPromise2<void, void> {
+        this.memoryCache.saveCoordinates(coordinates);
         return this.localStorageCache.saveCoordinates(coordinates);
     }
 }
