@@ -60,7 +60,6 @@ import IVisualEventService = powerbi.extensibility.IVisualEventService;
 import VisualUpdateType = powerbi.VisualUpdateType;
 
 import { GlobeMapSettings, GlobeMapSettingsModel } from "./settings";
-import { formattingSettings } from 'powerbi-visuals-utils-formattingmodel';
 import { VisualLayout } from "./visualLayout";
 import { GlobeMapCategoricalColumns, GlobeMapColumns } from "./columns";
 import {
@@ -78,7 +77,6 @@ import {
     BingMetadata
 } from "./interfaces/bingInterfaces";
 import { CacheManager } from "./cache/CacheManager";
-import { Geometry as CustomGeometry } from "./lib/Three/Geometry";
 import { BingSettings } from "./settings";
 
 const WebGLHeatmap = require("./lib/WebGLHeatmap");
@@ -112,7 +110,7 @@ import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel
 export class GlobeMap implements IVisual {
     private mouseDownTime: number;
     private localStorageService: ILocalVisualStorageService;
-    public static MercatorSphere: CustomGeometry;
+    public static MercatorSphere: Geometry;
     private GlobeSettings = {
         autoRotate: false,
         earthRadius: 30,
@@ -619,7 +617,7 @@ export class GlobeMap implements IVisual {
     }
 
     private createEarth(): THREE.Mesh {
-        const geometry: CustomGeometry = new CustomGeometry(
+        const geometry: Geometry = new Geometry(
             this.GlobeSettings.earthRadius,
             this.GlobeSettings.earthSegments,
             this.GlobeSettings.earthSegments);
@@ -1458,7 +1456,7 @@ export class GlobeMap implements IVisual {
     private initMercartorSphere() {
         if (GlobeMap.MercatorSphere) return;
 
-        const ms = new CustomGeometry(
+        const ms = new Geometry(
             this.GlobeSettings.earthRadius,
             this.GlobeSettings.earthSegments,
             this.GlobeSettings.earthSegments);
