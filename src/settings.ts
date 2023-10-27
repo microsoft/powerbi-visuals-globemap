@@ -72,7 +72,7 @@ export class GlobeMapSettingsModel extends FormattingSettingsModel {
                     return;
                 }
                 slices.push(new formattingSettings.ColorPicker({
-                    name: "fill",
+                    name: "defaultColor",
                     displayName: dataPoint.label,
                     value: { value: dataPoint.color },
                     selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector())
@@ -84,15 +84,15 @@ export class GlobeMapSettingsModel extends FormattingSettingsModel {
 
 export class DataPointSettings extends FormattingSettingsCard {
     
-    fill = new formattingSettings.ColorPicker({
-        name: "fill",
-        displayName: "Fill",
-        displayNameKey: "Visual_Fill",
+    defaultColor = new formattingSettings.ColorPicker({
+        name: "defaultColor",
+        displayName: "Default color",
+        displayNameKey: "Visual_DefaultColor",
         value: { value: "#118DFF" }
     });
 
     name = "dataPoint";
     displayName = "Data colors";
     displayNameKey = "Visual_DataPoint";
-    slices = [this.fill];
+    slices = [this.defaultColor];
 }

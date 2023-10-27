@@ -225,7 +225,7 @@
   "objects": {
     "dataPoint": {
       "properties": {
-        "fill": {
+        "defaultColor": {
           "type": {
             "fill": {
               "solid": {

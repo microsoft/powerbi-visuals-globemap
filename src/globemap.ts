@@ -190,7 +190,7 @@ export class GlobeMap implements IVisual {
     private selectionManager: ISelectionManager;
 
     // eslint-disable-next-line max-lines-per-function
-    public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost): GlobeMapData {
+    public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost, formattingSettingsModel: GlobeMapSettingsModel): GlobeMapData {
         const categorical: GlobeMapColumns<GlobeMapCategoricalColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
 
         if (!categorical
@@ -246,7 +246,8 @@ export class GlobeMap implements IVisual {
                         colorHelper: colorHelper,
                         colors: colors,
                         visualHost: visualHost,
-                        catIndex: null
+                        catIndex: null,
+                        settings: formattingSettingsModel
                     };
                     seriesDataPoints[i] = GlobeMap.createDataPointForEnumeration(dataPointsParams);
                     for (let j: number = 0; j < values.length; j++) {
@@ -406,7 +407,8 @@ export class GlobeMap implements IVisual {
                     colorHelper: colorHelper,
                     colors: colors,
                     visualHost: visualHost,
-                    catIndex: i
+                    catIndex: i,
+                    settings: formattingSettingsModel
                 };
                 seriesDataPoints[i] = GlobeMap.createDataPointForEnumeration(dataPointsParams);
             }
@@ -423,7 +425,7 @@ export class GlobeMap implements IVisual {
         return GlobeMapSettings.parse(dataView) as GlobeMapSettings;
     }
 
-    private static createDataPointForEnumeration(dataPointsParams: { dataView, seriesIndex, source, visualHost, catIndex, metaData, colors, colorHelper }): GlobeMapSeriesDataPoint {
+    private static createDataPointForEnumeration(dataPointsParams: { dataView, seriesIndex, source, visualHost, catIndex, metaData, colorHelper, settings }): GlobeMapSeriesDataPoint {
         let sourceForFormat: DataViewMetadataColumn = dataPointsParams.source;
         let nameForFormat: PrimitiveValue = dataPointsParams.source.displayName;
 
@@ -450,10 +452,8 @@ export class GlobeMap implements IVisual {
         const objects = categoryColumn && categoryColumn.objects;
         let color: string = (
             objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint 
-                ? objects[dataPointsParams.catIndex].dataPoint.fill["solid"].color 
-                : dataPointsParams.metaData && dataPointsParams.metaData.objects
-                ? dataPointsParams.colorHelper.getColorForMeasure(dataPointsParams.metaData.objects, "")
-                : dataPointsParams.colors.getColor(dataPointsParams.seriesIndex).value);
+                ? objects[dataPointsParams.catIndex].dataPoint.defaultColor["solid"].color 
+                : dataPointsParams.settings.dataPoint.defaultColor.value.value);
 
         if (dataPointsParams.colorHelper.isHighContrast) {
             color = dataPointsParams.colorHelper.getHighContrastColor("foreground", color);
@@ -988,7 +988,7 @@ export class GlobeMap implements IVisual {
 
         if (options.type & VisualUpdateType.Data) {
             this.cleanHeatAndBar();
-            const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost);
+            const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost, this.formattingServiceModel);
             this.data = data;
 
             if (data) {
