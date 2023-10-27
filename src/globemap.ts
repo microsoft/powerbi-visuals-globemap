@@ -178,7 +178,7 @@ export class GlobeMap implements IVisual {
     public visualHost: IVisualHost;
 
     private formattingSettingsService: FormattingSettingsService;
-    private formattingServiceModel: GlobeMapSettingsModel;
+    public formattingServiceModel: GlobeMapSettingsModel;
 
     private isFirstLoad: boolean = true;
 
@@ -192,14 +192,19 @@ export class GlobeMap implements IVisual {
     // eslint-disable-next-line max-lines-per-function
     public static converter(dataView: DataView, colors: IColorPalette, visualHost: IVisualHost, formattingSettingsModel: GlobeMapSettingsModel): GlobeMapData {
         const categorical: GlobeMapColumns<GlobeMapCategoricalColumns> = GlobeMapColumns.getCategoricalColumns(dataView);
+        const settings: GlobeMapSettings = GlobeMap.parseSettings(dataView);
 
         if (!categorical
             || !categorical.Location
             || isEmpty(categorical.Location.values) && (isEmpty(categorical.X) || isEmpty(categorical.Y))) {
-            return null;
+            return {
+                dataView: dataView,
+                dataPoints: [],
+                seriesDataPoints: [],
+                settings: settings
+            };
         }
 
-        const settings: GlobeMapSettings = GlobeMap.parseSettings(dataView);
         const groupedColumns: GlobeMapColumns<DataViewValueColumn>[] = GlobeMapColumns.getGroupedValueColumns(dataView);
         const dataPoints: GlobeMapDataPoint[] = [];
         let seriesDataPoints: GlobeMapSeriesDataPoint[] = [];
@@ -989,9 +994,9 @@ export class GlobeMap implements IVisual {
         if (options.type & VisualUpdateType.Data) {
             this.cleanHeatAndBar();
             const data: GlobeMapData = GlobeMap.converter(options.dataViews[0], this.colors, this.visualHost, this.formattingServiceModel);
-            this.data = data;
-
             if (data) {
+                this.data = data;
+
                 const locationsNeedToBeLoaded: ILocationKeyDictionary = {};
                 data.dataPoints.forEach((d: GlobeMapDataPoint) => {
                     if (!d.location && d.place)
@@ -1018,10 +1023,6 @@ export class GlobeMap implements IVisual {
                         this.events.renderingFailed(options);
                     });
             }
-            else {
-                this.render();
-                this.events.renderingFinished(options);
-            }
         }
     }
 
@@ -1034,6 +1035,10 @@ export class GlobeMap implements IVisual {
     }
 
     private render(): void {
+        if (!this.data) {
+            return;
+        }
+
         if (!this.readyToRender) {
             this.defferedRender();
             return;
@@ -1041,7 +1046,7 @@ export class GlobeMap implements IVisual {
 
         this.updateBarsAndHeatMapByZoom();
 
-        if (this.barsGroup.children?.length > 0 && this.camera && (this.initialLocationsLength !== this.barsGroup.children.length || this.barsGroup.children.length === 1)) {
+        if (this.barsGroup.children.length > 0 && this.camera && (this.initialLocationsLength !== this.barsGroup.children.length || this.barsGroup.children.length === 1)) {
             this.averageBarVector.multiplyScalar(1 / this.barsGroup.children.length);
             if (this.locationsLoaded === this.locationsToLoad) {
                 this.initialLocationsLength = this.barsGroup.children.length;
