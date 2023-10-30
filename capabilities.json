@@ -233,6 +233,15 @@
               }
             }
           }
+        },
+        "fill": {
+          "type": {
+            "fill":{
+              "solid": {
+                "color": true
+              }
+            }
+          }
         }
       }
     }

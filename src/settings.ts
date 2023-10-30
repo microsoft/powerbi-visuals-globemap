@@ -72,7 +72,7 @@ export class GlobeMapSettingsModel extends FormattingSettingsModel {
                     return;
                 }
                 slices.push(new formattingSettings.ColorPicker({
-                    name: "defaultColor",
+                    name: "fill",
                     displayName: dataPoint.label,
                     value: { value: dataPoint.color },
                     selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector())

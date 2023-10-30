@@ -457,7 +457,7 @@ export class GlobeMap implements IVisual {
         const objects = categoryColumn && categoryColumn.objects;
         let color: string = (
             objects && objects[dataPointsParams.catIndex] && objects[dataPointsParams.catIndex].dataPoint 
-                ? objects[dataPointsParams.catIndex].dataPoint.defaultColor["solid"].color 
+                ? objects[dataPointsParams.catIndex].dataPoint.fill["solid"].color 
                 : dataPointsParams.settings.dataPoint.defaultColor.value.value);
 
         if (dataPointsParams.colorHelper.isHighContrast) {
