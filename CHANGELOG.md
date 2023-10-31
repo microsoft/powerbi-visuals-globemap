@@ -1,3 +1,10 @@
+## 3.2.1
+* Updated all dependencies
+* Changed max zoom level
+* Changed scaling of heatmap and bars height and width
+* Added sRGB color space for earth textures
+* Changed conditions for dataview mapping
+
 ## 3.2.0
 * Updated all dependencies
 * Got rid of vulnerabilities

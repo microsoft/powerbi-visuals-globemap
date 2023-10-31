@@ -97,7 +97,7 @@ describe("GlobeMap", () => {
 
     describe("Converter tests", () => {
         it("should create same count of datapoints as dataView values", () => {
-            let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
+            let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost, visualInstance.formattingServiceModel);
 
             expect(data.dataPoints.length).toBe(dataView.categorical!.values![0].values.length);
         });
@@ -106,7 +106,7 @@ describe("GlobeMap", () => {
             let invalidDataSet = ["0qqa123", "value", 1, 2, 3, 4, 5, 6];
 
             dataView.categorical!.categories![0].values = invalidDataSet;
-            let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
+            let data = VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost, visualInstance.formattingServiceModel);
 
             expect(data.dataPoints.length).toBe(dataView.categorical!.categories![0].values.length);
         });
@@ -124,7 +124,7 @@ describe("GlobeMap", () => {
 
             it("Location should not be mandatory", () => {
                 expect(() => {
-                    VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost);
+                    VisualClass.converter(dataView, visualInstance.colors, visualInstance.visualHost, visualInstance.formattingServiceModel);
                 }).not.toThrow();
             });
         });
