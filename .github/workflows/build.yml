@@ -34,10 +34,13 @@ jobs:
 
 
     - env: 
-        BING_KEY: ${{ secrets.BING_KEY }}
+        TEST_BING_KEY: ${{ secrets.TEST_BING_KEY }}
+        BING_KEY: ${{ secrets.BING_KEY}}
       run: |
         touch .env
-        echo BING_KEY="$BING_KEY" >> .env
+        echo TEST_BING_KEY="$TEST_BING_KEY" >> .env
+        echo BING_KEY = "$BING_KEY"
+        echo TEST_BING_KEY = "$TEST_BING_KEY"
 
     - run: npm run test
       env:
