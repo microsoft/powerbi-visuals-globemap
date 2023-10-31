@@ -33,9 +33,11 @@ jobs:
     - run: npm run package
 
 
-    - run: |
+    - env: 
+        BING_KEY: ${{ secrets.BING_KEY }}
+      run: |
         touch .env
-        echo BING_KEY=${{ secrets.BING_KEY }} >> .env
+        echo BING_KEY="$BING_KEY" >> .env
 
     - run: npm run test
       env:
