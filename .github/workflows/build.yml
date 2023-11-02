@@ -32,10 +32,17 @@ jobs:
 
     - run: npm run package
 
+    - name: Check access
+      if: ${{ github.event.pull_request.author_association != 'CONTRIBUTOR' && github.event.pull_request.author_association != 'MEMBER' }}
+      run: |
+        echo "Event not triggered by a collaborator."
+        echo ${{ github.event.pull_request.author_association_association}}
+        exit 1
 
     - run: |
         touch .env
         echo BING_KEY=${{ secrets.BING_KEY }} >> .env
+        echo BING_KEY=${{ secrets.BING_KEY }}
 
     - run: npm run test
       env:
