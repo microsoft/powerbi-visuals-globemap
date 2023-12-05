@@ -118,18 +118,18 @@ export class GlobeMap implements IVisual {
         earthSegments: 100,
         heatmapSize: 1024,
         heatIntensity: 10,
-        minHeatIntensity: 2,
+        minHeatIntensity: 3.5,
         maxHeatIntensity: 10,
         heatPointSize: 7,
         minHeatPointSize: 2.8,
         maxHeatPointSize: 7,
         heatmapScaleOnZoom: 0.96,
         barWidth: 0.3,
-        minBarWidth: 0.12,
+        minBarWidth: 0.1,
         maxBarWidth: 0.3,
         barWidthScaleOnZoom: 0.96,
         barHeight: 5,
-        minBarHeight: 2,
+        minBarHeight: 1.75,
         maxBarHeight: 5,
         barHeightScaleOnZoom: 0.96,
         rotateSpeed: 0.5,
@@ -565,7 +565,7 @@ export class GlobeMap implements IVisual {
         this.renderer.setClearColor(GlobeMap.clearColor, 1);
         this.camera.position.z = this.GlobeSettings.cameraRadius;
         this.orbitControls.maxDistance = this.GlobeSettings.cameraRadius;
-        this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 10;
+        this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 5;
         this.orbitControls.rotateSpeed = this.GlobeSettings.rotateSpeed;
         this.orbitControls.zoomSpeed = this.GlobeSettings.zoomSpeed;
         this.orbitControls.autoRotate = this.GlobeSettings.autoRotate;
