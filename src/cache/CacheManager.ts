@@ -1,6 +1,6 @@
 import powerbi from "powerbi-visuals-api";
 import IPromise2 = powerbi.IPromise2;
-import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
+import IVisualLocalStorageV2Service = powerbi.extensibility.IVisualLocalStorageV2Service;
 import isEmpty from "lodash.isempty";
 import { ILocationDictionary, ILocationKeyDictionary } from "../interfaces/locationInterfaces";
 import { MemoryCache } from "./MemoryCache";
@@ -13,9 +13,9 @@ export class CacheManager {
     private localStorageCache: LocalStorageCache;
     private bingGeocoder: BingGeocoder;
     private coordsInLocalStorage: ILocationDictionary;
-    private localStorageService: ILocalVisualStorageService;
+    private localStorageService: IVisualLocalStorageV2Service;
 
-    constructor(localStorageService: ILocalVisualStorageService) {
+    constructor(localStorageService: IVisualLocalStorageV2Service) {
         this.memoryCache = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
         this.localStorageService = localStorageService;
         this.bingGeocoder = new BingGeocoder();
@@ -23,9 +23,9 @@ export class CacheManager {
     }
 
     private createLocalStorageCache(): IPromise2<LocalStorageCache, void>  {
-        const cache = new LocalStorageCache(this.localStorageService);
+        const cache: LocalStorageCache = new LocalStorageCache(this.localStorageService);
 
-        return (<LocalStorageCache>cache).syncStatus()
+        return cache.syncStatus()
             .then(status => {
                 console.log(`Received local storage status: ${status}`);
                 this.localStorageCache = cache;

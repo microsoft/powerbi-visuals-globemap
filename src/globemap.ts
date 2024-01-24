@@ -46,7 +46,7 @@ import DataViewObjectPropertyIdentifier = powerbi.DataViewObjectPropertyIdentifi
 import ISelectionId = powerbi.visuals.ISelectionId;
 
 import IVisual = powerbi.extensibility.IVisual;
-import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
+import IVisualLocalStorageV2Service = powerbi.extensibility.IVisualLocalStorageV2Service;
 import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 import IColorPalette = powerbi.extensibility.IColorPalette;
 import TooltipHideOptions = powerbi.extensibility.TooltipHideOptions;
@@ -109,7 +109,7 @@ import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel
 
 export class GlobeMap implements IVisual {
     private mouseDownTime: number;
-    private localStorageService: ILocalVisualStorageService;
+    private localStorageService: IVisualLocalStorageV2Service;
     public static MercatorSphere: Geometry;
     private GlobeSettings = {
         autoRotate: false,
@@ -480,7 +480,7 @@ export class GlobeMap implements IVisual {
 
     constructor(options: VisualConstructorOptions) {        
         this.currentLanguage = options.host.locale;
-        this.localStorageService = options.host.storageService;
+        this.localStorageService = options.host.storageV2Service;
         this.formattingSettingsService = new FormattingSettingsService();
         this.events = options.host.eventService;
 
