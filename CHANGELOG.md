@@ -1,4 +1,7 @@
-## 3.2.1
+## 3.2.2.0
+* Fix console error when using Heat without Height
+
+## 3.2.1.0
 * Updated all dependencies
 * Changed max zoom level
 * Changed scaling of heatmap and bars height and width

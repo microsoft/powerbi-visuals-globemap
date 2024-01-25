@@ -403,7 +403,7 @@ export class GlobeMap implements IVisual {
                 };
                 dataPoints.push(renderDatum);
 
-                const source = {...groupedColumns?.[0].Height.source, displayName: displayName};
+                const source = {...groupedColumns?.[0].Height?.source, displayName: displayName};
                 const dataPointsParams = {
                     dataView: dataView,
                     source: source,
