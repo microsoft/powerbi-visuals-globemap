@@ -56,10 +56,22 @@ import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructor
 import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisualHost = powerbi.extensibility.visual.IVisualHost;
 import IVisualEventService = powerbi.extensibility.IVisualEventService;
+import ILocalizationManager = powerbi.extensibility.ILocalizationManager;
 
 import VisualUpdateType = powerbi.VisualUpdateType;
 
-import { GlobeMapSettings, GlobeMapSettingsModel } from "./settings";
+import SubSelectionStylesType = powerbi.visuals.SubSelectionStylesType;
+import CustomVisualSubSelection = powerbi.visuals.CustomVisualSubSelection;
+import CustomVisualObject = powerbi.visuals.CustomVisualObject;
+import SubSelectionStyles = powerbi.visuals.SubSelectionStyles;
+import VisualSubSelectionShortcuts = powerbi.visuals.VisualSubSelectionShortcuts;
+import VisualShortcutType = powerbi.visuals.VisualShortcutType;
+import SubSelectionRegionOutline = powerbi.visuals.SubSelectionRegionOutline;
+import SubSelectionOutlineVisibility = powerbi.visuals.SubSelectionOutlineVisibility;
+import ArcSubSelectionOutline = powerbi.visuals.ArcSubSelectionOutline;
+import SubSelectionOutlineType = powerbi.visuals.SubSelectionOutlineType;
+
+import { GlobeMapSettings, GlobeMapSettingsModel, DataPointReferences } from "./settings";
 import { VisualLayout } from "./visualLayout";
 import { GlobeMapCategoricalColumns, GlobeMapColumns } from "./columns";
 import {
@@ -70,7 +82,7 @@ import {
     TileMap,
     IGlobeMapValueTypeDescriptor,
     IGlobeMapObject3DWithToolTipData,
-    ICanvasCoordinate,
+    ICanvasCoordinate
 } from "./interfaces/dataInterfaces";
 import {
     BingResourceMetadata,
@@ -176,9 +188,18 @@ export class GlobeMap implements IVisual {
     private animationFrameId: number;
     private cameraAnimationFrameId: number;
     public visualHost: IVisualHost;
+    private localizationManager: ILocalizationManager;
 
     private formattingSettingsService: FormattingSettingsService;
     public formattingServiceModel: GlobeMapSettingsModel;
+
+    public visualOnObjectFormatting: powerbi.extensibility.visual.VisualOnObjectFormatting;
+    private formatMode: boolean = false;
+    private pressKey: boolean = false;
+    private barFromMouseDown: THREE.Object3D;
+    private subSelectedBar: IGlobeMapObject3DWithToolTipData;
+    private subSelectionService: powerbi.extensibility.IVisualSubSelectionService;
+    private subSelectionRegionOutlines: Record<string, SubSelectionRegionOutline > = {}; 
 
     private isFirstLoad: boolean = true;
 
@@ -478,10 +499,9 @@ export class GlobeMap implements IVisual {
         return this.formattingSettingsService.buildFormattingModel(this.formattingServiceModel);
     }
 
-    constructor(options: VisualConstructorOptions) {        
+    constructor(options: VisualConstructorOptions) {       
         this.currentLanguage = options.host.locale;
         this.localStorageService = options.host.storageV2Service;
-        this.formattingSettingsService = new FormattingSettingsService();
         this.events = options.host.eventService;
 
         this.root = options.element;
@@ -494,13 +514,108 @@ export class GlobeMap implements IVisual {
         this.visualHost.telemetry.trace(VisualEventType.Trace, 'bing load coordinates');
         this.tooltipService = this.visualHost.tooltipService;
 
+        this.localizationManager = this.visualHost.createLocalizationManager();
+        this.formattingSettingsService = new FormattingSettingsService(this.localizationManager);
+
+        this.subSelectionService = this.visualHost.subSelectionService;
         this.selectionManager = this.visualHost.createSelectionManager();
 
         this.layout = new VisualLayout();
         this.readyToRender = false;
         this.cacheManager = new CacheManager(this.localStorageService);
         this.colors = options.host.colorPalette;
+        this.visualOnObjectFormatting = {
+            getSubSelectionStyles: (subSelections) => this.getSubSelectionStyles(subSelections),
+            getSubSelectionShortcuts: (subSelections) => this.getSubSelectionShortcuts(subSelections),
+            getSubSelectables: () => this.getSubSelectables()
+        };
         this.setup();
+    }
+
+    private getSubSelectables(): CustomVisualSubSelection[] | undefined {
+        const result: CustomVisualSubSelection[] = [];
+        this.data?.seriesDataPoints.forEach((dataPoint: GlobeMapSeriesDataPoint) => {
+            const dataPointSubSelection: CustomVisualSubSelection = this.createSubSelectionForDataPoint(dataPoint);
+            result.push(dataPointSubSelection);
+        });
+        return result;
+    }
+
+    private createSubSelectionForDataPoint(dataPoint: GlobeMapSeriesDataPoint | IGlobeMapObject3DWithToolTipData, showUI: boolean = false, event?: MouseEvent): CustomVisualSubSelection {
+        const customVisualObjects: CustomVisualObject[] = [];
+        if (dataPoint){
+            const customVisualObject: CustomVisualObject = {
+                objectName: DataPointReferences.fill.objectName,
+                selectionId: dataPoint.identity as powerbi.visuals.ISelectionId
+            };
+            customVisualObjects.push(customVisualObject);
+        }
+
+        const dataPointSubSelection: CustomVisualSubSelection = {
+            customVisualObjects,
+            displayName: dataPoint ? dataPoint.label : "",
+            subSelectionType: SubSelectionStylesType.Shape,
+            showUI,
+            selectionOrigin: {
+                x: event ? event.clientX : 0,
+                y: event ? event.clientY : 0
+            }
+        };
+
+        return dataPointSubSelection;
+    }
+
+    private getSubSelectionStyles(subSelections: CustomVisualSubSelection[]): SubSelectionStyles | undefined {
+        const visualObject = subSelections[0]?.customVisualObjects[0];
+        if (visualObject) {
+            switch (visualObject.objectName) {
+                case DataPointReferences.fill.objectName:
+                    return this.getDataPointStyles(subSelections);
+            }
+        }
+    }
+
+    private getDataPointStyles(subSelections: CustomVisualSubSelection[]): SubSelectionStyles {
+        const selector = subSelections[0].customVisualObjects[0].selectionId?.getSelector();
+        return {
+            type: SubSelectionStylesType.Shape,
+            fill: {
+                reference: {
+                    ...DataPointReferences.fill,
+                    selector
+                },
+                label: this.localizationManager.getDisplayName("Visual_Fill")
+            },
+        };
+    }
+
+    private getSubSelectionShortcuts(subSelections: CustomVisualSubSelection[]): VisualSubSelectionShortcuts | undefined {
+        const visualObject = subSelections[0]?.customVisualObjects[0];
+        if (visualObject) {
+            switch (visualObject.objectName) {
+                case DataPointReferences.fill.objectName:
+                    return this.getDataPointShortcuts(subSelections);
+            }
+        }
+    }
+
+    private getDataPointShortcuts(subSelections: CustomVisualSubSelection[]): VisualSubSelectionShortcuts {
+        const selectionId: powerbi.visuals.ISelectionId = subSelections[0].customVisualObjects[0].selectionId;
+        const selector = selectionId?.getSelector();
+        return [
+            {
+                type: VisualShortcutType.Reset,
+                relatedResetFormattingIds: [{
+                    ...DataPointReferences.fill,
+                    selector
+                }]
+            },
+            {
+                type: VisualShortcutType.Navigate,
+                destinationInfo: { cardUid: DataPointReferences.cardUid },
+                label: this.localizationManager.getDisplayName("Visual_OnObject_FormatDataPoint")
+            }
+        ];
     }
 
     private setup(): void {
@@ -597,6 +712,12 @@ export class GlobeMap implements IVisual {
                 this.renderer.render(this.scene, this.camera);
                 this.intersectBars();
                 this.needsRender = false;
+
+                if (this.formatMode){
+                    this.formatModeShowActiveOutlines();
+                    this.renderOutlines();
+                }
+
             } catch (e) {
                 console.error(`Render error: ${e}`);
             }
@@ -642,11 +763,20 @@ export class GlobeMap implements IVisual {
         this.updateBarsAndHeatMapByZoom(-zoomDirection);
         this.orbitControls.update();
         this.animateCamera(this.camera.position);
+
+        if (this.formatMode){
+            this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
+            this.needsRender = true;
+        }
     }
 
     public rotateCam(deltaX: number, deltaY: number): void {
         if (!this.orbitControls.enabled) {
             return;
+        }
+        if (this.formatMode) {
+            this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
+            this.needsRender = true;
         }
         this.orbitControls.rotateLeft(2 * Math.PI * deltaX / this.rendererCanvas.offsetHeight * this.GlobeSettings.rotateSpeed);
         this.orbitControls.rotateUp(2 * Math.PI * deltaY / this.rendererCanvas.offsetHeight * this.GlobeSettings.rotateSpeed);
@@ -975,7 +1105,8 @@ export class GlobeMap implements IVisual {
         this.root.style.height = this.layout.viewportIn.height.toString();
         this.root.style.width = this.layout.viewportIn.width.toString();
 
-        this.formattingServiceModel = this.formattingSettingsService.populateFormattingSettingsModel(GlobeMapSettingsModel, options.dataViews)
+        this.formattingServiceModel = this.formattingSettingsService.populateFormattingSettingsModel(GlobeMapSettingsModel, options.dataViews[0]);
+        this.formatMode = options.formatMode;
 
         this.controlContainer.setAttribute("style",
             `display: ${this.layout.viewportIn.height > GlobeMap.ZoomControlSettings.height
@@ -1024,7 +1155,103 @@ export class GlobeMap implements IVisual {
                     });
             }
         }
+
+        if (this.formatMode && (options.type & (powerbi.VisualUpdateType.Data
+            | powerbi.VisualUpdateType.Resize
+            | powerbi.VisualUpdateType.FormattingSubSelectionChange))){
+
+            this.updateOutlinesFromSubSelections(options.subSelections);
+            this.events.renderingFinished(options);
+        }
     }
+
+    private updateOutlinesFromSubSelections(subSelections: CustomVisualSubSelection[]){
+        const visualObject = subSelections[0]?.customVisualObjects[0];
+        if (visualObject) {
+            switch (visualObject.objectName) {
+                case DataPointReferences.fill.objectName: 
+                    this.updateDataPointOutline(subSelections);
+            }
+        }
+    }
+
+    private updateDataPointOutline(subSelections: CustomVisualSubSelection[]): void {
+        const selectionId: powerbi.visuals.ISelectionId = subSelections[0].customVisualObjects[0].selectionId;
+        if (selectionId){
+            const subSelectedBar: IGlobeMapObject3DWithToolTipData = this.subSelectedBar;
+            this.needsRender = true;
+
+            //animation for disambiguation menu
+            if ((subSelectedBar && !selectionId.equals(subSelectedBar.identity)) || (!subSelectedBar && !this.hoveredBar)){
+                const newSelectedBar = this.barsGroup?.children.find((bar: IGlobeMapObject3DWithToolTipData) => selectionId.equals(bar.identity));
+                this.subSelectedBar = newSelectedBar as IGlobeMapObject3DWithToolTipData;
+                if (this.subSelectedBar) {
+                    this.animateCamera(this.subSelectedBar.position);
+                }
+            }
+
+        }
+    }
+
+    private formatModeShowActiveOutlines(): void {
+        this.formatModeResetOutline(SubSelectionOutlineVisibility.Active);
+        const selectedBar = this.subSelectedBar;
+        if (selectedBar && !this.pressKey) {
+            const regionOutline: SubSelectionRegionOutline = this.formatModeCreateOutline(selectedBar, SubSelectionOutlineVisibility.Active);
+            this.subSelectionRegionOutlines[regionOutline.id] = regionOutline;
+        }
+    }
+
+    private formatModeResetOutline(visibility: SubSelectionOutlineVisibility): void {
+        const regionOutlines = Object.values(this.subSelectionRegionOutlines); 
+        const outline = regionOutlines.find(outline => outline.visibility === visibility); 
+        if (outline) { 
+            this.subSelectionRegionOutlines[outline.id] = { 
+            ...this.subSelectionRegionOutlines[outline.id], 
+            visibility: SubSelectionOutlineVisibility.None 
+            }; 
+        } 
+    }
+
+    private formatModeCreateOutline(bar: IGlobeMapObject3DWithToolTipData, visibility: SubSelectionOutlineVisibility): SubSelectionRegionOutline {
+        const barPos = this.worldToScreenPositions(bar);
+        const arcOutline: ArcSubSelectionOutline = {
+            type: SubSelectionOutlineType.Arc,
+            center: {...barPos},
+            innerRadius: 0,
+            outerRadius: 10,
+            startAngle: 0,
+            endAngle: 360
+        }
+            
+        const regionOutline: SubSelectionRegionOutline = { 
+            id: `${bar.identity.getKey()}`, 
+            visibility: visibility, 
+            outline: arcOutline
+        }; 
+
+        return regionOutline;
+    }
+
+    private worldToScreenPositions(bar: THREE.Object3D) {
+        const vector = new THREE.Vector3();
+        const canvas = this.renderer.domElement;
+
+        bar.updateMatrixWorld();  
+        vector.setFromMatrixPosition(bar.matrixWorld);
+
+        vector.project(this.camera); 
+
+        const x = (vector.x + 1) / 2 * canvas.width ;
+        const y = -(vector.y - 1) / 2 * canvas.height;
+        
+        return {x, y};
+    }
+        
+    private renderOutlines(): void { 
+        const regionOutlines = Object.values(this.subSelectionRegionOutlines); 
+        this.subSelectionService.updateRegionOutlines(regionOutlines); 
+    } 
 
     public cleanHeatAndBar(): void {
         this.heatmap.clear();
@@ -1139,20 +1366,54 @@ export class GlobeMap implements IVisual {
         this.mousePosNormalized = new THREE.Vector2(fractionalPositionX * 2 - 1, -fractionalPositionY * 2 + 1);
     
         this.needsRender = true;
+
+        if (this.formatMode && !this.pressKey){
+            this.handleFormatModeHoverBar();
+        }
     }
+
+    private handleFormatModeHoverBar(): void { 
+        this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
+        const regionOutlines = Object.values(this.subSelectionRegionOutlines); 
+        const activeOutline = regionOutlines.find(outline => outline.visibility === SubSelectionOutlineVisibility.Active); 
+        const hoveredBar = this.hoveredBar as IGlobeMapObject3DWithToolTipData;
+
+        if (hoveredBar) {
+            const newHoverOutline: SubSelectionRegionOutline = this.formatModeCreateOutline(hoveredBar, SubSelectionOutlineVisibility.Hover);
+            if (newHoverOutline.id !== activeOutline?.id){
+                this.subSelectionRegionOutlines[newHoverOutline.id] = newHoverOutline;
+            }
+        }
+    } 
 
     private handleMouseDown = () => {
         cancelAnimationFrame(this.cameraAnimationFrameId);
         this.mouseDownTime = Date.now();
+        if (this.formatMode) {
+            this.handleFormatModeMouseDown();
+        }
     };
 
+    private handleFormatModeMouseDown(): void{
+            this.pressKey = true;
+            this.formatModeResetOutline(SubSelectionOutlineVisibility.Active);
+            this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
+            this.barFromMouseDown = this.hoveredBar as IGlobeMapObject3DWithToolTipData ?? null;
+            this.needsRender = true;
+    }
+
     private handleMouseUp = (event: MouseEvent) => {
-        // Debounce slow clicks
-        if ((Date.now() - this.mouseDownTime) > this.GlobeSettings.clickInterval) {
-            return;
+        const isSlowClick: boolean = (Date.now() - this.mouseDownTime) > this.GlobeSettings.clickInterval;
+
+        if (this.formatMode){
+           this.handleFormatModeMouseUp(isSlowClick, event);
         }
 
-        if (this.hoveredBar && event.shiftKey) {
+        // Debounce slow clicks
+        if (isSlowClick){
+            return;
+        }
+        if (this.hoveredBar && event.shiftKey && !this.formatMode) {
             this.selectedBar = this.hoveredBar;
             this.animateCamera(this.selectedBar.position, () => {
                 if (!this.selectedBar) return;
@@ -1160,7 +1421,7 @@ export class GlobeMap implements IVisual {
                 this.orbitControls.minDistance = 1;
             });
         } else {
-            if (this.selectedBar) {
+            if (this.selectedBar && !this.formatMode) {
                 this.animateCamera(this.selectedBar.position, () => {
                     this.orbitControls.target.set(0, 0, 0);
                     this.orbitControls.minDistance = this.GlobeSettings.earthRadius + 1;
@@ -1169,6 +1430,21 @@ export class GlobeMap implements IVisual {
             }
         }
     }
+
+    private handleFormatModeMouseUp(isSlowClick: boolean, event: MouseEvent): void { 
+        this.pressKey = false;
+        this.subSelectedBar = this.barFromMouseDown as IGlobeMapObject3DWithToolTipData ?? this.subSelectedBar;
+        if (!isSlowClick && !this.barFromMouseDown){
+            this.subSelectedBar = null;
+        }
+        this.subSelectFromEvent(event, event.button === 2);
+        this.needsRender = true;
+    } 
+
+    private subSelectFromEvent(event: MouseEvent, showUI: boolean): void { 
+        const newSubSelection = this.createSubSelectionForDataPoint(this.subSelectedBar, showUI, event);
+        this.subSelectionService.subSelect(newSubSelection); 
+    } 
 
     private handleWheel = (e: WheelEvent) => {
         e.preventDefault();
@@ -1179,6 +1455,10 @@ export class GlobeMap implements IVisual {
             const event: { deltaY, detail } = e;
             const delta: number = event.deltaY < 0 || event.detail < 0 ? 1 : -1;
             this.updateBarsAndHeatMapByZoom(delta);
+            if (this.formatMode) {
+                this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
+                this.needsRender = true;
+            }
         }
     }
 
@@ -1487,6 +1767,7 @@ export class GlobeMap implements IVisual {
         const len: number = this.data.dataPoints.length;
         for (let i: number = 0; i < len; ++i) {
             const renderDatum: GlobeMapDataPoint = this.data.dataPoints[i];
+            const seriesDatum: GlobeMapSeriesDataPoint = this.data.seriesDataPoints[i];
 
             if (!renderDatum.location || renderDatum.location.longitude === undefined || renderDatum.location.latitude === undefined
                 || (renderDatum.location.longitude === 0 && renderDatum.location.latitude === 0)
@@ -1546,7 +1827,7 @@ export class GlobeMap implements IVisual {
                 for (let j: number = 0; j < measuresBySeries.length; j++) {
                     previousMeasureValue += measuresBySeries[j];
                     const geometry: THREE.BoxGeometry = new THREE.BoxGeometry(this.GlobeSettings.barWidth, this.GlobeSettings.barWidth, barHeight * measuresBySeries[j]);
-                    const bar: THREE.Mesh & {toolTipData?} = new THREE.Mesh(geometry, this.getBarMaterialByIndex(i));
+                    const bar: THREE.Mesh & {toolTipData?, identity?, label?} = new THREE.Mesh(geometry, this.getBarMaterialByIndex(i));
                     const position: THREE.Vector3 = vector.clone().multiplyScalar(this.GlobeSettings.earthRadius + ((barHeight / 2) * previousMeasureValue));
                     bar.position.set(position.x, position.y, position.z);
                     bar.lookAt(vector);
@@ -1554,9 +1835,14 @@ export class GlobeMap implements IVisual {
                         ? renderDatum.toolTipData
                         : this.getToolTipDataForSeries(renderDatum.toolTipData, dataPointToolTip[j]);
 
+                    bar.identity = seriesDatum.identity;
+                    bar.label = seriesDatum.label;
                     this.barsGroup.add(bar);
 
                     previousMeasureValue += measuresBySeries[j];
+                    if (this.subSelectedBar?.identity.equals(bar.identity)){
+                        this.subSelectedBar = bar as IGlobeMapObject3DWithToolTipData;
+                    }
                 }
             }
         }

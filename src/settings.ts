@@ -30,7 +30,7 @@ import { dataViewObjectsParser } from "powerbi-visuals-utils-dataviewutils";
 import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
 
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
-import FormattingSettingsCard = formattingSettings.Card;
+import FormattingSettingsCard = formattingSettings.SimpleCard;
 import FormattingSettingsSlice = formattingSettings.Slice;
 import FormattingSettingsModel = formattingSettings.Model;
 import { GlobeMapData } from "./interfaces/dataInterfaces";
@@ -39,6 +39,7 @@ import { ColorHelper } from "powerbi-visuals-utils-colorutils";
 
 import powerbi from "powerbi-visuals-api";
 import ISelectionId = powerbi.visuals.ISelectionId
+import FormattingId = powerbi.visuals.FormattingId;
 
 export const CacheSettings = {
     /** Maximum cache size of cached geocode data. */
@@ -56,6 +57,19 @@ export const BingSettings = {
     BingKey: process.env.BING_KEY
 };
 
+interface IDataPoinReferences {
+    cardUid: string;
+    fill: FormattingId;
+}
+
+export const DataPointReferences: IDataPoinReferences = {
+    cardUid: "Visual-dataPoint-card",
+    fill: {
+        objectName: "dataPoint",
+        propertyName: "fill"
+    }
+}
+
 export class GlobeMapSettings extends DataViewObjectsParser {
     public dataPoint: DataPointSettings = new DataPointSettings();
 }
@@ -72,7 +86,7 @@ export class GlobeMapSettingsModel extends FormattingSettingsModel {
                     return;
                 }
                 slices.push(new formattingSettings.ColorPicker({
-                    name: "fill",
+                    name: DataPointReferences.fill.propertyName,
                     displayName: dataPoint.label,
                     value: { value: dataPoint.color },
                     selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector())
@@ -91,7 +105,7 @@ export class DataPointSettings extends FormattingSettingsCard {
         value: { value: "#118DFF" }
     });
 
-    name = "dataPoint";
+    name = DataPointReferences.fill.objectName;
     displayName = "Data colors";
     displayNameKey = "Visual_DataPoint";
     slices = [this.defaultColor];

@@ -10,6 +10,7 @@
     "Visual_DataPoint_Show_All": "Show all",
     "Visual_Fill": "Fill",
     "Visual_Gradient": "Color saturation",
+    "Visual_OnObject_FormatDataPoint": "Format data point colors",
     "Role_Description_DisplayName_Longitude": "Overrides the longitude of locations",
     "Role_Description_DisplayName_Latitude": "Overrides the latitude of locations",
     "Visual_Short_Description": "Plot locations on an interactive 3D map",
