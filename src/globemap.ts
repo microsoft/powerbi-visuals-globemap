@@ -644,7 +644,7 @@ export class GlobeMap implements IVisual {
     private static maxResolutionLevel: number = 5;
     private static metadataUrl: string = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/RoadOnDemand?output=json&uriScheme=https&key=${BingSettings.BingKey}`;
     private static reserveBindMapsMetadata: BingResourceMetadata = {
-        imageUrl: "https://{subdomain}.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/{quadkey}?mkt={culture}&it=G,L&shading=hill&og=2310&n=z",
+        imageUrl: "https://{subdomain}.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/{quadkey}?mkt={culture}&it=G,L&og=2310&n=z",
         imageUrlSubdomains: [
             "t0",
             "t1",
@@ -835,7 +835,7 @@ export class GlobeMap implements IVisual {
 
             this.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
-                    const urlTemplate = metadata.imageUrl.replace("{culture}", language);
+                    const urlTemplate = metadata.imageUrl.replace("{culture}", language).replace("&shading=hill", "");
                     const subdomains = metadata.imageUrlSubdomains;
 
                     tileCacheArray?.forEach((zoomArray: ITileGapObject) => {
@@ -869,7 +869,8 @@ export class GlobeMap implements IVisual {
 
         return this.getBingMapsServerMetadata()
                 .then((metadata: BingResourceMetadata) => {
-                    const urlTemplate = metadata.imageUrl.replace("{culture}", language);
+                    const urlTemplate = metadata.imageUrl.replace("{culture}", language).replace("&shading=hill", "");
+
                     for (let level: number = GlobeMap.initialResolutionLevel; level <= GlobeMap.maxResolutionLevel; ++level) {
                         const levelTiles = GlobeMap.generateQuadsByLevel(level, urlTemplate, metadata.imageUrlSubdomains);
                         tileCacheValue.push(levelTiles);
