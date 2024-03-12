@@ -199,7 +199,7 @@ export class GlobeMap implements IVisual {
     private barFromMouseDown: THREE.Object3D;
     private subSelectedBar: IGlobeMapObject3DWithToolTipData;
     private subSelectionService: powerbi.extensibility.IVisualSubSelectionService;
-    private subSelectionRegionOutlines: Record<string, SubSelectionRegionOutline > = {}; 
+    private subSelectionRegionOutlines: Map<SubSelectionOutlineVisibility, SubSelectionRegionOutline>; 
 
     private isFirstLoad: boolean = true;
 
@@ -524,6 +524,7 @@ export class GlobeMap implements IVisual {
         this.readyToRender = false;
         this.cacheManager = new CacheManager(this.localStorageService);
         this.colors = options.host.colorPalette;
+        this.subSelectionRegionOutlines = new Map<SubSelectionOutlineVisibility, SubSelectionRegionOutline>();
         this.visualOnObjectFormatting = {
             getSubSelectionStyles: (subSelections) => this.getSubSelectionStyles(subSelections),
             getSubSelectionShortcuts: (subSelections) => this.getSubSelectionShortcuts(subSelections),
@@ -533,12 +534,7 @@ export class GlobeMap implements IVisual {
     }
 
     private getSubSelectables(): CustomVisualSubSelection[] | undefined {
-        const result: CustomVisualSubSelection[] = [];
-        this.data?.seriesDataPoints.forEach((dataPoint: GlobeMapSeriesDataPoint) => {
-            const dataPointSubSelection: CustomVisualSubSelection = this.createSubSelectionForDataPoint(dataPoint);
-            result.push(dataPointSubSelection);
-        });
-        return result;
+        return this.data?.seriesDataPoints.map((dataPoint: GlobeMapSeriesDataPoint) => this.createSubSelectionForDataPoint(dataPoint));
     }
 
     private createSubSelectionForDataPoint(dataPoint: GlobeMapSeriesDataPoint | IGlobeMapObject3DWithToolTipData, showUI: boolean = false, event?: MouseEvent): CustomVisualSubSelection {
@@ -1199,18 +1195,15 @@ export class GlobeMap implements IVisual {
         const selectedBar = this.subSelectedBar;
         if (selectedBar && !this.pressKey) {
             const regionOutline: SubSelectionRegionOutline = this.formatModeCreateOutline(selectedBar, SubSelectionOutlineVisibility.Active);
-            this.subSelectionRegionOutlines[regionOutline.id] = regionOutline;
+            this.subSelectionRegionOutlines.set(SubSelectionOutlineVisibility.Active, regionOutline);
         }
     }
 
     private formatModeResetOutline(visibility: SubSelectionOutlineVisibility): void {
-        const regionOutlines = Object.values(this.subSelectionRegionOutlines); 
+        const regionOutlines = Array.from(this.subSelectionRegionOutlines.values()); 
         const outline = regionOutlines.find(outline => outline.visibility === visibility); 
         if (outline) { 
-            this.subSelectionRegionOutlines[outline.id] = { 
-            ...this.subSelectionRegionOutlines[outline.id], 
-            visibility: SubSelectionOutlineVisibility.None 
-            }; 
+            this.subSelectionRegionOutlines.delete(visibility);
         } 
     }
 
@@ -1250,7 +1243,7 @@ export class GlobeMap implements IVisual {
     }
         
     private renderOutlines(): void { 
-        const regionOutlines = Object.values(this.subSelectionRegionOutlines); 
+        const regionOutlines = Array.from(this.subSelectionRegionOutlines.values());
         this.subSelectionService.updateRegionOutlines(regionOutlines); 
     } 
 
@@ -1375,14 +1368,14 @@ export class GlobeMap implements IVisual {
 
     private handleFormatModeHoverBar(): void { 
         this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
-        const regionOutlines = Object.values(this.subSelectionRegionOutlines); 
+        const regionOutlines = Array.from(this.subSelectionRegionOutlines.values());
         const activeOutline = regionOutlines.find(outline => outline.visibility === SubSelectionOutlineVisibility.Active); 
         const hoveredBar = this.hoveredBar as IGlobeMapObject3DWithToolTipData;
 
         if (hoveredBar) {
             const newHoverOutline: SubSelectionRegionOutline = this.formatModeCreateOutline(hoveredBar, SubSelectionOutlineVisibility.Hover);
             if (newHoverOutline.id !== activeOutline?.id){
-                this.subSelectionRegionOutlines[newHoverOutline.id] = newHoverOutline;
+                this.subSelectionRegionOutlines.set(SubSelectionOutlineVisibility.Hover, newHoverOutline);
             }
         }
     } 
