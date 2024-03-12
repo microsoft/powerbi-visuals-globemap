@@ -761,7 +761,7 @@ export class GlobeMap implements IVisual {
         this.animateCamera(this.camera.position);
 
         if (this.formatMode){
-            this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
+            this.subSelectionRegionOutlines.delete(SubSelectionOutlineVisibility.Hover);
             this.needsRender = true;
         }
     }
@@ -771,7 +771,7 @@ export class GlobeMap implements IVisual {
             return;
         }
         if (this.formatMode) {
-            this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
+            this.subSelectionRegionOutlines.delete(SubSelectionOutlineVisibility.Hover);
             this.needsRender = true;
         }
         this.orbitControls.rotateLeft(2 * Math.PI * deltaX / this.rendererCanvas.offsetHeight * this.GlobeSettings.rotateSpeed);
@@ -1191,20 +1191,12 @@ export class GlobeMap implements IVisual {
     }
 
     private formatModeShowActiveOutlines(): void {
-        this.formatModeResetOutline(SubSelectionOutlineVisibility.Active);
+        this.subSelectionRegionOutlines.delete(SubSelectionOutlineVisibility.Active);
         const selectedBar = this.subSelectedBar;
         if (selectedBar && !this.pressKey) {
             const regionOutline: SubSelectionRegionOutline = this.formatModeCreateOutline(selectedBar, SubSelectionOutlineVisibility.Active);
             this.subSelectionRegionOutlines.set(SubSelectionOutlineVisibility.Active, regionOutline);
         }
-    }
-
-    private formatModeResetOutline(visibility: SubSelectionOutlineVisibility): void {
-        const regionOutlines = Array.from(this.subSelectionRegionOutlines.values()); 
-        const outline = regionOutlines.find(outline => outline.visibility === visibility); 
-        if (outline) { 
-            this.subSelectionRegionOutlines.delete(visibility);
-        } 
     }
 
     private formatModeCreateOutline(bar: IGlobeMapObject3DWithToolTipData, visibility: SubSelectionOutlineVisibility): SubSelectionRegionOutline {
@@ -1367,13 +1359,13 @@ export class GlobeMap implements IVisual {
     }
 
     private handleFormatModeHoverBar(): void { 
-        this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
-        const regionOutlines = Array.from(this.subSelectionRegionOutlines.values());
-        const activeOutline = regionOutlines.find(outline => outline.visibility === SubSelectionOutlineVisibility.Active); 
+        this.subSelectionRegionOutlines.delete(SubSelectionOutlineVisibility.Hover);
+
         const hoveredBar = this.hoveredBar as IGlobeMapObject3DWithToolTipData;
 
         if (hoveredBar) {
             const newHoverOutline: SubSelectionRegionOutline = this.formatModeCreateOutline(hoveredBar, SubSelectionOutlineVisibility.Hover);
+            const activeOutline = this.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active);
             if (newHoverOutline.id !== activeOutline?.id){
                 this.subSelectionRegionOutlines.set(SubSelectionOutlineVisibility.Hover, newHoverOutline);
             }
@@ -1389,11 +1381,11 @@ export class GlobeMap implements IVisual {
     };
 
     private handleFormatModeMouseDown(): void{
-            this.pressKey = true;
-            this.formatModeResetOutline(SubSelectionOutlineVisibility.Active);
-            this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
-            this.barFromMouseDown = this.hoveredBar as IGlobeMapObject3DWithToolTipData ?? null;
-            this.needsRender = true;
+        this.pressKey = true;
+        this.subSelectionRegionOutlines.delete(SubSelectionOutlineVisibility.Active);
+        this.subSelectionRegionOutlines.delete(SubSelectionOutlineVisibility.Hover);
+        this.barFromMouseDown = this.hoveredBar as IGlobeMapObject3DWithToolTipData ?? null;
+        this.needsRender = true;
     }
 
     private handleMouseUp = (event: MouseEvent) => {
@@ -1450,7 +1442,7 @@ export class GlobeMap implements IVisual {
             const delta: number = event.deltaY < 0 || event.detail < 0 ? 1 : -1;
             this.updateBarsAndHeatMapByZoom(delta);
             if (this.formatMode) {
-                this.formatModeResetOutline(SubSelectionOutlineVisibility.Hover);
+                this.subSelectionRegionOutlines.delete(SubSelectionOutlineVisibility.Hover);
                 this.needsRender = true;
             }
         }
