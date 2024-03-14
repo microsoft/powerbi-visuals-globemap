@@ -1,3 +1,8 @@
+## 3.3.0.0
+* Use new IVisualLocalStorageV2Service
+* Update powerbi-visuals-api to 5.8.0
+* Add onObject support
+
 ## 3.2.2.0
 * Fix console error when using Heat without Height
 
