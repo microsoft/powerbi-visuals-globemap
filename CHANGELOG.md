@@ -1,3 +1,7 @@
+## 3.3.1.0
+* Fixed bug that occurs when resizing the visual
+* Fixed console error in formatting mode
+
 ## 3.3.0.0
 * Use new IVisualLocalStorageV2Service
 * Update powerbi-visuals-api to 5.8.0
