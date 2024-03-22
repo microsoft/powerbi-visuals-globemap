@@ -1099,8 +1099,8 @@ export class GlobeMap implements IVisual {
         }
         this.layout.viewport = options.viewport;
 
-        this.root.style.height = this.layout.viewportIn.height.toString();
-        this.root.style.width = this.layout.viewportIn.width.toString();
+        this.root.style.height = `${this.layout.viewportIn.height.toString()}px`;
+        this.root.style.width = `${this.layout.viewportIn.width.toString()}px`;
 
         this.formattingServiceModel = this.formattingSettingsService.populateFormattingSettingsModel(GlobeMapSettingsModel, options.dataViews[0]);
         this.formatMode = options.formatMode;
@@ -1163,7 +1163,7 @@ export class GlobeMap implements IVisual {
     }
 
     private updateOutlinesFromSubSelections(subSelections: CustomVisualSubSelection[]){
-        const visualObject = subSelections[0]?.customVisualObjects[0];
+        const visualObject = subSelections?.[0].customVisualObjects[0];
         if (visualObject) {
             switch (visualObject.objectName) {
                 case DataPointReferences.fill.objectName: 
