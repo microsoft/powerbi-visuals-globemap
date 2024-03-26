@@ -216,39 +216,32 @@ describe("GlobeMap", () => {
             ];
 
             const expectedResult = [
-                {
-                    "000": "https://ecn.t1.tiles.virtualearth.net/tiles/r000.jpeg?mkt=en-US&shading=hill",
-                    "001": "https://ecn.t1.tiles.virtualearth.net/tiles/r001.jpeg?mkt=en-US&shading=hill",
-                    "002": "https://ecn.t1.tiles.virtualearth.net/tiles/r002.jpeg?mkt=en-US&shading=hill",
-                    "003": "https://ecn.t1.tiles.virtualearth.net/tiles/r003.jpeg?mkt=en-US&shading=hill"
-                }
-            ];
+            {
+                "000": "https://t0.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/000?mkt=en-US&it=G,L&on=z",
+                "001": "https://t1.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/001?mkt=en-US&it=G,L&on=z",
+                "002": "https://t2.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/002?mkt=en-US&it=G,L&on=z",
+                "003": "https://t3.ssl.ak.dynamic.tiles.virtualearth.net/comp/ch/003?mkt=en-US&it=G,L&on=z"
+            }];
 
             const culture: string = "en-US";
 
-            it("for not valid input", () => {
+            it("for not valid input", async () => {
                 const expectedResult = [];
                 const tiles = [[]];
-                tiles.forEach((tile) => {
-                    visualInstance.extendTiles(JSON.stringify(tile), culture)
-                        .then((data: TileMap[]) => {
-                            expect(data.length).toBe(expectedResult.length);
-                        });
-                });
+                const data: TileMap[] = await visualInstance.extendTiles(JSON.stringify(tiles[0]), culture);
+                expect(data.length).toBe(expectedResult.length);
             });
 
-            it("for valid input", () => {
-                visualInstance.extendTiles(JSON.stringify(tiles), culture)
-                    .then((data: TileMap[]) => {
-                        expect(data).not.toBeNull();
-                        for (let i = 0; data.length; i++) {
-                            const tile: TileMap = data[i];
-                            for (let key in tile) {
-                                tile[key] = tile[key].replace(/g=\w+&/g, '');
-                            }
-                            expect(data[i]).toBe(expectedResult[i]);
-                        }
-                    });
+            it("for valid input", async () => {
+                const data: TileMap[] = await visualInstance.extendTiles(JSON.stringify(tiles), culture);
+                expect(data).not.toBeNull();
+                for (let i = 0; i < data.length; i++) {
+                    const tile: TileMap = data[i];
+                    for (let key in tile) {
+                        tile[key] = tile[key].replace(/g=\w+&/g, '');
+                        expect(tile[key]).toBe(expectedResult[i][key]);
+                    }
+                }
             });
         });
     });
