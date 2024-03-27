@@ -1,3 +1,6 @@
+## 3.3.2.0
+* Fixed console error "undefined CustomVisualObjects"
+
 ## 3.3.1.0
 * Fixed bug that occurs when resizing the visual
 * Fixed console error in formatting mode
