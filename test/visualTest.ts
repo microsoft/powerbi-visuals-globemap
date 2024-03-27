@@ -37,11 +37,14 @@ import { GlobeMapData as GlobeMapDataViewBuilder } from "./visualData";
 import { GlobeMap as VisualClass } from "../src/globemap";
 import { GlobeMapColumns } from "../src/columns";
 
-import { TileMap, ITileGapObject } from "../src/interfaces/dataInterfaces";
+import { TileMap, ITileGapObject, IGlobeMapObject3DWithToolTipData } from "../src/interfaces/dataInterfaces";
 
 import capabilities from '../capabilities.json';
 import PrimitiveValue = powerbi.PrimitiveValue;
 import { ILocationKeyDictionary } from "../src/interfaces/locationInterfaces";
+import { d3MouseDown, renderTimeout } from "powerbi-visuals-utils-testutils";
+import SubSelectionOutlineVisibility = powerbi.visuals.SubSelectionOutlineVisibility;
+import ArcSubSelectionOutline = powerbi.visuals.ArcSubSelectionOutline;
 
 describe("GlobeMap", () => {
     let visualBuilder: GlobeMapBuilder,
@@ -49,20 +52,10 @@ describe("GlobeMap", () => {
         defaultDataViewBuilder: GlobeMapDataViewBuilder,
         dataView: DataView;
 
-    beforeAll(() => {
+    beforeAll(async() => {
         visualBuilder = new GlobeMapBuilder(1024, 1024);
         visualInstance = visualBuilder.instance;
-    });
-
-    beforeEach(() => {
         defaultDataViewBuilder = new GlobeMapDataViewBuilder();
-        dataView = defaultDataViewBuilder.getDataView();
-    });
-
-    describe("DOM tests", () => {
-
-        beforeAll(async () => {            
-            defaultDataViewBuilder = new GlobeMapDataViewBuilder();
             dataView = defaultDataViewBuilder.getDataView();
 
             let categoricalColumns = GlobeMapColumns.getCategoricalColumns(dataView);
@@ -83,8 +76,14 @@ describe("GlobeMap", () => {
             if (Object.keys(coordinates).length > 0) {
                 await visualInstance.cacheManager.saveCoordinates(coordinates);
             }
-        });
+    });
 
+    beforeEach(() => {
+        defaultDataViewBuilder = new GlobeMapDataViewBuilder();
+        dataView = defaultDataViewBuilder.getDataView();
+    });
+
+    describe("DOM tests", () => {
         it("canvas element created", () => {
             console.log("dom test started");
 
@@ -242,6 +241,185 @@ describe("GlobeMap", () => {
                         expect(tile[key]).toBe(expectedResult[i][key]);
                     }
                 }
+            });
+        });
+    });
+    
+    describe("OnObject test:", () => {        
+        beforeAll((done) => {
+            //update with formatMode=true
+            visualBuilder.updateRenderTimeout(dataView, done, powerbi.VisualUpdateType.Data, true, 500);
+        });
+        describe("wheel event test:", () => {
+            beforeAll((done) => {
+                //subselect bar before testing wheel behavior
+                const barToSubselect = visualInstance.barsGroup.children[0];
+                visualInstance.subSelectedBar = barToSubselect as IGlobeMapObject3DWithToolTipData;
+                visualInstance.needsRender = true;
+
+                renderTimeout(done, 500);
+            });
+
+            it("should recalculate Active outline after wheel zoom in", (done) => {
+                const outlineBeforeZoom = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                const outlineCenterBeforeZoom = (outlineBeforeZoom as ArcSubSelectionOutline).center;
+                const wheelEvent = new WheelEvent("wheel", {deltaY: -125});
+                visualBuilder.canvasElement?.dispatchEvent(wheelEvent);
+                renderTimeout(() => {
+                    const barAfterZoom = visualInstance.subSelectedBar;
+                    const barPositionAfterZoom = visualInstance.worldToScreenPositions(barAfterZoom);
+
+                    const outlineAfterZoom = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(outlineAfterZoom).toBeDefined();
+                    
+                    const outlineCenterAfterZoom = (outlineAfterZoom as ArcSubSelectionOutline).center;
+                    expect(barPositionAfterZoom).toEqual(outlineCenterAfterZoom);
+                    expect(outlineCenterBeforeZoom.x).toBeGreaterThan(outlineCenterAfterZoom.x);
+                    expect(outlineCenterBeforeZoom.y).toBeLessThan(outlineCenterAfterZoom.y);
+                    done();
+                }, 500);
+            });
+
+            it("should recalculate Active outline after wheel zoom out", (done) => {
+                const outlineBeforeZoom = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                const outlineCenterBeforeZoom = (outlineBeforeZoom as ArcSubSelectionOutline).center;
+                const wheelEvent = new WheelEvent("wheel", {deltaY: 125});
+                visualBuilder.canvasElement?.dispatchEvent(wheelEvent);
+                renderTimeout(() => {
+                    const barAfterZoom = visualInstance.subSelectedBar;
+                    const barPositionAfterZoom = visualInstance.worldToScreenPositions(barAfterZoom);
+
+                    const outlineAfterZoom = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(outlineAfterZoom).toBeDefined();
+                    
+                    const outlineCenterAfterZoom = (outlineAfterZoom as ArcSubSelectionOutline).center;
+                    expect(barPositionAfterZoom).toEqual(outlineCenterAfterZoom);
+                    expect(outlineCenterBeforeZoom.x).toBeLessThan(outlineCenterAfterZoom.x);
+                    expect(outlineCenterBeforeZoom.y).toBeGreaterThan(outlineCenterAfterZoom.y);
+                    done();
+                }, 500);
+            });
+        });
+
+        describe("control buttons test:", () => {
+            beforeAll((done) => {
+                //subselect bar before testing control buttons
+                const barToSubselect = visualInstance.barsGroup.children[0];
+                visualInstance.subSelectedBar = barToSubselect as IGlobeMapObject3DWithToolTipData;
+                visualInstance.needsRender = true;
+
+                renderTimeout(done, 500);
+            });
+
+            it("should recalculate Active outline after right control button click", (done) => {
+                const outlineBeforeClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                const outlineCenterBeforeClick = (outlineBeforeClick as ArcSubSelectionOutline).center;
+                d3MouseDown(visualBuilder.rightControlElement, 0, 0);
+                renderTimeout(() => {
+                    const barAfterClick = visualInstance.subSelectedBar;
+                    const barPositionAfterClick = visualInstance.worldToScreenPositions(barAfterClick);
+
+                    const outlineAfterClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(outlineAfterClick).toBeDefined();
+                    
+                    const outlineCenterAfterClick = (outlineAfterClick as ArcSubSelectionOutline).center;
+                    expect(barPositionAfterClick).toEqual(outlineCenterAfterClick);
+                    expect(outlineCenterBeforeClick.x).toBeGreaterThan(outlineCenterAfterClick.x);
+                    done();
+                }, 500);
+            });
+
+            it("should recalculate Active outline after left control button click", (done) => {
+                const outlineBeforeClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                const outlineCenterBeforeClick = (outlineBeforeClick as ArcSubSelectionOutline).center;
+                d3MouseDown(visualBuilder.leftControlElement, 0, 0);
+                renderTimeout(() => {
+                    const barAfterClick = visualInstance.subSelectedBar;
+                    const barPositionAfterClick = visualInstance.worldToScreenPositions(barAfterClick);
+
+                    const outlineAfterClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(outlineAfterClick).toBeDefined();
+                    
+                    const outlineCenterAfterClick = (outlineAfterClick as ArcSubSelectionOutline).center;                    
+                    expect(barPositionAfterClick).toEqual(outlineCenterAfterClick);
+                    expect(outlineCenterBeforeClick.x).toBeLessThan(outlineCenterAfterClick.x);
+                    done();
+                }, 500);
+            });
+
+            it("should recalculate Active outline after up control button click", (done) => {
+                const outlineBeforeClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                const outlineCenterBeforeClick = (outlineBeforeClick as ArcSubSelectionOutline).center;
+                d3MouseDown(visualBuilder.upControlElement, 0, 0);
+                renderTimeout(() => {
+                    const barAfterClick = visualInstance.subSelectedBar;
+                    const barPositionAfterClick = visualInstance.worldToScreenPositions(barAfterClick);
+
+                    const outlineAfterClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(outlineAfterClick).toBeDefined();
+                    
+                    const outlineCenterAfterClick = (outlineAfterClick as ArcSubSelectionOutline).center;
+                    expect(barPositionAfterClick).toEqual(outlineCenterAfterClick);
+                    expect(outlineCenterBeforeClick.y).toBeLessThan(outlineCenterAfterClick.y);
+                    done();
+                }, 500);
+            });
+
+            it("should recalculate Active outline after down control button click", (done) => {
+                const outlineBeforeClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                const outlineCenterBeforeClick = (outlineBeforeClick as ArcSubSelectionOutline).center;
+                d3MouseDown(visualBuilder.downControlElement, 0, 0);
+                renderTimeout(() => {
+                    const barAfterClick = visualInstance.subSelectedBar;
+                    const barPositionAfterClick = visualInstance.worldToScreenPositions(barAfterClick);
+
+                    const outlineAfterClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(outlineAfterClick).toBeDefined();
+                    
+                    const outlineCenterAfterClick = (outlineAfterClick as ArcSubSelectionOutline).center;                    
+                    expect(barPositionAfterClick).toEqual(outlineCenterAfterClick);
+                    expect(outlineCenterBeforeClick.y).toBeGreaterThan(outlineCenterAfterClick.y);
+                    done();
+                }, 500);
+            });
+
+            it("should recalculate Active outline after zoom up control button click", (done) => {
+                const outlineBeforeClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                const outlineCenterBeforeClick = (outlineBeforeClick as ArcSubSelectionOutline).center;
+                d3MouseDown(visualBuilder.zoomUpControlElement, 0, 0);
+                renderTimeout(() => {
+                    const barAfterClick = visualInstance.subSelectedBar;
+                    const barPositionAfterClick = visualInstance.worldToScreenPositions(barAfterClick);
+
+                    const outlineAfterClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(outlineAfterClick).toBeDefined();
+
+                    const outlineCenterAfterClick = (outlineAfterClick as ArcSubSelectionOutline).center;
+                    expect(barPositionAfterClick).toEqual(outlineCenterAfterClick);
+                    expect(outlineCenterBeforeClick.x).toBeGreaterThan(outlineCenterAfterClick.x);
+                    expect(outlineCenterBeforeClick.y).toBeLessThan(outlineCenterAfterClick.y);
+                    done();
+                }, 500);
+            });
+
+            it("should recalculate Active outline after zoom down control button click", (done) => {
+                const outlineBeforeClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                const outlineCenterBeforeClick = (outlineBeforeClick as ArcSubSelectionOutline).center;
+
+                d3MouseDown(visualBuilder.zoomDownControlElement, 0, 0);
+                renderTimeout(() => {
+                    const barAfterClick = visualInstance.subSelectedBar;
+                    const barPositionAfterClick = visualInstance.worldToScreenPositions(barAfterClick);
+
+                    const outlineAfterClick = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(outlineAfterClick).toBeDefined();
+                    
+                    const outlineCenterAfterClick = (outlineAfterClick as ArcSubSelectionOutline).center;
+                    expect(barPositionAfterClick).toEqual(outlineCenterAfterClick);
+                    expect(outlineCenterBeforeClick.x).toBeLessThan(outlineCenterAfterClick.x);
+                    expect(outlineCenterBeforeClick.y).toBeGreaterThan(outlineCenterAfterClick.y);
+                    done();
+                }, 500);
             });
         });
     });
