@@ -245,12 +245,199 @@ describe("GlobeMap", () => {
         });
     });
     
-    describe("OnObject test:", () => {        
+    describe("OnObject tests", () => {        
         beforeAll((done) => {
             //update with formatMode=true
             visualBuilder.updateRenderTimeout(dataView, done, powerbi.VisualUpdateType.Data, true, 500);
         });
-        describe("wheel event test:", () => {
+
+        describe("bar selection tests", () => {
+            describe("fast click", () => {
+                it("should create active outline for selected bar", (done) => {
+                    const barToSubselect = visualInstance.barsGroup.children[0];
+                    visualInstance.hoveredBar = barToSubselect as IGlobeMapObject3DWithToolTipData;
+
+                    const pointerDown = new PointerEvent("pointerdown");
+                    const pointerUp = new PointerEvent("pointerup");
+                    visualBuilder.canvasElement?.dispatchEvent(pointerDown);
+                    visualBuilder.canvasElement?.dispatchEvent(pointerUp);
+
+                    renderTimeout(() => {
+                        expect(visualInstance.subSelectedBar).toBeDefined();
+                        const subselectedBarPosition = visualInstance.worldToScreenPositions(visualInstance.subSelectedBar);
+
+                        const subselectedBarOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                        expect(subselectedBarOutline).toBeDefined();
+                        
+                        const outlineCenter = (subselectedBarOutline as ArcSubSelectionOutline).center;
+                        expect(subselectedBarPosition).toEqual(outlineCenter);
+                        done();
+                    }, 200);
+                });
+
+                it("should create new active outline for selected bar and delete previous active outline", (done) => {
+                    const previousActiveOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(previousActiveOutline).toBeDefined();
+                    const previousActiveOutlineCenter = (previousActiveOutline as ArcSubSelectionOutline).center;
+
+                    const barToSubselect = visualInstance.barsGroup.children[1];
+                    visualInstance.hoveredBar = barToSubselect as IGlobeMapObject3DWithToolTipData;
+
+                    const pointerDown = new PointerEvent("pointerdown");
+                    const pointerUp = new PointerEvent("pointerup");
+                    visualBuilder.canvasElement?.dispatchEvent(pointerDown);
+                    visualBuilder.canvasElement?.dispatchEvent(pointerUp);
+
+                    renderTimeout(() => {
+                        expect(visualInstance.subSelectedBar).toBeDefined();
+                        const subselectedBarPosition = visualInstance.worldToScreenPositions(visualInstance.subSelectedBar);
+
+                        const subselectedBarOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                        expect(subselectedBarOutline).toBeDefined();
+                        
+                        const outlineCenter = (subselectedBarOutline as ArcSubSelectionOutline).center;
+                        expect(subselectedBarPosition).toEqual(outlineCenter);
+                        expect(outlineCenter).not.toEqual(previousActiveOutlineCenter);
+                        done();
+                    }, 200);
+                });
+
+                it("should delete active outlines when clicking not on bar", (done) => {
+                    const previousActiveOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(previousActiveOutline).toBeDefined();
+
+                    visualInstance.hoveredBar = null;
+
+                    const pointerDown = new PointerEvent("pointerdown");
+                    const pointerUp = new PointerEvent("pointerup");
+                    visualBuilder.canvasElement?.dispatchEvent(pointerDown);
+                    visualBuilder.canvasElement?.dispatchEvent(pointerUp);
+
+                    renderTimeout(() => {
+                        expect(visualInstance.subSelectedBar).toBeFalsy();
+
+                        const subselectedBarOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                        expect(subselectedBarOutline).toBeUndefined();
+                        
+                        done();
+                    }, 200);
+                });
+            });
+            
+            describe("slow click", () => {
+                it("should create active outline for selected bar", (done) => {
+                    expect(visualInstance.subSelectedBar).toBeFalsy();
+                    const barToSubselect = visualInstance.barsGroup.children[0];
+                    visualInstance.hoveredBar = barToSubselect as IGlobeMapObject3DWithToolTipData;
+
+                    const pointerDown = new PointerEvent("pointerdown");
+                    const pointerUp = new PointerEvent("pointerup");
+                    visualBuilder.canvasElement?.dispatchEvent(pointerDown);
+                    renderTimeout(() => {
+                        visualBuilder.canvasElement?.dispatchEvent(pointerUp);
+                        renderTimeout(() => {
+                            expect(visualInstance.subSelectedBar).toBeDefined();
+                            const subselectedBarPosition = visualInstance.worldToScreenPositions(visualInstance.subSelectedBar);
+
+                            const subselectedBarOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                            expect(subselectedBarOutline).toBeDefined();
+                            
+                            const outlineCenter = (subselectedBarOutline as ArcSubSelectionOutline).center;
+                            expect(subselectedBarPosition).toEqual(outlineCenter);
+                            done();
+                        }, 200);
+                    }, 250)
+                    
+                });
+
+                it("should create new active outline for selected bar and delete previous active outline", (done) => {
+                    const previousActiveOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(previousActiveOutline).toBeDefined();
+                    const previousActiveOutlineCenter = (previousActiveOutline as ArcSubSelectionOutline).center;
+
+                    const barToSubselect = visualInstance.barsGroup.children[1];
+                    visualInstance.hoveredBar = barToSubselect as IGlobeMapObject3DWithToolTipData;
+
+                    const pointerDown = new PointerEvent("pointerdown");
+                    const pointerUp = new PointerEvent("pointerup");
+                    visualBuilder.canvasElement?.dispatchEvent(pointerDown);
+                    renderTimeout(() => {
+                        visualBuilder.canvasElement?.dispatchEvent(pointerUp);
+                        renderTimeout(() => {
+                            expect(visualInstance.subSelectedBar).toBeDefined();
+                            const subselectedBarPosition = visualInstance.worldToScreenPositions(visualInstance.subSelectedBar);
+
+                            const subselectedBarOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                            expect(subselectedBarOutline).toBeDefined();
+                            
+                            const outlineCenter = (subselectedBarOutline as ArcSubSelectionOutline).center;
+                            expect(subselectedBarPosition).toEqual(outlineCenter);
+                            expect(outlineCenter).not.toEqual(previousActiveOutlineCenter);
+                            done();
+                        }, 200);
+                    }, 250);
+                });
+
+                it("active outline should remain when clicking not on bar", (done) => {
+                    const activeOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(activeOutline).toBeDefined();
+                    const activeOutlineCenter = (activeOutline as ArcSubSelectionOutline).center;
+
+                    visualInstance.hoveredBar = null;
+
+                    const pointerDown = new PointerEvent("pointerdown");
+                    const pointerUp = new PointerEvent("pointerup");
+                    visualBuilder.canvasElement?.dispatchEvent(pointerDown);
+                    renderTimeout(() => {
+                        visualBuilder.canvasElement?.dispatchEvent(pointerUp);
+                        renderTimeout(() => {
+                            expect(visualInstance.subSelectedBar).toBeDefined();
+                            const subselectedBarPosition = visualInstance.worldToScreenPositions(visualInstance.subSelectedBar);
+
+                            const subselectedBarOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                            expect(subselectedBarOutline).toBeDefined();
+                            
+                            const outlineCenter = (subselectedBarOutline as ArcSubSelectionOutline).center;
+                            expect(subselectedBarPosition).toEqual(outlineCenter);
+                            expect(activeOutlineCenter).toEqual(outlineCenter);
+                            done();
+                        }, 200);
+                    }, 250);
+                });
+
+                it("should recalculate active outline for selected bar after pointerdown and pointemove events", (done) => {
+                    const activeOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    expect(activeOutline).toBeDefined();
+                    const activeOutlineCenter = (activeOutline as ArcSubSelectionOutline).center;
+
+                    visualInstance.hoveredBar = null;
+
+                    const pointerDown = new PointerEvent("pointerdown");
+                    const pointerMove = new PointerEvent("pointermove", {clientX: 50, clientY: 50, buttons: 1});
+                    const pointerUp = new PointerEvent("pointerup");
+                    visualBuilder.canvasElement?.dispatchEvent(pointerDown);
+                    visualBuilder.canvasElement?.dispatchEvent(pointerMove);
+                    visualBuilder.canvasElement?.dispatchEvent(pointerMove);
+                    renderTimeout(() => {
+                        visualBuilder.canvasElement?.dispatchEvent(pointerUp);
+                        renderTimeout(() => {
+                            expect(visualInstance.subSelectedBar).toBeDefined();
+                            const subselectedBarPosition = visualInstance.worldToScreenPositions(visualInstance.subSelectedBar);
+
+                            const subselectedBarOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                            expect(subselectedBarOutline).toBeDefined();
+                            
+                            const outlineCenter = (subselectedBarOutline as ArcSubSelectionOutline).center;
+                            expect(subselectedBarPosition).toEqual(outlineCenter);
+                            expect(activeOutlineCenter).not.toEqual(outlineCenter);
+                            done();
+                        }, 500);
+                    }, 500);
+                });
+            });
+        });
+
+        describe("wheel event tests:", () => {
             beforeAll((done) => {
                 //subselect bar before testing wheel behavior
                 const barToSubselect = visualInstance.barsGroup.children[0];
@@ -301,7 +488,7 @@ describe("GlobeMap", () => {
             });
         });
 
-        describe("control buttons test:", () => {
+        describe("control buttons tests:", () => {
             beforeAll((done) => {
                 //subselect bar before testing control buttons
                 const barToSubselect = visualInstance.barsGroup.children[0];
