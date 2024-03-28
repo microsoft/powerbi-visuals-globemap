@@ -1163,7 +1163,7 @@ export class GlobeMap implements IVisual {
     }
 
     private updateOutlinesFromSubSelections(subSelections: CustomVisualSubSelection[]){
-        const visualObject = subSelections?.[0].customVisualObjects[0];
+        const visualObject = subSelections?.[0]?.customVisualObjects[0];
         if (visualObject) {
             switch (visualObject.objectName) {
                 case DataPointReferences.fill.objectName: 
