@@ -42,7 +42,7 @@ import { TileMap, ITileGapObject, IGlobeMapObject3DWithToolTipData } from "../sr
 import capabilities from '../capabilities.json';
 import PrimitiveValue = powerbi.PrimitiveValue;
 import { ILocationKeyDictionary } from "../src/interfaces/locationInterfaces";
-import { d3MouseDown, renderTimeout } from "powerbi-visuals-utils-testutils";
+import { createSelectionId, d3MouseDown, renderTimeout } from "powerbi-visuals-utils-testutils";
 import SubSelectionOutlineVisibility = powerbi.visuals.SubSelectionOutlineVisibility;
 import ArcSubSelectionOutline = powerbi.visuals.ArcSubSelectionOutline;
 
@@ -249,6 +249,103 @@ describe("GlobeMap", () => {
         beforeAll((done) => {
             //update with formatMode=true
             visualBuilder.updateRenderTimeout(dataView, done, powerbi.VisualUpdateType.Data, true, 500);
+        });
+
+        describe("hover bar tests", () => {
+            it("should create hover outline when hovering bar", (done) => {
+                const barToHover = visualInstance.barsGroup.children[0];
+                visualInstance.hoveredBar = barToHover;
+
+                const pointerMove = new PointerEvent("pointermove");
+                visualBuilder.canvasElement?.dispatchEvent(pointerMove);
+
+                expect(visualInstance.hoveredBar).toBeDefined();
+                const hoveredBarPosition = visualInstance.worldToScreenPositions(visualInstance.hoveredBar);
+
+                const hoveredBarOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Hover)?.outline;
+                expect(hoveredBarOutline).toBeDefined();
+                        
+                const outlineCenter = (hoveredBarOutline as ArcSubSelectionOutline).center;
+                expect(hoveredBarPosition).toEqual(outlineCenter);
+                done();
+            });
+            it("should delete hover outline when not hovering bar", (done) => {
+                visualInstance.hoveredBar = null;
+
+                const pointerMove = new PointerEvent("pointermove");
+                visualBuilder.canvasElement?.dispatchEvent(pointerMove);
+
+
+                const hoveredBarOutline = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Hover)?.outline;
+                expect(hoveredBarOutline).toBeUndefined();
+                expect(visualInstance.hoveredBar).toBeFalsy();
+                done();
+            });
+            it("should create hover outline when hovering bar and keep active outline", (done) => {
+                //subselect bar
+                const barToSubselect = visualInstance.barsGroup.children[0];
+                visualInstance.subSelectedBar = barToSubselect as IGlobeMapObject3DWithToolTipData;
+                visualInstance.needsRender = true;
+
+                renderTimeout(() => {
+                    const activeOutlineBeforeHover = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    const hoverOutlineBeforeHover = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Hover)?.outline;
+                    expect(activeOutlineBeforeHover).toBeDefined();
+                    expect(hoverOutlineBeforeHover).toBeUndefined();
+                    const activeOutlineBeforeHoverCenter = (activeOutlineBeforeHover as ArcSubSelectionOutline).center;
+
+                    const barToHover = visualInstance.barsGroup.children[1] as IGlobeMapObject3DWithToolTipData;
+                    const barToHoverIdentity = createSelectionId("hover");
+                    barToHover.identity = barToHoverIdentity;
+                    visualInstance.hoveredBar = barToHover;
+
+                    const pointerMove = new PointerEvent("pointermove");
+                    visualBuilder.canvasElement?.dispatchEvent(pointerMove);
+
+                    expect(visualInstance.hoveredBar).toBeDefined();
+                    const activeOutlineAfterHover = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    const hoverOutlineAfterHover = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Hover)?.outline;
+                    expect(hoverOutlineAfterHover).toBeDefined();
+                    expect(activeOutlineAfterHover).toBeDefined();
+
+                    const activeOutlineAfterHoverCenter = (activeOutlineAfterHover as ArcSubSelectionOutline).center;
+                    const hoverOutlineAfterHoverCenter = (hoverOutlineAfterHover as ArcSubSelectionOutline).center;
+                    const hoveredBarPosition = visualInstance.worldToScreenPositions(visualInstance.hoveredBar);
+                    expect(activeOutlineBeforeHoverCenter).toEqual(activeOutlineAfterHoverCenter);
+                    expect(hoveredBarPosition).toEqual(hoverOutlineAfterHoverCenter);
+                    done();
+                }, 200);
+            });
+            it("should not create hover outline when hovering already active bar", (done) => {
+                //subselect bar
+                const barToSubselect = visualInstance.barsGroup.children[0];
+                visualInstance.subSelectedBar = barToSubselect as IGlobeMapObject3DWithToolTipData;
+                visualInstance.needsRender = true;
+
+                renderTimeout(() => {
+                    const activeOutlineBeforeHover = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    const hoverOutlineBeforeHover = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Hover)?.outline;
+                    expect(activeOutlineBeforeHover).toBeDefined();
+                    expect(hoverOutlineBeforeHover).toBeDefined();
+                    const activeOutlineBeforeHoverCenter = (activeOutlineBeforeHover as ArcSubSelectionOutline).center;
+
+                    const barToHover = visualInstance.barsGroup.children[0];
+                    visualInstance.hoveredBar = barToHover;
+
+                    const pointerMove = new PointerEvent("pointermove");
+                    visualBuilder.canvasElement?.dispatchEvent(pointerMove);
+
+                    expect(visualInstance.hoveredBar).toBeDefined();
+                    const activeOutlineAfterHover = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Active)?.outline;
+                    const hoverOutlineAfterHover = visualInstance.subSelectionRegionOutlines.get(SubSelectionOutlineVisibility.Hover)?.outline;
+                    expect(hoverOutlineAfterHover).toBeUndefined();
+                    expect(activeOutlineAfterHover).toBeDefined();
+
+                    const activeOutlineAfterHoverCenter = (activeOutlineAfterHover as ArcSubSelectionOutline).center;
+                    expect(activeOutlineBeforeHoverCenter).toEqual(activeOutlineAfterHoverCenter);
+                    done();
+                }, 200);
+            });
         });
 
         describe("bar selection tests", () => {
