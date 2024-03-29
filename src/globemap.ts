@@ -159,7 +159,7 @@ export class GlobeMap implements IVisual {
     private root: HTMLElement;
     private rendererContainer: HTMLElement;
     private rendererCanvas: HTMLElement;
-    private camera: THREE.PerspectiveCamera;
+    public camera: THREE.PerspectiveCamera;
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
     private orbitControls: OrbitControls;
@@ -1190,7 +1190,7 @@ export class GlobeMap implements IVisual {
         }
     }
 
-    public formatModeShowActiveOutlines(): void {
+    private formatModeShowActiveOutlines(): void {
         this.subSelectionRegionOutlines.delete(SubSelectionOutlineVisibility.Active);
         const selectedBar = this.subSelectedBar;
         if (selectedBar && !this.pressKey) {
@@ -1234,7 +1234,7 @@ export class GlobeMap implements IVisual {
         return {x, y};
     }
         
-    public renderOutlines(): void { 
+    private renderOutlines(): void { 
         const regionOutlines = Array.from(this.subSelectionRegionOutlines.values());
         this.subSelectionService.updateRegionOutlines(regionOutlines); 
     } 

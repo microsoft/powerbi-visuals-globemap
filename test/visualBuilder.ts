@@ -41,12 +41,13 @@ export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
         super(width, height, "GlobeMap1447669447625");
     }
 
-    public update(dataView: DataView[] | DataView, updateType?: VisualUpdateType, formatMode?: boolean ): void {
+    public update(dataView: DataView[] | DataView, updateType?: VisualUpdateType, formatMode?: boolean, subSelections?: powerbi.visuals.CustomVisualSubSelection[]): void {
         let options: VisualUpdateOptions = {
             dataViews: Array.isArray(dataView) ? dataView : [dataView],
             viewport: this.viewport,
             type: updateType!,
-            formatMode: formatMode
+            formatMode: formatMode,
+            subSelections: subSelections
         };
 
         this.visual.update(options);
@@ -57,8 +58,10 @@ export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
         fn: () => any,
         updateType: VisualUpdateType = GlobeMapBuilder.ChangeAllType,
         formatMode: boolean = false,
-        timeout?: number): number {
-        this.update(dataViews, updateType, formatMode);
+        timeout?: number,
+        subSelections?: powerbi.visuals.CustomVisualSubSelection[]
+        ): number {
+        this.update(dataViews, updateType, formatMode, subSelections);
         return renderTimeout(fn, timeout);
     }
 

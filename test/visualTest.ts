@@ -42,9 +42,10 @@ import { TileMap, ITileGapObject, IGlobeMapObject3DWithToolTipData } from "../sr
 import capabilities from '../capabilities.json';
 import PrimitiveValue = powerbi.PrimitiveValue;
 import { ILocationKeyDictionary } from "../src/interfaces/locationInterfaces";
-import { createSelectionId, d3MouseDown, renderTimeout } from "powerbi-visuals-utils-testutils";
+import { PointerType, createSelectionId, d3MouseDown, renderTimeout } from "powerbi-visuals-utils-testutils";
 import SubSelectionOutlineVisibility = powerbi.visuals.SubSelectionOutlineVisibility;
 import ArcSubSelectionOutline = powerbi.visuals.ArcSubSelectionOutline;
+import { DataPointReferences } from "../src/settings";
 
 describe("GlobeMap", () => {
     let visualBuilder: GlobeMapBuilder,
@@ -509,12 +510,11 @@ describe("GlobeMap", () => {
 
                     visualInstance.hoveredBar = null;
 
-                    const pointerDown = new PointerEvent("pointerdown");
-                    const pointerMove = new PointerEvent("pointermove", {clientX: 50, clientY: 50, buttons: 1});
-                    const pointerUp = new PointerEvent("pointerup");
+                    const pointerDown = new PointerEvent("pointerdown", {pointerType: PointerType.mouse, button: 0});
+                    const pointerMove = new PointerEvent("pointermove", {clientX: 50, clientY: 50, buttons: 1, pointerType: PointerType.mouse});
+                    const pointerUp = new PointerEvent("pointerup", {pointerType: PointerType.mouse, button: 0});
                     visualBuilder.canvasElement?.dispatchEvent(pointerDown);
-                    visualBuilder.canvasElement?.dispatchEvent(pointerMove);
-                    visualBuilder.canvasElement?.dispatchEvent(pointerMove);
+                    visualBuilder.canvasElement?.ownerDocument.dispatchEvent(pointerMove);
                     renderTimeout(() => {
                         visualBuilder.canvasElement?.dispatchEvent(pointerUp);
                         renderTimeout(() => {
@@ -705,6 +705,32 @@ describe("GlobeMap", () => {
                     done();
                 }, 500);
             });
+        });
+
+        it("context menu animation", (done) => {
+            const barIdentity = createSelectionId("subselection");
+            const barToSubselect = (visualInstance.barsGroup.children[0] as IGlobeMapObject3DWithToolTipData);
+            barToSubselect.identity = barIdentity;
+            const cameraPositionBeforeAnimation = visualInstance.camera.position.clone();
+
+            const subselectionsFromContextMenu: powerbi.visuals.CustomVisualSubSelection[] = [{
+                customVisualObjects: [{
+                    objectName: DataPointReferences.fill.objectName,
+                    selectionId: barIdentity
+                }],
+                displayName: "subselectionFromContextMenu",
+                subSelectionType: powerbi.visuals.SubSelectionStylesType.Shape,
+                selectionOrigin: {x:0, y:0},
+                showUI: true
+            }];
+            visualInstance.hoveredBar = null;
+            visualInstance.subSelectedBar = null;
+
+            visualBuilder.updateRenderTimeout(dataView, () => {
+                const cameraPositionAfterAnimation = visualInstance.camera.position;
+                expect(cameraPositionBeforeAnimation).not.toEqual(cameraPositionAfterAnimation);
+                done();
+            }, powerbi.VisualUpdateType.Data, true, 1500, subselectionsFromContextMenu);
         });
     });
 });
