@@ -248,8 +248,14 @@ describe("GlobeMap", () => {
     
     describe("OnObject tests", () => {        
         beforeAll((done) => {
-            //update with formatMode=true
-            visualBuilder.updateRenderTimeout(dataView, done, powerbi.VisualUpdateType.Data, true, 500);
+            const coordinates = defaultDataViewBuilder.getCoordinatesMock();
+            if (Object.keys(coordinates).length > 0) {
+                visualInstance.cacheManager.saveCoordinates(coordinates)
+                .then(() => {
+                    //update with formatMode=true
+                    visualBuilder.updateRenderTimeout(dataView, done, powerbi.VisualUpdateType.Data, true, 500);
+                });
+            }     
         });
 
         describe("hover bar tests", () => {
