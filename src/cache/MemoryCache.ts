@@ -30,7 +30,7 @@ export class MemoryCache {
         }
 
         const locations: ILocationDictionary = {};
-        for (const key in this.geocodeCache) {
+        for (const key of keys) {
             if (this.geocodeCache[key]) {
                 this.geocodeCache[key].hitCount++;
                 locations[key] = this.geocodeCache[key].coordinate;
