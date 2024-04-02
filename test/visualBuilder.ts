@@ -41,11 +41,13 @@ export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
         super(width, height, "GlobeMap1447669447625");
     }
 
-    public update(dataView: DataView[] | DataView, updateType?: VisualUpdateType): void {
+    public update(dataView: DataView[] | DataView, updateType?: VisualUpdateType, formatMode?: boolean, subSelections?: powerbi.visuals.CustomVisualSubSelection[]): void {
         let options: VisualUpdateOptions = {
             dataViews: Array.isArray(dataView) ? dataView : [dataView],
             viewport: this.viewport,
-            type: updateType!
+            type: updateType!,
+            formatMode: formatMode,
+            subSelections: subSelections
         };
 
         this.visual.update(options);
@@ -55,8 +57,11 @@ export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
         dataViews: DataView[] | DataView,
         fn: () => any,
         updateType: VisualUpdateType = GlobeMapBuilder.ChangeAllType,
-        timeout?: number): number {
-        this.update(dataViews, updateType);
+        formatMode: boolean = false,
+        timeout?: number,
+        subSelections?: powerbi.visuals.CustomVisualSubSelection[]
+        ): number {
+        this.update(dataViews, updateType, formatMode, subSelections);
         return renderTimeout(fn, timeout);
     }
 
@@ -66,5 +71,37 @@ export class GlobeMapBuilder extends VisualBuilderBase<VisualClass> {
 
     public get instance(): VisualClass {
         return this.visual;
+    }
+
+    public get canvasElement(): HTMLElement | null {
+        return this.element.querySelector("canvas");
+    }
+
+    public get controlsElements(): NodeListOf<HTMLElement> | null {
+        return this.element.querySelectorAll(".control");
+    }
+
+    public get rightControlElement(): HTMLElement | null {
+        return this.element.querySelector(".control.js-control--move-right");
+    }
+
+    public get leftControlElement(): HTMLElement | null {
+        return this.element.querySelector(".control.js-control--move-left");
+    }
+
+    public get upControlElement(): HTMLElement | null {
+        return this.element.querySelector(".control.js-control--move-up");
+    }
+
+    public get downControlElement(): HTMLElement | null {
+        return this.element.querySelector(".control.js-control--move-down");
+    }
+
+    public get zoomUpControlElement(): HTMLElement | null {
+        return this.element.querySelector(".control.js-control--zoom-up");
+    }
+
+    public get zoomDownControlElement(): HTMLElement | null {
+        return this.element.querySelector(".control.js-control--zoom-down");
     }
 }

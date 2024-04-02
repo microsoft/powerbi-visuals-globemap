@@ -159,7 +159,7 @@ export class GlobeMap implements IVisual {
     private root: HTMLElement;
     private rendererContainer: HTMLElement;
     private rendererCanvas: HTMLElement;
-    private camera: THREE.PerspectiveCamera;
+    public camera: THREE.PerspectiveCamera;
     private renderer: THREE.WebGLRenderer;
     private scene: THREE.Scene;
     private orbitControls: OrbitControls;
@@ -176,12 +176,12 @@ export class GlobeMap implements IVisual {
     private locationsLoaded: number = 0;
     private initialLocationsLength: number = 0;
     private renderLoopEnabled = true;
-    private needsRender = false;
+    public needsRender = false;
     private mousePosNormalized: THREE.Vector2;
     private mousePos: THREE.Vector2;
     private rayCaster: THREE.Raycaster;
     private selectedBar: THREE.Object3D;
-    private hoveredBar: THREE.Object3D;
+    public hoveredBar: THREE.Object3D;
     private averageBarVector: THREE.Vector3;
     private controlContainer: HTMLElement;
     public colors: IColorPalette;
@@ -197,9 +197,9 @@ export class GlobeMap implements IVisual {
     private formatMode: boolean = false;
     private pressKey: boolean = false;
     private barFromMouseDown: THREE.Object3D;
-    private subSelectedBar: IGlobeMapObject3DWithToolTipData;
+    public subSelectedBar: IGlobeMapObject3DWithToolTipData;
     private subSelectionService: powerbi.extensibility.IVisualSubSelectionService;
-    private subSelectionRegionOutlines: Map<SubSelectionOutlineVisibility, SubSelectionRegionOutline>; 
+    public subSelectionRegionOutlines: Map<SubSelectionOutlineVisibility, SubSelectionRegionOutline>; 
 
     private isFirstLoad: boolean = true;
 
@@ -1219,7 +1219,7 @@ export class GlobeMap implements IVisual {
         return regionOutline;
     }
 
-    private worldToScreenPositions(bar: THREE.Object3D) {
+    public worldToScreenPositions(bar: THREE.Object3D) {
         const vector = new THREE.Vector3();
         const canvas = this.renderer.domElement;
 
