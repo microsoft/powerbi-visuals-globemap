@@ -66,6 +66,7 @@ export class CacheManager {
             return result;
         }
 
+        // Load from localStorage
         return this.createLocalStorageCache()
             .then(cache => cache.loadCoordinates(locations))
             .then(async (coordinatesPromise: Promise<ILocationDictionary>) => {

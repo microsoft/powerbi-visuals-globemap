@@ -1,3 +1,6 @@
+## 3.3.3.0
+* Fixed deselection in Slicer wasn't apply to Globe map
+
 ## 3.3.2.0
 * Fixed console error "undefined CustomVisualObjects"
 
