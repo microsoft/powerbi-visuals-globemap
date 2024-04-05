@@ -22,7 +22,7 @@ export class MemoryCache {
         this.maxCacheSizeOverflow = maxCacheSizeOverflow;
     }
 
-    public async loadCoordinates(keys: string[]): Promise<ILocationDictionary> {
+    public loadCoordinates(keys: string[]): ILocationDictionary {
         console.log("Loading from memory cache...");
         
         if (!keys || !keys.length) {
@@ -44,7 +44,7 @@ export class MemoryCache {
         return locations;
     }
 
-    public saveCoordinates(coordinates: ILocationDictionary): Promise<void> {
+    public saveCoordinates(coordinates: ILocationDictionary): void {
         console.log("Saving coordinates to memory cache...");
         
         if (!coordinates) {

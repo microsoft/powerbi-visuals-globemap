@@ -56,7 +56,7 @@ export class CacheManager {
         let locations: string[] = Object.keys(locationsDictionary);
         
         // Load from memory
-        const coordsInMemory: ILocationDictionary = await this.memoryCache.loadCoordinates(locations); // {"London": {"lat": 54, "lon": 34"}, "Moscow": {"lat": 64, "lon": 54"}
+        const coordsInMemory: ILocationDictionary = this.memoryCache.loadCoordinates(locations); // {"London": {"lat": 54, "lon": 34"}, "Moscow": {"lat": 64, "lon": 54"}
         locationsInMemory = Object.keys(coordsInMemory);
         
         locations = locations.filter(loc => !locationsInMemory.includes(loc));                        
