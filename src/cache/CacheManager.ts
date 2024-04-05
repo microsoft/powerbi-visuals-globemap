@@ -52,46 +52,25 @@ export class CacheManager {
         // Load from memory
         const coordsInMemory: ILocationDictionary = this.memoryCache.loadCoordinates(locations); // {"London": {"lat": 54, "lon": 34"}, "Moscow": {"lat": 64, "lon": 54"}
         locationsInMemory = Object.keys(coordsInMemory);
-        
         locations = locations.filter(loc => !locationsInMemory.includes(loc));                        
-        
         if (locations.length === 0) {
             result = Object.assign({}, coordsInMemory);
             return result;
         }
 
-        // Load from localStorage
-        return this.createLocalStorageCache()
-            .then(cache => cache.loadCoordinates(locations))
-            .then(async (coordinates: ILocationDictionary) => {
-                if (coordinates && Object.keys(coordinates).length > 0) {
-                    const locationsInLocalStorage = Object.keys(coordinates);
-                    locations = locations.filter(loc => !locationsInLocalStorage.includes(loc));
-                    
-                    if (locations.length === 0) {
-                        result = Object.assign({}, coordsInMemory, coordinates);
-                        return result;
-                    }
-    
-                    // Load additional locations from Bing
-                    const locationsFromBing = await this.getLocationsFromBing(locations, locationsDictionary);
-                    result = Object.assign({}, coordsInMemory, coordinates, locationsFromBing);
-                    return result;
-                }
-                else {
-                    console.log("Local storage is empty, will attempt to load the coordinates from Bing API");
-                        
-                    const locationsFromBing = await this.getLocationsFromBing(locations, locationsDictionary);
-                    result = Object.assign({}, coordsInMemory, coordinates, locationsFromBing);
-                    return result;
-                }
-                    
-            }).catch(async (e) => {
-                console.error("Error while loading coordinates from local storage", e);
-                const locationsFromBing = await this.getLocationsFromBing(locations, locationsDictionary);
-                result = Object.assign({}, coordsInMemory, locationsFromBing);
-                return result;
-        });
+        // Load from local storage
+        const coordsInLocalStorage: ILocationDictionary = await this.createLocalStorageCache().then(cache => cache.loadCoordinates(locations));
+        const locationsInlocalStorage = Object.keys(coordsInLocalStorage);
+        locations = locations.filter(loc => !locationsInlocalStorage.includes(loc));                        
+        if (locations.length === 0) {
+            result = Object.assign({}, coordsInMemory, coordsInLocalStorage);
+            return result;
+        }
+
+        // Load from Bing
+        const coordsFromBing: ILocationDictionary = await this.getLocationsFromBing(locations, locationsDictionary);
+        result = Object.assign({}, coordsInMemory, coordsInLocalStorage, coordsFromBing);
+        return result;
     }
 
     public saveCoordinates(coordinates: ILocationDictionary): IPromise2<void, void> {
