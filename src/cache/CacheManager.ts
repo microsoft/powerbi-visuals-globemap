@@ -13,24 +13,22 @@ export class CacheManager {
     private localStorageCache: LocalStorageCache;
     private bingGeocoder: BingGeocoder;
     private coordsInLocalStorage: ILocationDictionary;
-    private localStorageService: IVisualLocalStorageV2Service;
 
     constructor(localStorageService: IVisualLocalStorageV2Service) {
         this.memoryCache = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
-        this.localStorageService = localStorageService;
         this.bingGeocoder = new BingGeocoder();
         this.coordsInLocalStorage = {};
+        this.localStorageCache = new LocalStorageCache(localStorageService);
     }
 
-    private createLocalStorageCache(): IPromise2<LocalStorageCache, void>  {
-        const cache: LocalStorageCache = new LocalStorageCache(this.localStorageService);
-
-        return cache.syncStatus()
-            .then(status => {
+    private createLocalStorageCache(): Promise<LocalStorageCache>  {
+        return new Promise<LocalStorageCache>((resolve) => {
+            this.localStorageCache.syncStatus()
+            .then((status: powerbi.PrivilegeStatus) => {
                 console.log(`Received local storage status: ${status}`);
-                this.localStorageCache = cache;
-                return cache            
-            });
+                resolve(this.localStorageCache);
+            })
+        });
     }
 
     private getLocationsFromBing = async (locations: string[], locationsInMemory: string[], locationsDictionary: ILocationKeyDictionary): Promise<ILocationDictionary> => {
@@ -69,8 +67,7 @@ export class CacheManager {
         // Load from localStorage
         return this.createLocalStorageCache()
             .then(cache => cache.loadCoordinates(locations))
-            .then(async (coordinatesPromise: Promise<ILocationDictionary>) => {
-                const coordinates = await coordinatesPromise;
+            .then(async (coordinates: ILocationDictionary) => {
                 if (coordinates && Object.keys(coordinates).length > 0) {
                     this.coordsInLocalStorage = this.coordsInLocalStorage ? {...this.coordsInLocalStorage, ...coordinates} : coordinates;
 
