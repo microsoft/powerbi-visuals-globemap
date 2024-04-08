@@ -62,13 +62,18 @@ export class BingGeocoder {
                 for (let i = 0; i < responseJson.resourceSets.length; i++) {
                     const currentSet: BingGeocodeResourceSet = responseJson.resourceSets[i];
                     
-                    const coordinates: number[] = currentSet.resources[0].point.coordinates;
-                    
-                    const latitude: number = coordinates[0];
-                    const longitude: number = coordinates[1];
-    
-                    const name: string = batch[i];
-                    result[name] = { latitude, longitude };
+                    if (!currentSet.resources[0]?.point){
+                        console.log(`Could not get coordinates of '${batch[i]}' from Bing`);
+                    }
+                    else {
+                        const coordinates: number[] = currentSet.resources[0].point.coordinates;
+                        
+                        const latitude: number = coordinates[0];
+                        const longitude: number = coordinates[1];
+        
+                        const name: string = batch[i];
+                        result[name] = { latitude, longitude };
+                    }   
                 }
             }));
         } catch (e) {
