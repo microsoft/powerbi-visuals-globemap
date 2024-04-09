@@ -41,11 +41,15 @@ import { TileMap, ITileGapObject, IGlobeMapObject3DWithToolTipData } from "../sr
 
 import capabilities from '../capabilities.json';
 import PrimitiveValue = powerbi.PrimitiveValue;
-import { ILocationKeyDictionary } from "../src/interfaces/locationInterfaces";
-import { PointerType, createSelectionId, d3MouseDown, renderTimeout } from "powerbi-visuals-utils-testutils";
+import { ILocationDictionary, ILocationKeyDictionary } from "../src/interfaces/locationInterfaces";
+import { PointerType, createSelectionId, d3MouseDown, renderTimeout, MockIStorageV2Service } from "powerbi-visuals-utils-testutils";
 import SubSelectionOutlineVisibility = powerbi.visuals.SubSelectionOutlineVisibility;
 import ArcSubSelectionOutline = powerbi.visuals.ArcSubSelectionOutline;
-import { DataPointReferences } from "../src/settings";
+import { CacheSettings, DataPointReferences } from "../src/settings";
+import { BingGeocoder } from "../src/geocoder";
+import { LocalStorageCache } from "../src/cache/LocalStorageCache";
+import { MemoryCache } from "../src/cache/MemoryCache";
+import { CacheManager } from "../src/cache/CacheManager";
 
 describe("GlobeMap", () => {
     let visualBuilder: GlobeMapBuilder,
@@ -61,16 +65,8 @@ describe("GlobeMap", () => {
 
             let categoricalColumns = GlobeMapColumns.getCategoricalColumns(dataView);
             
-            let locations = categoricalColumns.Location.values as PrimitiveValue[];
-            let locationsNeedToBeLoaded = {} as ILocationKeyDictionary;
-
-            locations.forEach((locationName) => {
-                const name = (locationName as string).toLowerCase();
-                locationsNeedToBeLoaded[name] = {
-                    place: name, 
-                    locationType: ""
-                };
-            });
+            let locations = categoricalColumns.Location.values as string[];
+            let locationsNeedToBeLoaded = convertLocationsForCacheManager(locations);
 
             const coordinates = await visualInstance.cacheManager.loadCoordinates(locationsNeedToBeLoaded);
             
@@ -244,11 +240,119 @@ describe("GlobeMap", () => {
                 }
             });
         });
+
+        it("geocoder should return locations for all valid input", async () => {
+            const bingGeocoder = new BingGeocoder();
+            const locations = Object.assign(defaultDataViewBuilder.valuesSourceDestination);
+            // set invalid location
+            locations[0] = 'lll, lll';
+            const coordinatesFromBing: ILocationDictionary = await bingGeocoder.geocode(locations);
+
+            expect(Object.keys(coordinatesFromBing).length).toBe(locations.length - 1);
+            expect(coordinatesFromBing[locations[0]]).toBeUndefined;
+        });
+
+        it("cacheManager should load coordinates for all input from bing, when memory cache is empty and local storage is empty", async () => {
+            const locations = Object.assign(defaultDataViewBuilder.valuesSourceDestination);
+            const locationsNeedToBeLoaded = convertLocationsForCacheManager(locations);
+
+            const { memoryCacheMock, localStorageMock, geocoderMock } = setUpMocks(0, 0);
+            const cacheManager = new CacheManager(new MockIStorageV2Service(), memoryCacheMock, localStorageMock, geocoderMock);
+
+            const result = await cacheManager.loadCoordinates(locationsNeedToBeLoaded);
+            expect(geocoderMock.geocode).toHaveBeenCalled();
+            expect(Object.keys(result).length).toBe(Object.keys(locationsNeedToBeLoaded).length);
+        });
+
+        it("cacheManager should load coordinates for all input, when memory cache is empty and local storage has half of data", async () => {
+            const locations = Object.assign(defaultDataViewBuilder.valuesSourceDestination);
+            const locationsNeedToBeLoaded = convertLocationsForCacheManager(locations);
+
+            const { memoryCacheMock, localStorageMock, geocoderMock } = setUpMocks(0, 10);
+            const cacheManager = new CacheManager(new MockIStorageV2Service(), memoryCacheMock, localStorageMock, geocoderMock);
+
+            const result = await cacheManager.loadCoordinates(locationsNeedToBeLoaded);
+            expect(geocoderMock.geocode).toHaveBeenCalled();
+            expect(Object.keys(result).length).toBe(Object.keys(locationsNeedToBeLoaded).length);
+        });
+
+        it("cacheManager should load coordinates for all input, when memory cache has half of data and local storage is empty", async () => {
+            const locations = Object.assign(defaultDataViewBuilder.valuesSourceDestination);
+            const locationsNeedToBeLoaded = convertLocationsForCacheManager(locations);
+
+            const { memoryCacheMock, localStorageMock, geocoderMock } = setUpMocks(10, 0);
+            const cacheManager = new CacheManager(new MockIStorageV2Service(), memoryCacheMock, localStorageMock, geocoderMock);
+
+            const result = await cacheManager.loadCoordinates(locationsNeedToBeLoaded);
+            expect(geocoderMock.geocode).toHaveBeenCalled();
+            expect(Object.keys(result).length).toBe(Object.keys(locationsNeedToBeLoaded).length);
+        });
+
+        it("cacheManager should load coordinates for all input, when memory cache has 1/3 of data and local storage has 1/3 of data", async () => {
+            const locations = Object.assign(defaultDataViewBuilder.valuesSourceDestination);
+            const locationsNeedToBeLoaded = convertLocationsForCacheManager(locations);
+
+            const { memoryCacheMock, localStorageMock, geocoderMock } = setUpMocks(5, 5);
+            const cacheManager = new CacheManager(new MockIStorageV2Service(), memoryCacheMock, localStorageMock, geocoderMock);
+
+            const result = await cacheManager.loadCoordinates(locationsNeedToBeLoaded);
+            expect(geocoderMock.geocode).toHaveBeenCalled();
+            expect(Object.keys(result).length).toBe(Object.keys(locationsNeedToBeLoaded).length);
+        });
+
+        it("cacheManager should load coordinates for all input, when memory cache has 1/2 of data and local storage has 1/2 of data", async () => {
+            const locations = Object.assign(defaultDataViewBuilder.valuesSourceDestination);
+            const locationsNeedToBeLoaded = convertLocationsForCacheManager(locations);
+
+            const { memoryCacheMock, localStorageMock, geocoderMock } = setUpMocks(10, 10);
+            const cacheManager = new CacheManager(new MockIStorageV2Service(), memoryCacheMock, localStorageMock, geocoderMock);
+
+            const result = await cacheManager.loadCoordinates(locationsNeedToBeLoaded);
+            expect(geocoderMock.geocode).not.toHaveBeenCalled();
+            expect(Object.keys(result).length).toBe(Object.keys(locationsNeedToBeLoaded).length);
+        });
+
+        function setUpMocks(locationsInMemoryCache: number, locationsInLocalStorageCache: number) {
+            const fullResult = defaultDataViewBuilder.coordinatesMock;
+
+            const locationsFromMemoryCache: ILocationDictionary = {};
+            const locationsFromLocalStorageCache: ILocationDictionary = {};
+            const locationsFromBing: ILocationDictionary = {};
+            let counter = 0;
+            for (let key in fullResult) {
+                if (counter < locationsInMemoryCache){
+                    locationsFromMemoryCache[key] = fullResult[key];
+                }
+                else if (counter < locationsInLocalStorageCache + locationsInMemoryCache){
+                    locationsFromLocalStorageCache[key] = fullResult[key];
+                }
+                else {
+                    locationsFromBing[key] = fullResult[key];
+                }
+                counter++;
+            }
+
+            // mock for local storage
+            const localStorageMock = new LocalStorageCache(new MockIStorageV2Service());
+            const locationsInPromise = new Promise<ILocationDictionary>((resolve)=> resolve(locationsFromLocalStorageCache));
+            spyOn(localStorageMock, 'loadCoordinates').and.returnValue(locationsInPromise);
+
+            // mock for MemoryCache
+            const memoryCacheMock = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
+            spyOn(memoryCacheMock, 'loadCoordinates').and.returnValue(locationsFromMemoryCache);
+
+            // mock for geocoder
+            const geocoderMock = new BingGeocoder();
+            const locationsGeocoderInPromise = new Promise<ILocationDictionary>((resolve)=> resolve(locationsFromBing));
+            spyOn(geocoderMock, 'geocode').and.returnValue(locationsGeocoderInPromise);
+
+            return {memoryCacheMock, localStorageMock, geocoderMock};
+        }
     });
     
     describe("OnObject tests", () => {        
         beforeAll((done) => {
-            const coordinates = defaultDataViewBuilder.getCoordinatesMock();
+            const coordinates = defaultDataViewBuilder.coordinatesMock;
             if (Object.keys(coordinates).length > 0) {
                 visualInstance.cacheManager.saveCoordinates(coordinates)
                 .then(() => {
@@ -739,4 +843,16 @@ describe("GlobeMap", () => {
             }, powerbi.VisualUpdateType.Data, true, 1500, subselectionsFromContextMenu);
         });
     });
+
+    function convertLocationsForCacheManager(locations: string[]): ILocationKeyDictionary{
+        const locationsNeedToBeLoaded = {} as ILocationKeyDictionary;
+        locations.forEach((locationName) => {
+            const name = (locationName as string).toLowerCase();
+            locationsNeedToBeLoaded[name] = {
+                place: name, 
+                locationType: ""
+            };
+        });
+        return locationsNeedToBeLoaded;
+    }
 });

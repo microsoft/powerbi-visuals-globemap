@@ -13,10 +13,10 @@ export class CacheManager {
     private localStorageCache: LocalStorageCache;
     private bingGeocoder: BingGeocoder;
 
-    constructor(localStorageService: IVisualLocalStorageV2Service) {
-        this.memoryCache = new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
-        this.bingGeocoder = new BingGeocoder();
-        this.localStorageCache = new LocalStorageCache(localStorageService);
+    constructor(localStorageService: IVisualLocalStorageV2Service, memoryCache?: MemoryCache, localStorageCache?: LocalStorageCache, bingGeocoder?: BingGeocoder) {
+        this.memoryCache = memoryCache ?? new MemoryCache(CacheSettings.MaxCacheSize, CacheSettings.MaxCacheSizeOverflow);
+        this.bingGeocoder = bingGeocoder ?? new BingGeocoder();
+        this.localStorageCache = localStorageCache ?? new LocalStorageCache(localStorageService);
     }
 
     private createLocalStorageCache(): Promise<LocalStorageCache>  {
