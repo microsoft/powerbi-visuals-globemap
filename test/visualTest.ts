@@ -41,7 +41,7 @@ import { TileMap, ITileGapObject, IGlobeMapObject3DWithToolTipData } from "../sr
 
 import capabilities from '../capabilities.json';
 import PrimitiveValue = powerbi.PrimitiveValue;
-import { ILocationDictionary, ILocationKeyDictionary } from "../src/interfaces/locationInterfaces";
+import { IGeocodeCoordinate, ILocationDictionary, ILocationKeyDictionary } from "../src/interfaces/locationInterfaces";
 import { PointerType, createSelectionId, d3MouseDown, renderTimeout, MockIStorageV2Service } from "powerbi-visuals-utils-testutils";
 import SubSelectionOutlineVisibility = powerbi.visuals.SubSelectionOutlineVisibility;
 import ArcSubSelectionOutline = powerbi.visuals.ArcSubSelectionOutline;
@@ -242,10 +242,33 @@ describe("GlobeMap", () => {
         });
 
         it("geocoder should return locations for all valid input", async () => {
-            const bingGeocoder = new BingGeocoder();
             const locations = Object.assign(defaultDataViewBuilder.valuesSourceDestination);
+            const locationsWithCoordinates = Object.assign(defaultDataViewBuilder.coordinatesMock);
             // set invalid location
             locations[0] = 'lll, lll';
+            const data = 
+            {
+                resourceSets: locations.map((location: string) => {
+                    debugger;
+                    const coordsForLocation = locationsWithCoordinates[location.toLowerCase()] as IGeocodeCoordinate;
+                    if (coordsForLocation){
+                        return { 
+                            resources: [{
+                                point: {
+                                    coordinates: [coordsForLocation.latitude, coordsForLocation.longitude]
+                                }
+                            }],
+                        };
+                    }
+                    else {
+                        return { resources: []};
+                    }
+                })
+            };
+            const response = new Response(JSON.stringify(data));
+            const bingGeocoder = new BingGeocoder();
+
+            spyOn(window, "fetch").and.returnValue(Promise.resolve(response));
             const coordinatesFromBing: ILocationDictionary = await bingGeocoder.geocode(locations);
 
             expect(Object.keys(coordinatesFromBing).length).toBe(locations.length - 1);
