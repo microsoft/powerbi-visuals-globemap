@@ -246,10 +246,8 @@ describe("GlobeMap", () => {
             const locationsWithCoordinates = Object.assign(defaultDataViewBuilder.coordinatesMock);
             // set invalid location
             locations[0] = 'lll, lll';
-            const data = 
-            {
+            const data = {
                 resourceSets: locations.map((location: string) => {
-                    debugger;
                     const coordsForLocation = locationsWithCoordinates[location.toLowerCase()] as IGeocodeCoordinate;
                     if (coordsForLocation){
                         return { 
