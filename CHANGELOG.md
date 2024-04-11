@@ -1,3 +1,8 @@
+## 3.3.3.0
+* Fixed deselection in Slicer wasn't apply to Globe map
+* Update powerbi-visuals-api to 5.9.0
+* Refactored cacheManager, LocalStorageCache, MemoryCache
+
 ## 3.3.2.0
 * Fixed console error "undefined CustomVisualObjects"
 
