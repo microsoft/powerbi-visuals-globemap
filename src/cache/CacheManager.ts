@@ -19,12 +19,12 @@ export class CacheManager {
         this.localStorageCache = localStorageCache ?? new LocalStorageCache(localStorageService);
     }
 
-    private createLocalStorageCache(): Promise<LocalStorageCache>  {
-        return new Promise<LocalStorageCache>((resolve) => {
+    private syncLocalStorageCacheStatus(): Promise<void>  {
+        return new Promise((resolve) => {
             this.localStorageCache.syncStatus()
             .then((status: powerbi.PrivilegeStatus) => {
                 console.log(`Received local storage status: ${status}`);
-                resolve(this.localStorageCache);
+                resolve();
             })
         });
     }
@@ -59,7 +59,8 @@ export class CacheManager {
         }
 
         // Load from local storage
-        const coordsInLocalStorage: ILocationDictionary = await this.createLocalStorageCache().then(cache => cache.loadCoordinates(locations));
+        await this.syncLocalStorageCacheStatus();
+        const coordsInLocalStorage: ILocationDictionary = await this.localStorageCache.loadCoordinates(locations);
         const locationsInlocalStorage = Object.keys(coordsInLocalStorage);
         locations = locations.filter(loc => !locationsInlocalStorage.includes(loc));                        
         if (locations.length === 0) {
