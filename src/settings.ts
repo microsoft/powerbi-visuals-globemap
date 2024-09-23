@@ -30,8 +30,16 @@ import { dataViewObjectsParser } from "powerbi-visuals-utils-dataviewutils";
 import DataViewObjectsParser = dataViewObjectsParser.DataViewObjectsParser;
 
 import { formattingSettings } from "powerbi-visuals-utils-formattingmodel";
-import FormattingSettingsCard = formattingSettings.Card;
+import FormattingSettingsCard = formattingSettings.SimpleCard;
+import FormattingSettingsSlice = formattingSettings.Slice;
 import FormattingSettingsModel = formattingSettings.Model;
+import { GlobeMapData } from "./interfaces/dataInterfaces";
+
+import { ColorHelper } from "powerbi-visuals-utils-colorutils";
+
+import powerbi from "powerbi-visuals-api";
+import ISelectionId = powerbi.visuals.ISelectionId
+import FormattingId = powerbi.visuals.FormattingId;
 
 export const CacheSettings = {
     /** Maximum cache size of cached geocode data. */
@@ -49,6 +57,19 @@ export const BingSettings = {
     BingKey: process.env.BING_KEY
 };
 
+interface IDataPoinReferences {
+    cardUid: string;
+    fill: FormattingId;
+}
+
+export const DataPointReferences: IDataPoinReferences = {
+    cardUid: "Visual-dataPoint-card",
+    fill: {
+        objectName: "dataPoint",
+        propertyName: "fill"
+    }
+}
+
 export class GlobeMapSettings extends DataViewObjectsParser {
     public dataPoint: DataPointSettings = new DataPointSettings();
 }
@@ -56,6 +77,23 @@ export class GlobeMapSettings extends DataViewObjectsParser {
 export class GlobeMapSettingsModel extends FormattingSettingsModel {
     dataPoint = new DataPointSettings();
     cards = [this.dataPoint];
+
+    populateDataPointColorSelector(globeMapData: GlobeMapData) {
+        const slices: FormattingSettingsSlice[] = this.dataPoint.slices;
+        if (slices && globeMapData && globeMapData.seriesDataPoints) {
+            globeMapData.seriesDataPoints.forEach(dataPoint => {
+                if(slices.some((dataPointColorSelector: FormattingSettingsSlice) => dataPointColorSelector.displayName === dataPoint.label)){
+                    return;
+                }
+                slices.push(new formattingSettings.ColorPicker({
+                    name: DataPointReferences.fill.propertyName,
+                    displayName: dataPoint.label,
+                    value: { value: dataPoint.color },
+                    selector: ColorHelper.normalizeSelector((dataPoint.identity as ISelectionId).getSelector())
+                }));
+            });
+        }
+    }
 }
 
 export class DataPointSettings extends FormattingSettingsCard {
@@ -64,33 +102,11 @@ export class DataPointSettings extends FormattingSettingsCard {
         name: "defaultColor",
         displayName: "Default color",
         displayNameKey: "Visual_DefaultColor",
-        value: { value: "#000000" }
+        value: { value: "#118DFF" }
     });
 
-    showAllDataPoints = new formattingSettings.ToggleSwitch({
-        name: "showAllDataPoints",
-        displayName: "Show all",
-        displayNameKey: "Visual_DataPoint_Show_All",
-        value: true,
-        topLevelToggle: true
-    });
-
-    fill = new formattingSettings.ColorPicker({
-        name: "fill",
-        displayName: "Fill",
-        displayNameKey: "Visual_Fill",
-        value: { value: "#000000" }
-    });
-
-    fillRule = new formattingSettings.ColorPicker({
-        name: "fillRule",
-        displayName: "Color saturation",
-        displayNameKey: "Visual_Gradient",
-        value: { value: "" }
-    });
-
-    name = "dataPoint";
+    name = DataPointReferences.fill.objectName;
     displayName = "Data colors";
     displayNameKey = "Visual_DataPoint";
-    slices = [this.defaultColor, this.showAllDataPoints, this.fill, this.fillRule];
+    slices = [this.defaultColor];
 }

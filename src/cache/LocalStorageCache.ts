@@ -1,7 +1,6 @@
 import powerbi from "powerbi-visuals-api";
-import assign from "lodash.assign";
 
-import ILocalVisualStorageService = powerbi.extensibility.ILocalVisualStorageService;
+import IVisualLocalStorageV2Service = powerbi.extensibility.IVisualLocalStorageV2Service;
 import LocalStorageStatus = powerbi.PrivilegeStatus;
 import IPromise2 = powerbi.IPromise2;
 
@@ -9,10 +8,10 @@ import { ILocationDictionary } from "../interfaces/locationInterfaces";
 
 export class LocalStorageCache {
     private static TILE_LOCATIONS = "GLOBEMAP_TILE_LOCATIONS";
-    private localStorageService: ILocalVisualStorageService;
+    private localStorageService: IVisualLocalStorageV2Service;
     private localStorageStatus: LocalStorageStatus;
 
-    constructor(localStorageService: ILocalVisualStorageService) {
+    constructor(localStorageService: IVisualLocalStorageV2Service) {
         this.localStorageService = localStorageService;
     }
 
@@ -97,7 +96,7 @@ export class LocalStorageCache {
         return this.localStorageService.get(LocalStorageCache.TILE_LOCATIONS)
             .then((data) => {
                 const locationsFromStorage = JSON.parse(data);
-                const mergedObject = locationsFromStorage ? assign(locationsFromStorage, locationItemsObject) : locationItemsObject;
+                const mergedObject = locationsFromStorage ? {...locationsFromStorage, ...locationItemsObject} : locationItemsObject;
 
                 const valueObjectToString = JSON.stringify(mergedObject);
                 

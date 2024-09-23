@@ -1,3 +1,30 @@
+## 3.3.3.0
+* Fixed deselection in Slicer wasn't apply to Globe map
+* Update powerbi-visuals-api to 5.9.0
+* Refactored cacheManager, LocalStorageCache, MemoryCache
+
+## 3.3.2.0
+* Fixed console error "undefined CustomVisualObjects"
+
+## 3.3.1.0
+* Fixed bug that occurs when resizing the visual
+* Fixed console error in formatting mode
+
+## 3.3.0.0
+* Use new IVisualLocalStorageV2Service
+* Update powerbi-visuals-api to 5.8.0
+* Add onObject support
+
+## 3.2.2.0
+* Fix console error when using Heat without Height
+
+## 3.2.1.0
+* Updated all dependencies
+* Changed max zoom level
+* Changed scaling of heatmap and bars height and width
+* Added sRGB color space for earth textures
+* Changed conditions for dataview mapping
+
 ## 3.2.0
 * Updated all dependencies
 * Got rid of vulnerabilities

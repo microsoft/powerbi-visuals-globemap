@@ -140,24 +140,6 @@
           "Heat": {
             "max": 1
           }
-        },
-        {
-          "Location": {
-            "min": 1,
-            "max": 1
-          },
-          "X": {
-            "max": 1
-          },
-          "Y": {
-            "max": 1
-          },
-          "Height": {
-            "max": 1
-          },
-          "Heat": {
-            "max": 1
-          }
         }
       ],
       "categorical": {
@@ -180,16 +162,6 @@
               {
                 "for": {
                   "in": "Heat"
-                }
-              },
-              {
-                "for": {
-                  "in": "X"
-                }
-              },
-              {
-                "for": {
-                  "in": "Y"
                 }
               }
             ],
@@ -252,43 +224,23 @@
   ],
   "objects": {
     "dataPoint": {
-      "displayName": "Data colors",
-      "displayNameKey": "Visual_DataPoint",
       "properties": {
         "defaultColor": {
-          "displayName": "Default color",
-          "displayNameKey": "Visual_DefaultColor",
           "type": {
             "fill": {
               "solid": {
                 "color": true
               }
             }
-          }
-        },
-        "showAllDataPoints": {
-          "displayName": "Show all",
-          "displayNameKey": "Visual_DataPoint_Show_All",
-          "type": {
-            "bool": true
           }
         },
         "fill": {
-          "displayName": "Fill",
-          "displayNameKey": "Visual_Fill",
           "type": {
-            "fill": {
+            "fill":{
               "solid": {
                 "color": true
               }
             }
-          }
-        },
-        "fillRule": {
-          "displayName": "Color saturation",
-          "displayNameKey": "Visual_Gradient",
-          "type": {
-            "fill": {}
           }
         }
       }
@@ -298,5 +250,7 @@
     "custom": {}
   },
   "supportsKeyboardFocus": true,
-  "supportsMultiVisualSelection": true
+  "supportsMultiVisualSelection": true,
+  "supportsOnObjectFormatting": true,
+  "enablePointerEventsFormatMode": true
 }

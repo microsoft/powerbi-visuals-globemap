@@ -27,15 +27,15 @@
 import powerbi from "powerbi-visuals-api";
 
 import DataView = powerbi.DataView;
-import PrimitiveValue = powerbi.PrimitiveValue;
 import ValueTypeDescriptor = powerbi.ValueTypeDescriptor;
 
 import { interactivitySelectionService } from "powerbi-visuals-utils-interactivityutils";
 import SelectableDataPoint = interactivitySelectionService.SelectableDataPoint;
+import ISelectionId = powerbi.visuals.ISelectionId;
+import VisualTooltipDataItem = powerbi.extensibility.VisualTooltipDataItem;
 
 import { GlobeMapSettings } from "../settings";
 import { IGeocodeCoordinate } from "./locationInterfaces";
-import { HexColorString } from "three";
 
 export interface GlobeMapData {
     dataView: DataView;
@@ -58,7 +58,7 @@ export interface GlobeMapDataPoint {
 
 export interface GlobeMapSeriesDataPoint extends SelectableDataPoint {
     label: string;
-    color: HexColorString;
+    color: string;
     category?: string;
 }
 
@@ -76,16 +76,18 @@ export interface IGlobeMapValueTypeDescriptor extends ValueTypeDescriptor {
 }
 
 export interface IGlobeMapToolTipData {
-    location: PrimitiveValue;
-    longitude: PrimitiveValue;
-    latitude: PrimitiveValue;
-    series: PrimitiveValue;
-    height: PrimitiveValue;
-    heat: PrimitiveValue;
+    location: VisualTooltipDataItem;
+    longitude: VisualTooltipDataItem;
+    latitude: VisualTooltipDataItem;
+    series: VisualTooltipDataItem;
+    height: VisualTooltipDataItem;
+    heat: VisualTooltipDataItem;
 }
 
 export interface IGlobeMapObject3DWithToolTipData extends THREE.Object3D {
     toolTipData: IGlobeMapToolTipData;
+    identity: ISelectionId;
+    label: string;
 }
 
 export interface ITileGapObject {

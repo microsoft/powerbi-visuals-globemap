@@ -30,6 +30,7 @@ import DataView = powerbi.DataView;
 import { ValueType } from "powerbi-visuals-utils-typeutils/lib/valueType";
 import { TestDataViewBuilder } from "powerbi-visuals-utils-testutils/lib/dataViewBuilder/testDataViewBuilder";
 import { getRandomNumbers } from "powerbi-visuals-utils-testutils";
+import { ILocationDictionary } from "../src/interfaces/locationInterfaces";
 
 export class GlobeMapData extends TestDataViewBuilder {
     public static ColumnSource: string = "Location";
@@ -102,6 +103,28 @@ export class GlobeMapData extends TestDataViewBuilder {
         -99.136068,
         80.237908
     ];
+
+    public coordinatesMock: ILocationDictionary = {
+        "addis ababa, ethiopia": {latitude: 9.03582859, longitude: 38.75241089},
+        "ahmedabad, india": {latitude: 23.0145092, longitude: 72.59175873},
+        "cairo, egypt": {latitude: 30.04348755, longitude: 31.23529243},
+        "cape town, south africa": {latitude: -33.92710876, longitude: 18.42006111},
+        "casablanca, morocco": {latitude: 33.59451294, longitude: -7.6200285},
+        "chennai, india": {latitude: 13.07209206, longitude: 80.20185852},
+        "durban, south africa": {latitude: -29.88188934, longitude: 30.98084259},
+        "jakarta, indonesia": {latitude: -6.17475653, longitude: 106.82707214},
+        "jeddah, saudi arabia": {latitude: 21.48730469, longitude: 39.18133545},
+        "lagos, nigeria": {latitude: 6.45505762, longitude: 3.39417958},
+        "lima, peru": {latitude: -12.06210613, longitude: -77.03652191},
+        "london, united kingdom": {latitude: 51.50740814, longitude: -0.12772401},
+        "mexico city, mexico": {latitude: 19.43267822, longitude: -99.13420868},
+        "new taipei city, republic of china": {latitude: 25.01170921, longitude: 121.46588135},
+        "riyadh, saudi arabia": {latitude: 24.69496918, longitude: 46.72412872},
+        "shanghai, china": {latitude: 31.23036957, longitude: 121.47370148},
+        "shenzhen, china": {latitude: 22.54368019, longitude: 114.0579071},
+        "surat, india": {latitude: 21.20350838, longitude: 72.83922577},
+        "tehran, iran": {latitude: 35.68925095, longitude: 51.38959885}
+    };
 
     public valuesValue: number[] = getRandomNumbers(this.valuesSourceDestination.length, 10, 500);
 
